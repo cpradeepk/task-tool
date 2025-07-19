@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  googleId          String?  @unique
+  name              String
+  shortName         String?
+  phone             String?
+  telegram          String?
+  whatsapp          String?
+  profilePicture    String?
+  isAdmin           Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  refreshToken      String?
+  lastLoginAt       DateTime?
+  
+  // Theme preferences stored as JSON
+  preferences       Json?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  createdProjects   Project[]        @relation("ProjectCreator")
+  projectMemberships ProjectMember[]
+  createdTasks      Task[]           @relation("TaskCreator")
+  assignedTasks     Task[]           @relation("TaskAssignee")
+  taskComments      TaskComment[]
+  timeEntries       TimeEntry[]
+  uploadedFiles     FileUpload[]
+  chatMessages      ChatMessage[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  priority    Priority      @default(MEDIUM)
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relations
+  createdById String
+  createdBy   User          @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members     ProjectMember[]
+  tasks       Task[]
+  subProjects SubProject[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String            @id @default(cuid())
+  role      ProjectMemberRole @default(MEMBER)
+  joinedAt  DateTime          @default(now())
+  
+  // Relations
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model SubProject {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  priority    Priority      @default(MEDIUM)
+  startDate   DateTime?
+  endDate     DateTime?
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relations
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@unique([projectId, name])
+  @@map("sub_projects")
+}
+
+model Task {
+  id            String     @id @default(cuid())
+  title         String
+  description   String?
+  status        TaskStatus @default(TODO)
+  priority      Priority   @default(MEDIUM)
+  dueDate       DateTime?
+  estimatedHours Float?
+  actualHours   Float?
+  tags          String[]   @default([])
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  
+  // Relations
+  projectId     String?
+  project       Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subProjectId  String?
+  subProject    SubProject? @relation(fields: [subProjectId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User        @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  assignedToId  String?
+  assignedTo    User?       @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  
+  comments      TaskComment[]
+  timeEntries   TimeEntry[]
+  attachments   FileUpload[]
+
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  taskId    String
+  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("task_comments")
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  description String?
+  hours       Float
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  taskId      String
+  task        Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("time_entries")
+}
+
+model FileUpload {
+  id            String     @id @default(cuid())
+  fileName      String
+  originalName  String
+  mimeType      String
+  size          Int
+  googleDriveId String     @unique
+  folderType    FolderType
+  description   String?
+  
+  createdAt     DateTime   @default(now())
+  
+  // Relations
+  uploadedById  String
+  uploadedBy    User  @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  taskId        String?
+  task          Task? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("file_uploads")
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  content   String
+  type      MessageType @default(TEXT)
+  fileId    String?
+  createdAt DateTime    @default(now())
+  
+  // Relations
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chat_messages")
+}
+
+// Enums
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum FolderType {
+  PROFILE_PICTURES
+  TASK_ATTACHMENTS
+  CHAT_MEDIA
+  DOCUMENTS
+  VOICE_NOTES
+}
+
+enum MessageType {
+  TEXT
+  FILE
+  IMAGE
+  VOICE
+}

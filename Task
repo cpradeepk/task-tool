@@ -1,0 +1,16 @@
+    8  cd backend
+    9  mk backend
+   10  md backend
+   11  mkdir backend
+   12  ls
+   13  cd backend
+   14  ls
+   15  ls
+   16  ls
+   17  ls
+   18  cd src
+   19  s
+   20  ls
+   21  cd ..
+   22  cd ..
+   23  ls
