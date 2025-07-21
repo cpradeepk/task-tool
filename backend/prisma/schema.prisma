@@ -38,6 +38,9 @@ model User {
   timeEntries       TimeEntry[]
   uploadedFiles     FileUpload[]
   chatMessages      ChatMessage[]
+  createdTemplates  TaskTemplate[]   @relation("TemplateCreator")
+  createdRecurringTasks RecurringTask[] @relation("RecurringTaskCreator")
+  assignedRecurringTasks RecurringTask[] @relation("RecurringTaskAssignee")
 
   @@map("users")
 }
@@ -60,6 +63,8 @@ model Project {
   members     ProjectMember[]
   tasks       Task[]
   subProjects SubProject[]
+  taskTemplates TaskTemplate[]
+  recurringTasks RecurringTask[]
 
   @@map("projects")
 }
@@ -95,6 +100,7 @@ model SubProject {
   projectId   String
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       Task[]
+  recurringTasks RecurringTask[]
 
   @@unique([projectId, name])
   @@map("sub_projects")
@@ -150,6 +156,10 @@ model Task {
   preDependencies  TaskDependency[] @relation("PreDependentTask")
   postDependencies TaskDependency[] @relation("PostDependentTask")
 
+  // Recurring task relation
+  recurringTaskId  String?
+  recurringTask    RecurringTask?   @relation("RecurringTaskGenerated", fields: [recurringTaskId], references: [id], onDelete: SetNull)
+
   comments      TaskComment[]
   timeEntries   TimeEntry[]
   attachments   FileUpload[]
@@ -185,6 +195,86 @@ model TaskDependency {
 
   @@unique([preTaskId, postTaskId])
   @@map("task_dependencies")
+}
+
+model TaskTemplate {
+  id            String     @id @default(cuid())
+  name          String
+  description   String?
+  taskType      TaskType   @default(REQUIREMENT)
+  priority      Priority   @default(NOT_IMPORTANT_NOT_URGENT)
+
+  // PERT time estimates
+  optimisticHours   Float?
+  pessimisticHours  Float?
+  mostLikelyHours   Float?
+
+  // Template organization
+  tags          String[]   @default([])
+  milestones    String[]   @default([])
+  customLabels  String[]   @default([])
+
+  // Template metadata
+  isPublic      Boolean    @default(false)
+  usageCount    Int        @default(0)
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  projectId     String?
+  project       Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User       @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@map("task_templates")
+}
+
+model RecurringTask {
+  id            String           @id @default(cuid())
+  name          String
+  description   String?
+  taskType      TaskType         @default(REQUIREMENT)
+  priority      Priority         @default(NOT_IMPORTANT_NOT_URGENT)
+
+  // Recurrence settings
+  recurrenceType RecurrenceType  @default(WEEKLY)
+  recurrenceInterval Int          @default(1)
+  recurrenceDays    String[]      @default([]) // For weekly: ["MON", "WED", "FRI"]
+  recurrenceEndDate DateTime?
+
+  // PERT time estimates
+  optimisticHours   Float?
+  pessimisticHours  Float?
+  mostLikelyHours   Float?
+
+  // Template organization
+  tags          String[]   @default([])
+  milestones    String[]   @default([])
+  customLabels  String[]   @default([])
+
+  // Status
+  isActive      Boolean    @default(true)
+  lastGenerated DateTime?
+  nextDue       DateTime?
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  projectId     String?
+  project       Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subProjectId  String?
+  subProject    SubProject? @relation(fields: [subProjectId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User       @relation("RecurringTaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  mainAssigneeId String?
+  mainAssignee   User?      @relation("RecurringTaskAssignee", fields: [mainAssigneeId], references: [id], onDelete: SetNull)
+
+  // Generated tasks
+  generatedTasks Task[]     @relation("RecurringTaskGenerated")
+
+  @@map("recurring_tasks")
 }
 
 model TaskComment {
@@ -303,6 +393,14 @@ enum DependencyType {
   START_TO_START    // Task A must start before Task B starts
   FINISH_TO_FINISH  // Task A must finish before Task B finishes
   START_TO_FINISH   // Task A must start before Task B finishes
+}
+
+enum RecurrenceType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
 }
 
 enum FolderType {
