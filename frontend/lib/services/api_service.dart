@@ -283,14 +283,55 @@ class ApiService {
     await delete('/projects/$id');
   }
 
+  // Sub-project endpoints
+  static Future<List<dynamic>> getSubProjects(String projectId) async {
+    final response = await get('/projects/$projectId/subprojects');
+    return response['subProjects'] ?? response;
+  }
+
+  static Future<Map<String, dynamic>> getSubProject(String id) async {
+    return await get('/projects/subprojects/$id');
+  }
+
+  static Future<Map<String, dynamic>> createSubProject(Map<String, dynamic> data) async {
+    return await post('/projects/subprojects', data);
+  }
+
+  static Future<Map<String, dynamic>> updateSubProject(String id, Map<String, dynamic> data) async {
+    return await put('/projects/subprojects/$id', data);
+  }
+
+  static Future<void> deleteSubProject(String id) async {
+    await delete('/projects/subprojects/$id');
+  }
+
   // Task endpoints
-  static Future<List<dynamic>> getTasks({String? projectId}) async {
-    String endpoint = '/tasks';
-    if (projectId != null) {
-      endpoint += '?projectId=$projectId';
-    }
-    final response = await get(endpoint);
-    return response['tasks'] ?? response;
+  static Future<Map<String, dynamic>> getTasks({
+    String? projectId,
+    String? subProjectId,
+    String? status,
+    String? priority,
+    String? taskType,
+    String? mainAssigneeId,
+    String? search,
+    String? sortBy,
+    String? sortOrder,
+    int page = 1,
+    int limit = 10,
+  }) async {
+    String endpoint = '/tasks?page=$page&limit=$limit';
+
+    if (projectId != null) endpoint += '&projectId=$projectId';
+    if (subProjectId != null) endpoint += '&subProjectId=$subProjectId';
+    if (status != null) endpoint += '&status=$status';
+    if (priority != null) endpoint += '&priority=$priority';
+    if (taskType != null) endpoint += '&taskType=$taskType';
+    if (mainAssigneeId != null) endpoint += '&mainAssigneeId=$mainAssigneeId';
+    if (search != null) endpoint += '&search=${Uri.encodeComponent(search)}';
+    if (sortBy != null) endpoint += '&sortBy=$sortBy';
+    if (sortOrder != null) endpoint += '&sortOrder=$sortOrder';
+
+    return await get(endpoint);
   }
 
   static Future<Map<String, dynamic>> getTask(String id) async {
@@ -307,6 +348,25 @@ class ApiService {
 
   static Future<void> deleteTask(String id) async {
     await delete('/tasks/$id');
+  }
+
+  // Task dependency endpoints
+  static Future<Map<String, dynamic>> addTaskDependency(String taskId, Map<String, dynamic> data) async {
+    return await post('/tasks/$taskId/dependencies', data);
+  }
+
+  static Future<void> removeTaskDependency(String taskId, String dependencyId) async {
+    await delete('/tasks/$taskId/dependencies/$dependencyId');
+  }
+
+  // Task comment endpoints
+  static Future<Map<String, dynamic>> addTaskComment(String taskId, Map<String, dynamic> data) async {
+    return await post('/tasks/$taskId/comments', data);
+  }
+
+  // Task time tracking endpoints
+  static Future<Map<String, dynamic>> addTimeEntry(String taskId, Map<String, dynamic> data) async {
+    return await post('/tasks/$taskId/time-entries', data);
   }
 
   // Legacy methods for backward compatibility
