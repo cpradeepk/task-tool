@@ -32,7 +32,8 @@ model User {
   createdProjects   Project[]        @relation("ProjectCreator")
   projectMemberships ProjectMember[]
   createdTasks      Task[]           @relation("TaskCreator")
-  assignedTasks     Task[]           @relation("TaskAssignee")
+  mainAssignedTasks Task[]           @relation("TaskMainAssignee")
+  taskAssignments   TaskAssignment[]
   taskComments      TaskComment[]
   timeEntries       TimeEntry[]
   uploadedFiles     FileUpload[]
@@ -103,26 +104,52 @@ model Task {
   id            String     @id @default(cuid())
   title         String
   description   String?
-  status        TaskStatus @default(TODO)
-  priority      Priority   @default(MEDIUM)
+  status        TaskStatus @default(OPEN)
+  priority      Priority   @default(NOT_IMPORTANT_NOT_URGENT)
+  taskType      TaskType   @default(REQUIREMENT)
+
+  // Date fields with auto-population logic
+  startDate     DateTime?  // Auto-populated when status changes to IN_PROGRESS
+  plannedEndDate DateTime? // Manual entry
+  endDate       DateTime?  // Auto-populated when status changes to COMPLETED
   dueDate       DateTime?
-  estimatedHours Float?
-  actualHours   Float?
+
+  // PERT time estimates
+  optimisticHours   Float?
+  pessimisticHours  Float?
+  mostLikelyHours   Float?
+  estimatedHours    Float?  // Calculated from PERT formula
+  actualHours       Float?
+
+  // Task organization
   tags          String[]   @default([])
-  
+  milestones    String[]   @default([])
+  customLabels  String[]   @default([])
+
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
-  
+
   // Relations
   projectId     String?
   project       Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   subProjectId  String?
   subProject    SubProject? @relation(fields: [subProjectId], references: [id], onDelete: Cascade)
+  parentTaskId  String?     // For subtasks (4th level hierarchy)
+  parentTask    Task?       @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks      Task[]      @relation("TaskSubtasks")
+
   createdById   String
   createdBy     User        @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  assignedToId  String?
-  assignedTo    User?       @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  
+
+  // Multiple user assignment
+  mainAssigneeId String?
+  mainAssignee   User?      @relation("TaskMainAssignee", fields: [mainAssigneeId], references: [id], onDelete: SetNull)
+  assignments    TaskAssignment[]
+
+  // Task dependencies
+  preDependencies  TaskDependency[] @relation("PreDependentTask")
+  postDependencies TaskDependency[] @relation("PostDependentTask")
+
   comments      TaskComment[]
   timeEntries   TimeEntry[]
   attachments   FileUpload[]
@@ -130,12 +157,42 @@ model Task {
   @@map("tasks")
 }
 
+model TaskAssignment {
+  id        String           @id @default(cuid())
+  role      TaskAssignmentRole @default(SUPPORT)
+  assignedAt DateTime        @default(now())
+
+  // Relations
+  taskId    String
+  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@map("task_assignments")
+}
+
+model TaskDependency {
+  id            String           @id @default(cuid())
+  dependencyType DependencyType  @default(FINISH_TO_START)
+  createdAt     DateTime         @default(now())
+
+  // Relations
+  preTaskId     String  // Task that must be completed first
+  preTask       Task    @relation("PreDependentTask", fields: [preTaskId], references: [id], onDelete: Cascade)
+  postTaskId    String  // Task that depends on the pre-task
+  postTask      Task    @relation("PostDependentTask", fields: [postTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([preTaskId, postTaskId])
+  @@map("task_dependencies")
+}
+
 model TaskComment {
   id        String   @id @default(cuid())
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   taskId    String
   task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
@@ -212,18 +269,40 @@ enum ProjectMemberRole {
 }
 
 enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  IN_REVIEW
-  DONE
-  CANCELLED
+  OPEN              // White
+  IN_PROGRESS       // Yellow - auto-populates start date
+  COMPLETED         // Green - auto-populates end date
+  CANCELLED         // Grey
+  HOLD              // Brown
+  DELAYED           // Red
 }
 
 enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
+  IMPORTANT_URGENT          // Orange - Important & Urgent
+  IMPORTANT_NOT_URGENT      // Yellow - Important & Not Urgent
+  NOT_IMPORTANT_URGENT      // White - Not Important & Urgent
+  NOT_IMPORTANT_NOT_URGENT  // White - Not Important & Not Urgent
+}
+
+enum TaskType {
+  REQUIREMENT
+  DESIGN
+  CODING
+  TESTING
+  LEARNING
+  DOCUMENTATION
+}
+
+enum TaskAssignmentRole {
+  MAIN_RESPONSIBLE
+  SUPPORT
+}
+
+enum DependencyType {
+  FINISH_TO_START   // Most common: Task A must finish before Task B starts
+  START_TO_START    // Task A must start before Task B starts
+  FINISH_TO_FINISH  // Task A must finish before Task B finishes
+  START_TO_FINISH   // Task A must start before Task B finishes
 }
 
 enum FolderType {
