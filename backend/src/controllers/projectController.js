@@ -1,31 +1,67 @@
 const { PrismaClient } = require('@prisma/client');
 const logger = require('../config/logger');
+const activityService = require('../services/activityService');
+const notificationService = require('../services/notificationService');
 
 const prisma = new PrismaClient();
 
 // Create project (admin only)
 const createProject = async (req, res) => {
   try {
-    const { name, description, priority, startDate, endDate } = req.body;
+    const { 
+      name, 
+      description, 
+      projectType = 'SOFTWARE_DEVELOPMENT',
+      priority = 'NOT_IMPORTANT_NOT_URGENT', 
+      priorityOrder,
+      startDate, 
+      endDate,
+      hasTimeDependencies = false,
+      managerId
+    } = req.body;
 
     // Only admins can create projects
     if (!req.user.isAdmin) {
       return res.status(403).json({ error: 'Only administrators can create projects' });
     }
 
+    // Validate manager if provided
+    if (managerId) {
+      const manager = await prisma.user.findUnique({
+        where: { id: managerId },
+        select: { role: true }
+      });
+
+      if (!manager || !['ADMIN', 'PROJECT_MANAGER'].includes(manager.role)) {
+        return res.status(400).json({ error: 'Invalid project manager specified' });
+      }
+    }
+
+    // Validate time dependencies
+    if (hasTimeDependencies && !startDate) {
+      return res.status(400).json({ error: 'Start date is required for time-dependent projects' });
+    }
+
     const project = await prisma.project.create({
       data: {
         name,
         description,
-        priority: priority || 'NOT_IMPORTANT_NOT_URGENT',
+        projectType,
+        priority,
+        priorityOrder,
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
+        hasTimeDependencies,
         status: 'ACTIVE',
-        createdById: req.user.id
+        createdById: req.user.id,
+        managerId
       },
       include: {
         createdBy: {
           select: { id: true, name: true, email: true }
+        },
+        manager: {
+          select: { id: true, name: true, email: true, role: true }
         },
         members: {
           include: {
@@ -37,22 +73,24 @@ const createProject = async (req, res) => {
       }
     });
 
-    // Add creator as project owner
-    await prisma.projectMember.create({
-      data: {
-        projectId: project.id,
-        userId: req.user.id,
-        role: 'OWNER'
-      }
-    });
+    // Auto-add manager as project member if specified
+    if (managerId && managerId !== req.user.id) {
+      await prisma.projectMember.create({
+        data: {
+          projectId: project.id,
+          userId: managerId,
+          role: 'ADMIN'
+        }
+      });
+    }
 
-    logger.info(`Project created: ${project.name} by ${req.user.email}`);
+    logger.info(`Project created: ${name} by ${req.user.email}`);
     res.status(201).json(project);
   } catch (error) {
-    logger.error('Error creating project:', error);
     if (error.code === 'P2002') {
       return res.status(400).json({ error: 'Project name already exists' });
     }
+    logger.error('Error creating project:', error);
     res.status(500).json({ error: 'Failed to create project' });
   }
 };
@@ -264,10 +302,70 @@ const deleteProject = async (req, res) => {
   }
 };
 
+// Add new method for project manager assignment
+const assignProjectManager = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { managerId } = req.body;
+
+    // Only admins can assign project managers
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ error: 'Only administrators can assign project managers' });
+    }
+
+    // Validate manager
+    if (managerId) {
+      const manager = await prisma.user.findUnique({
+        where: { id: managerId },
+        select: { role: true, name: true, email: true }
+      });
+
+      if (!manager || !['ADMIN', 'PROJECT_MANAGER'].includes(manager.role)) {
+        return res.status(400).json({ error: 'User must have PROJECT_MANAGER or ADMIN role' });
+      }
+    }
+
+    const project = await prisma.project.update({
+      where: { id },
+      data: { managerId },
+      include: {
+        manager: {
+          select: { id: true, name: true, email: true, role: true }
+        }
+      }
+    });
+
+    // Ensure manager is project member
+    if (managerId) {
+      await prisma.projectMember.upsert({
+        where: {
+          projectId_userId: {
+            projectId: id,
+            userId: managerId
+          }
+        },
+        update: { role: 'ADMIN' },
+        create: {
+          projectId: id,
+          userId: managerId,
+          role: 'ADMIN'
+        }
+      });
+    }
+
+    logger.info(`Project manager assigned: ${id} -> ${managerId} by ${req.user.email}`);
+    res.json(project);
+  } catch (error) {
+    logger.error('Error assigning project manager:', error);
+    res.status(500).json({ error: 'Failed to assign project manager' });
+  }
+};
+
 module.exports = {
   createProject,
   getProjects,
   getProjectById,
   updateProject,
-  deleteProject
+  deleteProject,
+  assignProjectManager
 };

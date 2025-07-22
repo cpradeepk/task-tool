@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const logger = require('../config/logger');
 const taskDependencyService = require('../services/taskDependencyService');
+const activityService = require('../services/activityService');
 
 const prisma = new PrismaClient();
 

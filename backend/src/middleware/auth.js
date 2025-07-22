@@ -46,7 +46,33 @@ const requireAdmin = (req, res, next) => {
   next();
 };
 
+// Add role-based middleware
+const requireRole = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const userRoles = Array.isArray(roles) ? roles : [roles];
+    if (!userRoles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        error: 'Insufficient permissions',
+        required: userRoles,
+        current: req.user.role
+      });
+    }
+
+    next();
+  };
+};
+
+const requireProjectManager = requireRole(['ADMIN', 'PROJECT_MANAGER']);
+const requireAdminOrProjectManager = requireRole(['ADMIN', 'PROJECT_MANAGER']);
+
 module.exports = {
   authenticateToken,
-  requireAdmin
+  requireAdmin,
+  requireRole,
+  requireProjectManager,
+  requireAdminOrProjectManager
 };

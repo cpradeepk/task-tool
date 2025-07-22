@@ -1,5 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const logger = require('../config/logger');
+const activityService = require('../services/activityService');
+const notificationService = require('../services/notificationService');
 
 const prisma = new PrismaClient();
 
@@ -123,6 +125,29 @@ class TaskController {
             role: 'SUPPORT'
           }))
         });
+      }
+
+      // Log activity
+      await activityService.logTaskCreated(
+        req.user.id,
+        task.id,
+        task.projectId,
+        task.title
+      );
+
+      // Send notifications to assignees
+      const assigneeIds = [
+        ...(task.mainAssigneeId ? [task.mainAssigneeId] : []),
+        ...supportAssignees
+      ].filter(id => id !== req.user.id); // Don't notify the creator
+
+      if (assigneeIds.length > 0) {
+        await notificationService.createTaskAssignedNotifications(
+          assigneeIds,
+          task.id,
+          task.title,
+          req.user.name
+        );
       }
 
       logger.info(`Task created: ${task.title} by ${req.user.email}`);
@@ -487,6 +512,93 @@ class TaskController {
             }))
           });
         }
+      }
+
+      // Log activity for significant changes
+      const changes = [];
+      if (status !== undefined && status !== currentTask.status) {
+        changes.push(`status changed from ${currentTask.status} to ${status}`);
+
+        // Log specific activity for status changes
+        if (status === 'COMPLETED') {
+          await activityService.logTaskCompleted(
+            req.user.id,
+            task.id,
+            task.projectId,
+            task.title
+          );
+
+          // Notify relevant users about completion
+          const notifyUsers = [
+            currentTask.createdById,
+            ...(currentTask.mainAssigneeId ? [currentTask.mainAssigneeId] : []),
+            ...supportAssignees
+          ].filter((id, index, arr) => arr.indexOf(id) === index && id !== req.user.id);
+
+          if (notifyUsers.length > 0) {
+            await notificationService.createTaskCompletedNotifications(
+              notifyUsers,
+              task.id,
+              task.title,
+              req.user.name
+            );
+          }
+        } else {
+          await activityService.logTaskStatusChanged(
+            req.user.id,
+            task.id,
+            task.projectId,
+            task.title,
+            currentTask.status,
+            status
+          );
+        }
+      }
+
+      if (mainAssigneeId !== undefined && mainAssigneeId !== currentTask.mainAssigneeId) {
+        changes.push(`assignee changed`);
+
+        // Log assignment change
+        await activityService.logTaskAssigned(
+          req.user.id,
+          task.id,
+          task.projectId,
+          task.title,
+          mainAssigneeId
+        );
+
+        // Notify new assignee
+        if (mainAssigneeId && mainAssigneeId !== req.user.id) {
+          await notificationService.createTaskAssignedNotifications(
+            [mainAssigneeId],
+            task.id,
+            task.title,
+            req.user.name
+          );
+        }
+      }
+
+      if (priority !== undefined && priority !== currentTask.priority) {
+        changes.push(`priority changed from ${currentTask.priority} to ${priority}`);
+
+        await activityService.logTaskPriorityChanged(
+          req.user.id,
+          task.id,
+          task.projectId,
+          task.title,
+          currentTask.priority,
+          priority
+        );
+      }
+
+      // General task update activity if other changes were made
+      if (changes.length === 0 && Object.keys(updateData).length > 0) {
+        await activityService.logTaskUpdated(
+          req.user.id,
+          task.id,
+          task.projectId,
+          task.title
+        );
       }
 
       logger.info(`Task updated: ${task.title} by ${req.user.email}`);

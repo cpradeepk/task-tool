@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../models/task.dart';
 import '../models/project.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../services/socket_service.dart';
+import '../services/notification_service.dart';
+import '../services/time_tracking_service.dart';
 import '../widgets/task_card.dart';
 import '../widgets/task_form_dialog.dart';
 import '../widgets/responsive_layout.dart';
@@ -40,10 +44,119 @@ class _TaskManagementScreenState extends State<TaskManagementScreen> {
   final int _pageSize = 20;
   bool _hasMoreData = true;
 
+  // Real-time services
+  final SocketService _socketService = SocketService();
+  final NotificationService _notificationService = NotificationService();
+  final TimeTrackingService _timeTrackingService = TimeTrackingService();
+
+  // Stream subscriptions
+  StreamSubscription? _taskUpdateSubscription;
+  StreamSubscription? _notificationSubscription;
+
   @override
   void initState() {
     super.initState();
     _loadTasks();
+    _setupRealTimeListeners();
+
+    // Join project room for real-time updates
+    if (widget.projectId != null) {
+      _socketService.joinProject(widget.projectId!);
+    }
+  }
+
+  void _setupRealTimeListeners() {
+    // Listen for task updates
+    _taskUpdateSubscription = _socketService.taskUpdateStream.listen((data) {
+      _handleTaskUpdate(data);
+    });
+
+    // Listen for notifications
+    _notificationSubscription = _socketService.notificationStream.listen((data) {
+      _handleNotification(data);
+    });
+  }
+
+  void _handleTaskUpdate(Map<String, dynamic> data) {
+    final type = data['type'];
+    final taskData = data['task'];
+
+    if (taskData == null) return;
+
+    final updatedTask = Task.fromJson(taskData);
+
+    setState(() {
+      switch (type) {
+        case 'task_created':
+          // Add new task if it belongs to current project/filters
+          if (_shouldIncludeTask(updatedTask)) {
+            _tasks.insert(0, updatedTask);
+          }
+          break;
+
+        case 'task_updated':
+          // Update existing task
+          final index = _tasks.indexWhere((t) => t.id == updatedTask.id);
+          if (index != -1) {
+            if (_shouldIncludeTask(updatedTask)) {
+              _tasks[index] = updatedTask;
+            } else {
+              _tasks.removeAt(index);
+            }
+          } else if (_shouldIncludeTask(updatedTask)) {
+            _tasks.insert(0, updatedTask);
+          }
+          break;
+
+        case 'task_deleted':
+          _tasks.removeWhere((t) => t.id == updatedTask.id);
+          break;
+      }
+    });
+  }
+
+  void _handleNotification(Map<String, dynamic> data) {
+    if (data['type'] == 'new_notification') {
+      // Show in-app notification
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(data['message'] ?? 'New notification'),
+          action: SnackBarAction(
+            label: 'View',
+            onPressed: () {
+              // Navigate to notification center
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  bool _shouldIncludeTask(Task task) {
+    // Check if task matches current filters
+    if (widget.projectId != null && task.projectId != widget.projectId) {
+      return false;
+    }
+
+    if (_statusFilter != null && task.status != _statusFilter) {
+      return false;
+    }
+
+    if (_priorityFilter != null && task.priority != _priorityFilter) {
+      return false;
+    }
+
+    if (_typeFilter != null && task.taskType != _typeFilter) {
+      return false;
+    }
+
+    if (_searchQuery.isNotEmpty &&
+        !task.title.toLowerCase().contains(_searchQuery.toLowerCase()) &&
+        !task.description.toLowerCase().contains(_searchQuery.toLowerCase())) {
+      return false;
+    }
+
+    return true;
   }
 
   Future<void> _loadTasks({bool loadMore = false}) async {
@@ -757,5 +870,18 @@ class _TaskManagementScreenState extends State<TaskManagementScreen> {
       '/task-details',
       arguments: task,
     );
+  }
+
+  @override
+  void dispose() {
+    _taskUpdateSubscription?.cancel();
+    _notificationSubscription?.cancel();
+
+    // Leave project room
+    if (widget.projectId != null) {
+      _socketService.leaveProject(widget.projectId!);
+    }
+
+    super.dispose();
   }
 }

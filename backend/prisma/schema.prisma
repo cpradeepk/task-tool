@@ -18,6 +18,7 @@ model User {
   whatsapp          String?
   profilePicture    String?
   isAdmin           Boolean  @default(false)
+  role              UserRole @default(MEMBER)
   isActive          Boolean  @default(true)
   refreshToken      String?
   lastLoginAt       DateTime?
@@ -30,6 +31,7 @@ model User {
 
   // Relations
   createdProjects   Project[]        @relation("ProjectCreator")
+  managedProjects   Project[]        @relation("ProjectManager")
   projectMemberships ProjectMember[]
   createdTasks      Task[]           @relation("TaskCreator")
   mainAssignedTasks Task[]           @relation("TaskMainAssignee")
@@ -37,10 +39,16 @@ model User {
   taskComments      TaskComment[]
   timeEntries       TimeEntry[]
   uploadedFiles     FileUpload[]
-  chatMessages      ChatMessage[]
   createdTemplates  TaskTemplate[]   @relation("TemplateCreator")
   createdRecurringTasks RecurringTask[] @relation("RecurringTaskCreator")
   assignedRecurringTasks RecurringTask[] @relation("RecurringTaskAssignee")
+  createdModules    Module[]         @relation("ModuleCreator")
+  activityLogs      ActivityLog[]
+  sentMessages      ChatMessage[]    @relation("MessageSender")
+  receivedMessages  ChatMessage[]    @relation("DirectMessageRecipient")
+  createdChannels   ChatChannel[]    @relation("ChannelCreator")
+  channelMemberships ChatChannelMember[]
+  notifications     Notification[]
 
   @@map("users")
 }
@@ -49,10 +57,13 @@ model Project {
   id          String        @id @default(cuid())
   name        String        @unique
   description String?
+  projectType ProjectType   @default(SOFTWARE_DEVELOPMENT)
   status      ProjectStatus @default(ACTIVE)
-  priority    Priority      @default(MEDIUM)
-  startDate   DateTime?
+  priority    Priority      @default(NOT_IMPORTANT_NOT_URGENT)
+  priorityOrder Int?        // Numerical ordering within priority quadrant
+  startDate   DateTime?     // Mandatory for time-dependent projects
   endDate     DateTime?
+  hasTimeDependencies Boolean @default(false)
   
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -60,11 +71,17 @@ model Project {
   // Relations
   createdById String
   createdBy   User          @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  managerId   String?
+  manager     User?         @relation("ProjectManager", fields: [managerId], references: [id], onDelete: SetNull)
   members     ProjectMember[]
+  modules     Module[]
   tasks       Task[]
   subProjects SubProject[]
   taskTemplates TaskTemplate[]
   recurringTasks RecurringTask[]
+  chatChannels ChatChannel[]
+  notifications Notification[]
+  activityLogs ActivityLog[]
 
   @@map("projects")
 }
@@ -89,7 +106,7 @@ model SubProject {
   name        String
   description String?
   status      ProjectStatus @default(ACTIVE)
-  priority    Priority      @default(MEDIUM)
+  priority    Priority      @default(NOT_IMPORTANT_NOT_URGENT)
   startDate   DateTime?
   endDate     DateTime?
   
@@ -112,19 +129,21 @@ model Task {
   description   String?
   status        TaskStatus @default(OPEN)
   priority      Priority   @default(NOT_IMPORTANT_NOT_URGENT)
+  priorityOrder Int?       // Numerical ordering within priority quadrant
   taskType      TaskType   @default(REQUIREMENT)
 
   // Date fields with auto-population logic
-  startDate     DateTime?  // Auto-populated when status changes to IN_PROGRESS
-  plannedEndDate DateTime? // Manual entry
-  endDate       DateTime?  // Auto-populated when status changes to COMPLETED
+  startDate     DateTime?  // Optional for time-dependent tasks
+  plannedEndDate DateTime?
+  endDate       DateTime?
   dueDate       DateTime?
+  hasTimeDependencies Boolean @default(false)
 
   // PERT time estimates
   optimisticHours   Float?
   pessimisticHours  Float?
   mostLikelyHours   Float?
-  estimatedHours    Float?  // Calculated from PERT formula
+  estimatedHours    Float?
   actualHours       Float?
 
   // Task organization
@@ -136,33 +155,37 @@ model Task {
   updatedAt     DateTime   @updatedAt
 
   // Relations
-  projectId     String?
-  project       Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  project       Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  moduleId      String?
+  module        Module?    @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  
   subProjectId  String?
-  subProject    SubProject? @relation(fields: [subProjectId], references: [id], onDelete: Cascade)
-  parentTaskId  String?     // For subtasks (4th level hierarchy)
-  parentTask    Task?       @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
-  subtasks      Task[]      @relation("TaskSubtasks")
+  subProject    SubProject? @relation(fields: [subProjectId], references: [id], onDelete: SetNull)
+
+  parentTaskId  String?
+  parentTask    Task?      @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks      Task[]     @relation("TaskSubtasks")
 
   createdById   String
-  createdBy     User        @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy     User       @relation("TaskCreator", fields: [createdById], references: [id], onDelete: Cascade)
 
-  // Multiple user assignment
   mainAssigneeId String?
-  mainAssignee   User?      @relation("TaskMainAssignee", fields: [mainAssigneeId], references: [id], onDelete: SetNull)
+  mainAssignee   User?     @relation("TaskMainAssignee", fields: [mainAssigneeId], references: [id], onDelete: SetNull)
   assignments    TaskAssignment[]
 
-  // Task dependencies
   preDependencies  TaskDependency[] @relation("PreDependentTask")
   postDependencies TaskDependency[] @relation("PostDependentTask")
 
-  // Recurring task relation
   recurringTaskId  String?
   recurringTask    RecurringTask?   @relation("RecurringTaskGenerated", fields: [recurringTaskId], references: [id], onDelete: SetNull)
 
   comments      TaskComment[]
   timeEntries   TimeEntry[]
   attachments   FileUpload[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
 
   @@map("tasks")
 }
@@ -325,22 +348,120 @@ model FileUpload {
   uploadedBy    User  @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
   taskId        String?
   task          Task? @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  messageId     String?
+  message       ChatMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@map("file_uploads")
+}
+
+model ChatChannel {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  isPrivate   Boolean     @default(false)
+  channelType ChannelType @default(PROJECT)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  projectId   String?
+  project     Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User        @relation("ChannelCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  messages    ChatMessage[]
+  members     ChatChannelMember[]
+
+  @@unique([projectId, name])
+  @@map("chat_channels")
+}
+
+model ChatChannelMember {
+  id        String            @id @default(cuid())
+  role      ChannelMemberRole @default(MEMBER)
+  joinedAt  DateTime          @default(now())
+  lastRead  DateTime?
+
+  // Relations
+  channelId String
+  channel   ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@map("chat_channel_members")
 }
 
 model ChatMessage {
   id        String      @id @default(cuid())
   content   String
-  type      MessageType @default(TEXT)
-  fileId    String?
+  messageType MessageType @default(TEXT)
+  isEdited  Boolean     @default(false)
+  isDeleted Boolean     @default(false)
   createdAt DateTime    @default(now())
-  
+  updatedAt DateTime    @updatedAt
+
   // Relations
-  userId    String
-  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channelId String?
+  channel   ChatChannel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  // For direct messages
+  recipientId String?
+  recipient   User?   @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  // For replies and threads
+  parentMessageId String?
+  parentMessage   ChatMessage? @relation("MessageReplies", fields: [parentMessageId], references: [id], onDelete: Cascade)
+  replies         ChatMessage[] @relation("MessageReplies")
+
+  // File attachments
+  attachments FileUpload[]
 
   @@map("chat_messages")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  title       String
+  message     String
+  type        NotificationType @default(INFO)
+  isRead      Boolean          @default(false)
+  data        Json?            // Additional data for the notification
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+
+  // Relations
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Optional relations for context
+  taskId      String?
+  task        Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id          String       @id @default(cuid())
+  action      ActivityType
+  description String
+  metadata    Json?        // Additional context data
+  createdAt   DateTime     @default(now())
+
+  // Relations
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Optional relations for context
+  taskId      String?
+  task        Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
 }
 
 // Enums
@@ -416,4 +537,126 @@ enum MessageType {
   FILE
   IMAGE
   VOICE
+  SYSTEM
+  TASK_REFERENCE
+  PROJECT_REFERENCE
+}
+
+enum ChannelType {
+  PROJECT
+  DIRECT
+  GENERAL
+  ANNOUNCEMENT
+}
+
+enum ChannelMemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  TASK_ASSIGNED
+  TASK_UPDATED
+  TASK_COMPLETED
+  TASK_OVERDUE
+  PROJECT_UPDATED
+  COMMENT_ADDED
+  MENTION
+  DEADLINE_REMINDER
+}
+
+enum ActivityType {
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_COMPLETED
+  TASK_DELETED
+  TASK_ASSIGNED
+  TASK_UNASSIGNED
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_DELETED
+  COMMENT_ADDED
+  COMMENT_UPDATED
+  COMMENT_DELETED
+  FILE_UPLOADED
+  FILE_DELETED
+  TIME_LOGGED
+  DEPENDENCY_ADDED
+  DEPENDENCY_REMOVED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  USER_JOINED
+  USER_LEFT
+  CHANNEL_CREATED
+  CHANNEL_UPDATED
+  MESSAGE_SENT
+}
+
+enum UserRole {
+  ADMIN
+  PROJECT_MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum ProjectType {
+  SOFTWARE_DEVELOPMENT
+  MARKETING
+  RESEARCH
+  OPERATIONS
+  MAINTENANCE
+  CUSTOM
+}
+
+enum MasterDataType {
+  TASK_STATUS
+  TASK_TYPE
+  PROJECT_TYPE
+}
+
+// New Module model
+model Module {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  priority    Priority @default(NOT_IMPORTANT_NOT_URGENT)
+  priorityOrder Int?
+  startDate   DateTime?
+  endDate     DateTime?
+  hasTimeDependencies Boolean @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User     @relation("ModuleCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  
+  @@unique([projectId, name])
+  @@map("modules")
+}
+
+// New MasterData model for system configuration
+model MasterData {
+  id          String         @id @default(cuid())
+  type        MasterDataType
+  key         String         // e.g., "OPEN", "REQUIREMENT", "SOFTWARE_DEVELOPMENT"
+  value       String         // Display name
+  description String?
+  isActive    Boolean        @default(true)
+  sortOrder   Int            @default(0)
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  @@unique([type, key])
+  @@map("master_data")
 }

@@ -1,7 +1,9 @@
 require('dotenv').config();
+const http = require('http');
 const app = require('./app');
 const logger = require('./config/logger');
 const { PrismaClient } = require('@prisma/client');
+const socketServer = require('./socket/socketServer');
 
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
@@ -20,12 +22,17 @@ async function initializeServices() {
 // Initialize services
 initializeServices();
 
+// Create HTTP server and initialize Socket.io
+const server = http.createServer(app);
+const io = socketServer.initialize(server);
+
 // Start server
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
   logger.info(`❤️  Health Check: http://localhost:${PORT}/health`);
+  logger.info(`🔌 Socket.IO server initialized`);
 });
 
 // Graceful shutdown

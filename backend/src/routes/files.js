@@ -1,148 +1,42 @@
 const express = require('express');
-const { param } = require('express-validator');
+const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const fileController = require('../controllers/fileController');
-const { authenticateToken } = require('../middleware/auth');
-const { validateRequest } = require('../middleware/validation');
-const upload = require('../middleware/upload');
+const fileService = require('../services/fileService');
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(authenticateToken);
+// Configure multer for different upload types
+const taskUpload = fileService.getMulterConfig('tasks');
+const chatUpload = fileService.getMulterConfig('chat');
+const projectUpload = fileService.getMulterConfig('projects');
+const generalUpload = fileService.getMulterConfig('general');
 
-/**
- * @swagger
- * /api/files/profile-picture:
- *   post:
- *     summary: Upload profile picture
- *     tags: [Files]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *     responses:
- *       200:
- *         description: Profile picture uploaded successfully
- *       400:
- *         description: Invalid file or file too large
- */
-router.post('/profile-picture', 
-  upload.single('file'), 
-  fileController.uploadProfilePicture
-);
+// File upload routes
+router.post('/upload', authenticateToken, generalUpload.single('file'), fileController.uploadFile);
+router.post('/upload/multiple', authenticateToken, generalUpload.array('files', 10), fileController.uploadMultipleFiles);
+router.post('/upload/task', authenticateToken, taskUpload.single('file'), fileController.uploadFile);
+router.post('/upload/chat', authenticateToken, chatUpload.single('file'), fileController.uploadFile);
+router.post('/upload/project', authenticateToken, projectUpload.single('file'), fileController.uploadFile);
 
-/**
- * @swagger
- * /api/files/task-attachment:
- *   post:
- *     summary: Upload task attachment
- *     tags: [Files]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *               taskId:
- *                 type: string
- *               description:
- *                 type: string
- *     responses:
- *       200:
- *         description: File uploaded successfully
- */
-router.post('/task-attachment', 
-  upload.single('file'), 
-  fileController.uploadTaskAttachment
-);
+// File access routes
+router.get('/:fileId', authenticateToken, fileController.getFile);
+router.get('/:fileId/download', authenticateToken, fileController.downloadFile);
+router.get('/:fileId/preview', authenticateToken, fileController.previewFile);
 
-/**
- * @swagger
- * /api/files/{id}/download:
- *   get:
- *     summary: Download file
- *     tags: [Files]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: File downloaded successfully
- *       404:
- *         description: File not found
- */
-router.get('/:id/download', [
-  param('id').isString().notEmpty()
-], validateRequest, fileController.downloadFile);
+// File management routes
+router.put('/:fileId', authenticateToken, fileController.updateFile);
+router.delete('/:fileId', authenticateToken, fileController.deleteFile);
 
-/**
- * @swagger
- * /api/files/{id}:
- *   delete:
- *     summary: Delete file
- *     tags: [Files]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: File deleted successfully
- *       404:
- *         description: File not found
- */
-router.delete('/:id', [
-  param('id').isString().notEmpty()
-], validateRequest, fileController.deleteFile);
+// File listing routes
+router.get('/user/files', authenticateToken, fileController.getUserFiles);
+router.get('/user/recent', authenticateToken, fileController.getRecentFiles);
+router.get('/user/stats', authenticateToken, fileController.getFileStats);
 
-/**
- * @swagger
- * /api/files/user/{userId}:
- *   get:
- *     summary: Get user files
- *     tags: [Files]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *       - in: query
- *         name: folderType
- *         schema:
- *           type: string
- *           enum: [PROFILE_PICTURES, TASK_ATTACHMENTS, CHAT_MEDIA, DOCUMENTS, VOICE_NOTES]
- *     responses:
- *       200:
- *         description: Files retrieved successfully
- */
-router.get('/user/:userId', [
-  param('userId').isString().notEmpty()
-], validateRequest, fileController.getUserFiles);
+// Task and message file routes
+router.get('/tasks/:taskId/files', authenticateToken, fileController.getTaskFiles);
+router.get('/messages/:messageId/files', authenticateToken, fileController.getMessageFiles);
+
+// Project file routes
+router.get('/projects/:projectId/files', authenticateToken, fileController.getProjectFiles);
 
 module.exports = router;

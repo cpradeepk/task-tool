@@ -12,6 +12,16 @@ const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const taskRoutes = require('./routes/tasks');
 const userRoutes = require('./routes/users');
+const fileRoutes = require('./routes/files');
+const chatRoutes = require('./routes/chat');
+const notificationRoutes = require('./routes/notifications');
+const activityRoutes = require('./routes/activity');
+const timeTrackingRoutes = require('./routes/timeTracking');
+const taskDependencyRoutes = require('./routes/taskDependencies');
+const taskTemplateRoutes = require('./routes/taskTemplates');
+const userRoleRoutes = require('./routes/userRoles');
+const masterDataRoutes = require('./routes/masterData');
+const moduleRoutes = require('./routes/modules');
 
 const app = express();
 
@@ -95,7 +105,11 @@ app.get('/api', (req, res) => {
       auth: '/api/auth',
       users: '/api/users',
       projects: '/api/projects',
-      tasks: '/api/tasks'
+      tasks: '/api/tasks',
+      files: '/api/files',
+      chat: '/api/chat',
+      notifications: '/api/notifications',
+      activity: '/api/activity'
     }
   });
 });
@@ -105,6 +119,16 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/time-tracking', timeTrackingRoutes);
+app.use('/api/task-dependencies', taskDependencyRoutes);
+app.use('/api/task-templates', taskTemplateRoutes);
+app.use('/api/user-roles', userRoleRoutes);
+app.use('/api/master-data', masterDataRoutes);
+app.use('/api/modules', moduleRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
