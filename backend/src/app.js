@@ -21,7 +21,6 @@ const taskDependencyRoutes = require('./routes/taskDependencies');
 const taskTemplateRoutes = require('./routes/taskTemplates');
 const userRoleRoutes = require('./routes/userRoles');
 const masterDataRoutes = require('./routes/masterData');
-const moduleRoutes = require('./routes/modules');
 
 const app = express();
 
@@ -128,7 +127,6 @@ app.use('/api/task-dependencies', taskDependencyRoutes);
 app.use('/api/task-templates', taskTemplateRoutes);
 app.use('/api/user-roles', userRoleRoutes);
 app.use('/api/master-data', masterDataRoutes);
-app.use('/api/modules', moduleRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
