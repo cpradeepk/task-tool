@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/project.dart';
+import '../models/sub_project.dart';
 import '../services/api_service.dart';
 
 class ProjectsScreen extends StatefulWidget {
@@ -52,8 +53,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             id: '1',
             name: 'Mobile App Development',
             description: 'Flutter mobile application for task management',
-            status: 'ACTIVE',
-            priority: 'HIGH',
+            status: ProjectStatus.active,
+            priority: Priority.importantUrgent,
             createdAt: DateTime.now().subtract(const Duration(days: 30)),
             updatedAt: DateTime.now().subtract(const Duration(days: 1)),
             createdById: 'user1',
@@ -62,8 +63,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             id: '2',
             name: 'Website Redesign',
             description: 'Complete redesign of company website',
-            status: 'IN_PROGRESS',
-            priority: 'MEDIUM',
+            status: ProjectStatus.active,
+            priority: Priority.importantNotUrgent,
             createdAt: DateTime.now().subtract(const Duration(days: 15)),
             updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
             createdById: 'user2',
