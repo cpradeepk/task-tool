@@ -4,16 +4,20 @@ const taskDependencyController = require('../controllers/taskDependencyControlle
 
 const router = express.Router();
 
-// Task dependency routes
-router.get('/tasks/:taskId/dependencies', authenticateToken, taskDependencyController.getTaskDependencies);
-router.post('/tasks/:taskId/dependencies', authenticateToken, taskDependencyController.addTaskDependency);
-router.delete('/tasks/:taskId/dependencies/:dependencyId', authenticateToken, taskDependencyController.removeTaskDependency);
+// Critical path and dependency chain
+router.get('/projects/:projectId/critical-path', authenticateToken, taskDependencyController.getCriticalPath);
+router.get('/tasks/:taskId/dependency-chain', authenticateToken, taskDependencyController.getDependencyChain);
 
-// Dependency validation
-router.post('/tasks/:taskId/dependencies/validate', authenticateToken, taskDependencyController.validateDependency);
+// Task availability and blocking
+router.get('/projects/:projectId/available-tasks', authenticateToken, taskDependencyController.getAvailableTasks);
+router.get('/projects/:projectId/blocked-tasks', authenticateToken, taskDependencyController.getBlockedTasks);
 
-// Project dependency overview
-router.get('/projects/:projectId/dependencies', authenticateToken, taskDependencyController.getProjectDependencies);
+// Dependency statistics and validation
+router.get('/projects/:projectId/dependency-stats', authenticateToken, taskDependencyController.getDependencyStats);
+router.post('/validate', authenticateToken, taskDependencyController.validateDependency);
+
+// Dependency graph and suggestions
 router.get('/projects/:projectId/dependency-graph', authenticateToken, taskDependencyController.getDependencyGraph);
+router.get('/tasks/:taskId/suggest', authenticateToken, taskDependencyController.suggestDependencies);
 
 module.exports = router;

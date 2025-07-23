@@ -5,20 +5,22 @@ const taskTemplateController = require('../controllers/taskTemplateController');
 const router = express.Router();
 
 // Task template routes
-router.get('/', authenticateToken, taskTemplateController.getTaskTemplates);
-router.post('/', authenticateToken, taskTemplateController.createTaskTemplate);
-router.get('/:id', authenticateToken, taskTemplateController.getTaskTemplate);
-router.put('/:id', authenticateToken, taskTemplateController.updateTaskTemplate);
-router.delete('/:id', authenticateToken, taskTemplateController.deleteTaskTemplate);
+router.get('/', authenticateToken, taskTemplateController.getTemplates);
+router.post('/', authenticateToken, taskTemplateController.createTemplate);
+router.get('/:id', authenticateToken, taskTemplateController.getTemplate);
+router.put('/:id', authenticateToken, taskTemplateController.updateTemplate);
+router.delete('/:id', authenticateToken, taskTemplateController.deleteTemplate);
 
 // Template usage
-router.post('/:id/use', authenticateToken, taskTemplateController.createTaskFromTemplate);
+router.post('/:templateId/use', authenticateToken, taskTemplateController.createTaskFromTemplate);
 
-// Project templates
-router.get('/projects/:projectId', authenticateToken, taskTemplateController.getProjectTaskTemplates);
+// Popular and suggested templates
+router.get('/popular', authenticateToken, taskTemplateController.getPopularTemplates);
+router.post('/suggest', authenticateToken, taskTemplateController.suggestTemplates);
 
-// Admin routes
-router.get('/admin/global', authenticateToken, requireAdmin, taskTemplateController.getGlobalTaskTemplates);
-router.post('/admin/global', authenticateToken, requireAdmin, taskTemplateController.createGlobalTaskTemplate);
+// Recurring tasks
+router.post('/recurring', authenticateToken, taskTemplateController.createRecurringTask);
+router.get('/recurring', authenticateToken, taskTemplateController.getRecurringTasks);
+router.post('/recurring/generate', authenticateToken, requireAdmin, taskTemplateController.generateRecurringTasks);
 
 module.exports = router;
