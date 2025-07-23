@@ -45,6 +45,10 @@ class AuthService {
     }
   }
 
+  static Future<String?> getToken() async {
+    return await ApiService.getToken();
+  }
+
   static Future<Map<String, dynamic>> getCurrentUser() async {
     try {
       return await ApiService.get('/auth/me');

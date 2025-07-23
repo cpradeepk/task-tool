@@ -159,29 +159,3 @@ class Project {
     return role == ProjectMemberRole.owner || role == ProjectMemberRole.admin;
   }
 }
-
-class ProjectMember {
-  final String id;
-  final String userId;
-  final String projectId;
-  final String role;
-  final DateTime joinedAt;
-
-  ProjectMember({
-    required this.id,
-    required this.userId,
-    required this.projectId,
-    required this.role,
-    required this.joinedAt,
-  });
-
-  factory ProjectMember.fromJson(Map<String, dynamic> json) {
-    return ProjectMember(
-      id: json['id'],
-      userId: json['userId'],
-      projectId: json['projectId'],
-      role: json['role'],
-      joinedAt: DateTime.parse(json['joinedAt']),
-    );
-  }
-}

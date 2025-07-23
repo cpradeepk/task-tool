@@ -55,7 +55,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             status: 'ACTIVE',
             createdAt: DateTime.now().subtract(const Duration(days: 30)),
             updatedAt: DateTime.now().subtract(const Duration(days: 1)),
-            ownerId: 'user1',
           ),
           Project(
             id: '2',
@@ -64,7 +63,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             status: 'IN_PROGRESS',
             createdAt: DateTime.now().subtract(const Duration(days: 15)),
             updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-            ownerId: 'user2',
           ),
         ];
       });

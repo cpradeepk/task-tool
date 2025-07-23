@@ -18,6 +18,8 @@ enum TaskStatus {
       orElse: () => TaskStatus.open,
     );
   }
+
+  String get displayName => label;
 }
 
 // Priority Enum (Eisenhower Matrix)
@@ -327,4 +329,98 @@ class Task {
 
   int get statusColor => status.color;
   int get priorityColor => priority.color;
+
+  // Additional properties needed by enhanced_task_card.dart
+  String get assigneeName => mainAssignee?['name'] ?? '';
+  bool get hasComments => comments.isNotEmpty;
+  bool get hasAttachments => attachments.isNotEmpty;
+
+  // Counts object for comments and attachments
+  Map<String, int> get counts => {
+    'comments': comments.length,
+    'attachments': attachments.length,
+  };
+
+  // copyWith method for updating task properties
+  Task copyWith({
+    String? id,
+    String? title,
+    String? description,
+    TaskStatus? status,
+    TaskPriority? priority,
+    TaskType? taskType,
+    DateTime? startDate,
+    DateTime? plannedEndDate,
+    DateTime? endDate,
+    DateTime? dueDate,
+    double? optimisticHours,
+    double? pessimisticHours,
+    double? mostLikelyHours,
+    double? estimatedHours,
+    double? actualHours,
+    List<String>? tags,
+    List<String>? milestones,
+    List<String>? customLabels,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? projectId,
+    String? subProjectId,
+    String? parentTaskId,
+    String? createdById,
+    String? mainAssigneeId,
+    Map<String, dynamic>? project,
+    Map<String, dynamic>? subProject,
+    Map<String, dynamic>? parentTask,
+    Map<String, dynamic>? mainAssignee,
+    Map<String, dynamic>? createdBy,
+    List<TaskAssignment>? assignments,
+    List<Task>? subtasks,
+    List<TaskDependency>? preDependencies,
+    List<TaskDependency>? postDependencies,
+    List<Map<String, dynamic>>? comments,
+    List<Map<String, dynamic>>? timeEntries,
+    List<Map<String, dynamic>>? attachments,
+    Map<String, dynamic>? count,
+  }) {
+    return Task(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      status: status ?? this.status,
+      priority: priority ?? this.priority,
+      taskType: taskType ?? this.taskType,
+      startDate: startDate ?? this.startDate,
+      plannedEndDate: plannedEndDate ?? this.plannedEndDate,
+      endDate: endDate ?? this.endDate,
+      dueDate: dueDate ?? this.dueDate,
+      optimisticHours: optimisticHours ?? this.optimisticHours,
+      pessimisticHours: pessimisticHours ?? this.pessimisticHours,
+      mostLikelyHours: mostLikelyHours ?? this.mostLikelyHours,
+      estimatedHours: estimatedHours ?? this.estimatedHours,
+      actualHours: actualHours ?? this.actualHours,
+      tags: tags ?? this.tags,
+      milestones: milestones ?? this.milestones,
+      customLabels: customLabels ?? this.customLabels,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      projectId: projectId ?? this.projectId,
+      subProjectId: subProjectId ?? this.subProjectId,
+      parentTaskId: parentTaskId ?? this.parentTaskId,
+      createdById: createdById ?? this.createdById,
+      mainAssigneeId: mainAssigneeId ?? this.mainAssigneeId,
+      project: project ?? this.project,
+      subProject: subProject ?? this.subProject,
+      parentTask: parentTask ?? this.parentTask,
+      mainAssignee: mainAssignee ?? this.mainAssignee,
+      createdBy: createdBy ?? this.createdBy,
+      assignments: assignments ?? this.assignments,
+      subtasks: subtasks ?? this.subtasks,
+      preDependencies: preDependencies ?? this.preDependencies,
+      postDependencies: postDependencies ?? this.postDependencies,
+      comments: comments ?? this.comments,
+      timeEntries: timeEntries ?? this.timeEntries,
+      attachments: attachments ?? this.attachments,
+      count: count ?? this.count,
+    );
+  }
 }

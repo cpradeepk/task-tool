@@ -447,11 +447,11 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
   // Helper methods
   Color _getStatusColor() {
     switch (widget.task.status) {
-      case TaskStatus.todo:
+      case TaskStatus.open:
         return Colors.grey;
       case TaskStatus.inProgress:
         return Colors.blue;
-      case TaskStatus.inReview:
+      case TaskStatus.hold:
         return Colors.orange;
       case TaskStatus.completed:
         return Colors.green;
@@ -462,26 +462,26 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
 
   Color _getPriorityColor() {
     switch (widget.task.priority) {
-      case Priority.importantUrgent:
+      case TaskPriority.importantUrgent:
         return Colors.red;
-      case Priority.importantNotUrgent:
+      case TaskPriority.importantNotUrgent:
         return Colors.orange;
-      case Priority.notImportantUrgent:
+      case TaskPriority.notImportantUrgent:
         return Colors.yellow[700]!;
-      case Priority.notImportantNotUrgent:
+      case TaskPriority.notImportantNotUrgent:
         return Colors.grey;
     }
   }
 
   String _getPriorityLabel() {
     switch (widget.task.priority) {
-      case Priority.importantUrgent:
+      case TaskPriority.importantUrgent:
         return 'High';
-      case Priority.importantNotUrgent:
+      case TaskPriority.importantNotUrgent:
         return 'Medium';
-      case Priority.notImportantUrgent:
+      case TaskPriority.notImportantUrgent:
         return 'Low';
-      case Priority.notImportantNotUrgent:
+      case TaskPriority.notImportantNotUrgent:
         return 'Lowest';
     }
   }
@@ -543,7 +543,7 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: Priority.values.map((priority) {
+          children: TaskPriority.values.map((priority) {
             return ListTile(
               leading: Container(
                 width: 12,
@@ -553,7 +553,7 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
                   shape: BoxShape.circle,
                 ),
               ),
-              title: Text(priority.displayName),
+              title: Text(priority.label),
               onTap: () {
                 Navigator.pop(context);
                 widget.onPriorityChanged?.call(widget.task.copyWith(priority: priority));
@@ -612,11 +612,11 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
 
   Color _getStatusColorForStatus(TaskStatus status) {
     switch (status) {
-      case TaskStatus.todo:
+      case TaskStatus.open:
         return Colors.grey;
       case TaskStatus.inProgress:
         return Colors.blue;
-      case TaskStatus.inReview:
+      case TaskStatus.hold:
         return Colors.orange;
       case TaskStatus.completed:
         return Colors.green;
@@ -625,15 +625,15 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
     }
   }
 
-  Color _getPriorityColorForPriority(Priority priority) {
+  Color _getPriorityColorForPriority(TaskPriority priority) {
     switch (priority) {
-      case Priority.importantUrgent:
+      case TaskPriority.importantUrgent:
         return Colors.red;
-      case Priority.importantNotUrgent:
+      case TaskPriority.importantNotUrgent:
         return Colors.orange;
-      case Priority.notImportantUrgent:
+      case TaskPriority.notImportantUrgent:
         return Colors.yellow[700]!;
-      case Priority.notImportantNotUrgent:
+      case TaskPriority.notImportantNotUrgent:
         return Colors.grey;
     }
   }

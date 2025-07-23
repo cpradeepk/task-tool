@@ -33,7 +33,7 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> get(String endpoint) async {
+  static Future<Map<String, dynamic>> get(String endpoint, {Map<String, dynamic>? queryParams}) async {
     // For demo tokens, simulate successful response
     if (_token != null && _token!.startsWith('demo-token-')) {
       await Future.delayed(const Duration(milliseconds: 500)); // Simulate network delay
