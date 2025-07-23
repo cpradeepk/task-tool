@@ -200,10 +200,15 @@ class _ChatInterfaceState extends State<ChatInterface> {
       setState(() {
         _conversations = conversations;
         if (widget.recipientId != null) {
-          _currentConversation = conversations.firstWhere(
-            (c) => c.userId == widget.recipientId,
-            orElse: () => conversations.isNotEmpty ? conversations.first : null,
-          );
+          try {
+            _currentConversation = conversations.firstWhere(
+              (c) => c.userId == widget.recipientId,
+            );
+          } catch (e) {
+            if (conversations.isNotEmpty) {
+              _currentConversation = conversations.first;
+            }
+          }
         }
       });
     } catch (e) {

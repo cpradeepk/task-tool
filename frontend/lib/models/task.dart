@@ -80,6 +80,17 @@ enum TaskAssignmentRole {
   }
 }
 
+// Task Counts class for comments and attachments
+class TaskCounts {
+  final int comments;
+  final int attachments;
+
+  TaskCounts({
+    required this.comments,
+    required this.attachments,
+  });
+}
+
 class TaskAssignment {
   final String id;
   final TaskAssignmentRole role;
@@ -336,10 +347,10 @@ class Task {
   bool get hasAttachments => attachments.isNotEmpty;
 
   // Counts object for comments and attachments
-  Map<String, int> get counts => {
-    'comments': comments.length,
-    'attachments': attachments.length,
-  };
+  TaskCounts get counts => TaskCounts(
+    comments: comments.length,
+    attachments: attachments.length,
+  );
 
   // copyWith method for updating task properties
   Task copyWith({

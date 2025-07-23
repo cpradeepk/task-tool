@@ -453,6 +453,8 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
         return Colors.blue;
       case TaskStatus.hold:
         return Colors.orange;
+      case TaskStatus.delayed:
+        return Colors.red;
       case TaskStatus.completed:
         return Colors.green;
       case TaskStatus.cancelled:
@@ -618,6 +620,8 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard> {
         return Colors.blue;
       case TaskStatus.hold:
         return Colors.orange;
+      case TaskStatus.delayed:
+        return Colors.red;
       case TaskStatus.completed:
         return Colors.green;
       case TaskStatus.cancelled:

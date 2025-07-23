@@ -155,6 +155,13 @@ class ApiService {
     await prefs.remove('auth_token');
   }
 
+  static Future<String?> getToken() async {
+    if (_token != null) return _token;
+    final prefs = await SharedPreferences.getInstance();
+    _token = prefs.getString('auth_token');
+    return _token;
+  }
+
   static Future<void> logout() async {
     await removeToken();
   }
