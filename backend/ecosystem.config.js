@@ -8,11 +8,11 @@ module.exports = {
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'development',
-        PORT: 3000,
+        PORT: 3003,
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 3003,
         API_BASE_URL: 'https://ai.swargfood.com/task',
         FRONTEND_URL: 'https://ai.swargfood.com/task',
         CORS_ORIGIN: 'https://ai.swargfood.com',
