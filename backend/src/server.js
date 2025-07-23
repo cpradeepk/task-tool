@@ -28,11 +28,12 @@ const io = socketServer.initialize(server);
 
 // Start server
 server.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
+  logger.info(`🚀 SwargFood Task Management Server running on port ${PORT}`);
   logger.info(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-  logger.info(`❤️  Health Check: http://localhost:${PORT}/health`);
-  logger.info(`🔌 Socket.IO server initialized`);
+  logger.info(`📚 API Documentation: http://localhost:${PORT}/task/api-docs`);
+  logger.info(`❤️  Health Check: http://localhost:${PORT}/task/health`);
+  logger.info(`🔌 Socket.IO server initialized at /task/socket.io/`);
+  logger.info(`🌐 API Base: http://localhost:${PORT}/task/api`);
 });
 
 // Graceful shutdown

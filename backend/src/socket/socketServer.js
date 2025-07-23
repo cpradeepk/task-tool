@@ -14,6 +14,7 @@ class SocketServer {
 
   initialize(server) {
     this.io = new Server(server, {
+      path: '/task/socket.io/',
       cors: {
         origin: process.env.FRONTEND_URL || "http://localhost:3000",
         methods: ["GET", "POST"],

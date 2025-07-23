@@ -81,11 +81,11 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// API Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// API Documentation (under /task prefix)
+app.use('/task/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+// Health check endpoint (under /task prefix)
+app.get('/task/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -94,39 +94,44 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
-app.get('/api', (req, res) => {
+// API routes (under /task prefix)
+app.get('/task/api', (req, res) => {
   res.json({
-    message: 'Task Management API',
+    message: 'SwargFood Task Management API',
     version: '1.0.0',
-    documentation: '/api-docs',
+    documentation: '/task/api-docs',
     endpoints: {
-      auth: '/api/auth',
-      users: '/api/users',
-      projects: '/api/projects',
-      tasks: '/api/tasks',
-      files: '/api/files',
-      chat: '/api/chat',
-      notifications: '/api/notifications',
-      activity: '/api/activity'
+      auth: '/task/api/auth',
+      users: '/task/api/users',
+      projects: '/task/api/projects',
+      tasks: '/task/api/tasks',
+      files: '/task/api/files',
+      chat: '/task/api/chat',
+      notifications: '/task/api/notifications',
+      activity: '/task/api/activity',
+      timeTracking: '/task/api/time-tracking',
+      taskDependencies: '/task/api/task-dependencies',
+      taskTemplates: '/task/api/task-templates',
+      userRoles: '/task/api/user-roles',
+      masterData: '/task/api/master-data'
     }
   });
 });
 
-// Mount routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/chat', chatRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/activity', activityRoutes);
-app.use('/api/time-tracking', timeTrackingRoutes);
-app.use('/api/task-dependencies', taskDependencyRoutes);
-app.use('/api/task-templates', taskTemplateRoutes);
-app.use('/api/user-roles', userRoleRoutes);
-app.use('/api/master-data', masterDataRoutes);
+// Mount routes (under /task prefix)
+app.use('/task/api/auth', authRoutes);
+app.use('/task/api/users', userRoutes);
+app.use('/task/api/projects', projectRoutes);
+app.use('/task/api/tasks', taskRoutes);
+app.use('/task/api/files', fileRoutes);
+app.use('/task/api/chat', chatRoutes);
+app.use('/task/api/notifications', notificationRoutes);
+app.use('/task/api/activity', activityRoutes);
+app.use('/task/api/time-tracking', timeTrackingRoutes);
+app.use('/task/api/task-dependencies', taskDependencyRoutes);
+app.use('/task/api/task-templates', taskTemplateRoutes);
+app.use('/task/api/user-roles', userRoleRoutes);
+app.use('/task/api/master-data', masterDataRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

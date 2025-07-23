@@ -604,7 +604,8 @@ pm2 restart swargfood-task-management
 
 ### 9.1 Access SwargFood Application
 - **Frontend**: `https://ai.swargfood.com/task/`
-- **API Health**: `https://ai.swargfood.com/task/api/health`
+- **API Health**: `https://ai.swargfood.com/task/health`
+- **API Base**: `https://ai.swargfood.com/task/api`
 - **API Documentation**: `https://ai.swargfood.com/task/api-docs/` (if enabled)
 
 ### 9.2 Test SwargFood Phase 3 Features
