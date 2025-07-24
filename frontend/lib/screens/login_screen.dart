@@ -50,13 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // TODO: Implement Google Sign-In
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Google Sign-In coming soon! Use Demo Login for now.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      final response = await AuthService.loginWithGoogle();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      // Set the user data from Google login
+      await authProvider.setUserFromGoogleLogin(response);
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

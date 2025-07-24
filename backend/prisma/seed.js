@@ -26,12 +26,41 @@ async function main() {
   // Create admin user
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@example.com' },
-    update: {},
+    update: {
+      isAdmin: true,
+      role: 'ADMIN',
+      isActive: true
+    },
     create: {
       email: 'admin@example.com',
       name: 'Admin User',
       shortName: 'Admin',
       isAdmin: true,
+      role: 'ADMIN',
+      isActive: true,
+      lastLoginAt: new Date(),
+      preferences: {
+        theme: 'dark',
+        notifications: true,
+        language: 'en'
+      }
+    },
+  });
+
+  // Create SwargFood admin user (update with actual admin email)
+  const swargfoodAdmin = await prisma.user.upsert({
+    where: { email: 'mailcpk@gmail.com' },
+    update: {
+      isAdmin: true,
+      role: 'ADMIN',
+      isActive: true
+    },
+    create: {
+      email: 'mailcpk@gmail.com',
+      name: 'SwargFood Admin',
+      shortName: 'Admin',
+      isAdmin: true,
+      role: 'ADMIN',
       isActive: true,
       lastLoginAt: new Date(),
       preferences: {
@@ -44,6 +73,15 @@ async function main() {
 
   console.log('Demo user created:', demoUser);
   console.log('Admin user created:', adminUser);
+  console.log('SwargFood admin created:', swargfoodAdmin);
+
+  console.log('\n🔧 Admin Users Summary:');
+  console.log(`📧 Generic Admin: ${adminUser.email} (${adminUser.role})`);
+  console.log(`📧 SwargFood Admin: ${swargfoodAdmin.email} (${swargfoodAdmin.role})`);
+  console.log('\n📝 Next Steps:');
+  console.log('1. Update the SwargFood admin email in seed.js if needed');
+  console.log('2. Configure Google OAuth with the admin email domain');
+  console.log('3. Run: npm run admin:create to create additional admin users');
 }
 
 main()

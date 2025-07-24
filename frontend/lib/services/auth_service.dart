@@ -1,18 +1,59 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'api_service.dart';
+import '../config/environment.dart';
 
 class AuthService {
-  static Future<Map<String, dynamic>> loginWithGoogle(String googleToken) async {
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: Environment.currentGoogleClientId,
+    scopes: ['email', 'profile'],
+  );
+
+  static Future<Map<String, dynamic>> loginWithGoogle() async {
+    try {
+      // Sign out any existing user first
+      await _googleSignIn.signOut();
+
+      // Trigger the Google Sign-In flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        throw Exception('Google Sign-In was cancelled');
+      }
+
+      // Get the authentication details
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      if (googleAuth.idToken == null) {
+        throw Exception('Failed to get Google ID token');
+      }
+
+      // Send the ID token to our backend
+      final response = await ApiService.post('/auth/google', {
+        'token': googleAuth.idToken,
+      });
+
+      if (response['tokens'] != null) {
+        await ApiService.saveToken(response['tokens']['accessToken']);
+      }
+
+      return response;
+    } catch (e) {
+      throw Exception('Google login failed: ${e.toString()}');
+    }
+  }
+
+  static Future<Map<String, dynamic>> loginWithGoogleToken(String googleToken) async {
     try {
       final response = await ApiService.post('/auth/google', {
         'token': googleToken,
       });
-      
+
       if (response['tokens'] != null) {
         await ApiService.saveToken(response['tokens']['accessToken']);
       }
-      
+
       return response;
     } catch (e) {
       throw Exception('Google login failed: ${e.toString()}');

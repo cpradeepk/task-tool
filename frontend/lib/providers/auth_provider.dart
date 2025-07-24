@@ -6,12 +6,27 @@ import '../services/api_service.dart';
 class AuthProvider with ChangeNotifier {
   User? _user;
   String? _token;
-  bool _isLoading = false;
+  bool _isLoading = true; // Start with loading true
 
   User? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _token != null && _user != null;
+
+  AuthProvider() {
+    _initializeAuth();
+  }
+
+  Future<void> _initializeAuth() async {
+    try {
+      await loadTokenFromStorage();
+    } catch (e) {
+      print('Error initializing auth: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> login(String email, String password) async {
     _isLoading = true;
@@ -36,7 +51,17 @@ class AuthProvider with ChangeNotifier {
   Future<void> setUserFromDemo(Map<String, dynamic> demoResponse) async {
     _token = demoResponse['tokens']['accessToken'];
     _user = User.fromJson(demoResponse['user']);
-    
+
+    // Save token to API service and storage
+    await ApiService.saveToken(_token!);
+    await _saveTokenToStorage(_token!);
+    notifyListeners();
+  }
+
+  Future<void> setUserFromGoogleLogin(Map<String, dynamic> googleResponse) async {
+    _token = googleResponse['tokens']['accessToken'];
+    _user = User.fromJson(googleResponse['user']);
+
     // Save token to API service and storage
     await ApiService.saveToken(_token!);
     await _saveTokenToStorage(_token!);

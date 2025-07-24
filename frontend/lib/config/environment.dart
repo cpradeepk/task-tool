@@ -13,8 +13,19 @@ class Environment {
   // Google OAuth Configuration
   static const String googleClientId = String.fromEnvironment(
     'GOOGLE_CLIENT_ID',
-    defaultValue: 'your-google-client-id.apps.googleusercontent.com',
+    defaultValue: '792432621176-nrigk87pmes9f28db8oj49dgc6obh24m.apps.googleusercontent.com',
   );
+
+  // Production Google Client ID (update this with your actual client ID)
+  static const String productionGoogleClientId = '792432621176-nrigk87pmes9f28db8oj49dgc6obh24m.apps.googleusercontent.com';
+
+  // Get the appropriate Google Client ID based on environment
+  static String get currentGoogleClientId {
+    if (apiBaseUrl.contains('ai.swargfood.com')) {
+      return productionGoogleClientId;
+    }
+    return googleClientId;
+  }
 
   // App Configuration
   static const String appName = 'Task Management Tool';
