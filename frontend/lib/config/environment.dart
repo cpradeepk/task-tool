@@ -2,12 +2,12 @@ class Environment {
   // API Configuration
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000/api',
+    defaultValue: 'https://ai.swargfood.com/task/api',
   );
-  
+
   static const String socketUrl = String.fromEnvironment(
     'SOCKET_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://ai.swargfood.com/task',
   );
 
   // Google OAuth Configuration

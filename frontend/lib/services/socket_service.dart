@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/foundation.dart';
 import 'auth_service.dart';
+import '../config/environment.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
@@ -38,7 +39,7 @@ class SocketService {
         return;
       }
 
-      const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:3000');
+      final baseUrl = Environment.socketUrl;
       
       _socket = IO.io(baseUrl, IO.OptionBuilder()
           .setTransports(['websocket'])
