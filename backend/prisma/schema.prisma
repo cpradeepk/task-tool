@@ -33,6 +33,7 @@ model User {
   createdProjects   Project[]        @relation("ProjectCreator")
   managedProjects   Project[]        @relation("ProjectManager")
   projectMemberships ProjectMember[]
+  projectAssignments UserProjectAssignment[]
   createdTasks      Task[]           @relation("TaskCreator")
   mainAssignedTasks Task[]           @relation("TaskMainAssignee")
   taskAssignments   TaskAssignment[]
@@ -43,6 +44,13 @@ model User {
   createdRecurringTasks RecurringTask[] @relation("RecurringTaskCreator")
   assignedRecurringTasks RecurringTask[] @relation("RecurringTaskAssignee")
   createdModules    Module[]         @relation("ModuleCreator")
+  createdEnhancedModules EnhancedModule[] @relation("EnhancedModuleCreator")
+  assignedByHistory UserProjectAssignment[] @relation("AssignedBy")
+  priorityChanges   PriorityChangeLog[] @relation("PriorityChanger")
+  approvedPriorityChanges PriorityChangeLog[] @relation("PriorityApprover")
+  assignmentHistory AssignmentHistory[] @relation("AssignmentUser")
+  performedAssignments AssignmentHistory[] @relation("AssignmentPerformer")
+  createdDependencies EnhancedTaskDependency[] @relation("DependencyCreator")
   activityLogs      ActivityLog[]
   sentMessages      ChatMessage[]    @relation("MessageSender")
   receivedMessages  ChatMessage[]    @relation("DirectMessageRecipient")
@@ -74,13 +82,18 @@ model Project {
   managerId   String?
   manager     User?         @relation("ProjectManager", fields: [managerId], references: [id], onDelete: SetNull)
   members     ProjectMember[]
+  userAssignments UserProjectAssignment[]
   modules     Module[]
+  enhancedModules EnhancedModule[]
   tasks       Task[]
   subProjects SubProject[]
   taskTemplates TaskTemplate[]
   recurringTasks RecurringTask[]
   chatChannels ChatChannel[]
   notifications Notification[]
+  priorityChanges PriorityChangeLog[]
+  assignmentHistory AssignmentHistory[]
+  timeline    ProjectTimeline[]
   activityLogs ActivityLog[]
 
   @@map("projects")
@@ -177,6 +190,14 @@ model Task {
 
   preDependencies  TaskDependency[] @relation("PreDependentTask")
   postDependencies TaskDependency[] @relation("PostDependentTask")
+
+  // Enhanced dependencies
+  predecessorDependencies EnhancedTaskDependency[] @relation("PredecessorDependencies")
+  successorDependencies   EnhancedTaskDependency[] @relation("SuccessorDependencies")
+
+  // Module relation
+  enhancedModuleId String?
+  enhancedModule   EnhancedModule? @relation("ModuleTasks", fields: [enhancedModuleId], references: [id], onDelete: SetNull)
 
   recurringTaskId  String?
   recurringTask    RecurringTask?   @relation("RecurringTaskGenerated", fields: [recurringTaskId], references: [id], onDelete: SetNull)
@@ -462,6 +483,142 @@ model ActivityLog {
   project     Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("activity_logs")
+}
+
+// Enhanced Project Management Models
+
+model UserProjectAssignment {
+  id              String   @id @default(cuid())
+  userId          String
+  projectId       String
+  role            ProjectMemberRole @default(MEMBER)
+  assignmentStatus String   @default("ASSIGNED") // ASSIGNED, PENDING, UNASSIGNED
+  assignedBy      String
+  assignedAt      DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  notes           String?
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedByUser  User     @relation("AssignedBy", fields: [assignedBy], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@map("user_project_assignments")
+}
+
+model EnhancedModule {
+  id                  String   @id @default(cuid())
+  name                String
+  description         String?
+  projectId           String
+  parentModuleId      String?
+  orderIndex          Int      @default(0)
+  status              String   @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD, CANCELLED
+  priority            Priority @default(NOT_IMPORTANT_NOT_URGENT)
+  priorityNumber      Int?
+  startDate           DateTime?
+  endDate             DateTime?
+  estimatedHours      Float?
+  actualHours         Float?
+  completionPercentage Int     @default(0)
+  createdBy           String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relations
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentModule        EnhancedModule? @relation("ModuleHierarchy", fields: [parentModuleId], references: [id], onDelete: Cascade)
+  childModules        EnhancedModule[] @relation("ModuleHierarchy")
+  creator             User     @relation("EnhancedModuleCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  tasks               Task[]   @relation("ModuleTasks")
+
+  @@map("enhanced_modules")
+}
+
+model EnhancedTaskDependency {
+  id                String   @id @default(cuid())
+  predecessorTaskId String
+  successorTaskId   String
+  dependencyType    String   @default("FINISH_TO_START") // FINISH_TO_START, START_TO_START, FINISH_TO_FINISH, START_TO_FINISH
+  lagDays           Int      @default(0)
+  createdBy         String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  predecessorTask   Task     @relation("PredecessorDependencies", fields: [predecessorTaskId], references: [id], onDelete: Cascade)
+  successorTask     Task     @relation("SuccessorDependencies", fields: [successorTaskId], references: [id], onDelete: Cascade)
+  creator           User     @relation("DependencyCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@unique([predecessorTaskId, successorTaskId])
+  @@map("enhanced_task_dependencies")
+}
+
+model PriorityChangeLog {
+  id                String   @id @default(cuid())
+  entityType        String   // PROJECT, TASK, MODULE
+  entityId          String
+  oldPriority       String?
+  newPriority       String?
+  oldPriorityNumber Int?
+  newPriorityNumber Int?
+  reason            String?
+  changedBy         String
+  approvedBy        String?
+  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt         DateTime @default(now())
+
+  // Relations
+  changer           User     @relation("PriorityChanger", fields: [changedBy], references: [id], onDelete: Cascade)
+  approver          User?    @relation("PriorityApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+  project           Project? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@map("priority_change_log")
+}
+
+model AssignmentHistory {
+  id          String   @id @default(cuid())
+  entityType  String   // PROJECT, TASK
+  entityId    String
+  userId      String
+  action      String   // ASSIGNED, UNASSIGNED, ROLE_CHANGED
+  oldRole     String?
+  newRole     String?
+  oldStatus   String?
+  newStatus   String?
+  performedBy String
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation("AssignmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  performer   User     @relation("AssignmentPerformer", fields: [performedBy], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@map("assignment_history")
+}
+
+model ProjectTimeline {
+  id                   String   @id @default(cuid())
+  projectId            String
+  entityType           String   // PROJECT, MODULE, TASK
+  entityId             String
+  startDate            DateTime
+  endDate              DateTime
+  baselineStart        DateTime?
+  baselineEnd          DateTime?
+  actualStart          DateTime?
+  actualEnd            DateTime?
+  completionPercentage Int      @default(0)
+  isMilestone          Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_timeline")
 }
 
 // Enums

@@ -21,6 +21,10 @@ const taskDependencyRoutes = require('./routes/taskDependencies');
 const taskTemplateRoutes = require('./routes/taskTemplates');
 const userRoleRoutes = require('./routes/userRoles');
 const masterDataRoutes = require('./routes/masterData');
+const projectAssignmentRoutes = require('./routes/projectAssignmentRoutes');
+const enhancedModuleRoutes = require('./routes/enhancedModuleRoutes');
+const priorityRoutes = require('./routes/priorityRoutes');
+const timelineRoutes = require('./routes/timelineRoutes');
 
 const app = express();
 
@@ -113,7 +117,11 @@ app.get('/task/api', (req, res) => {
       taskDependencies: '/task/api/task-dependencies',
       taskTemplates: '/task/api/task-templates',
       userRoles: '/task/api/user-roles',
-      masterData: '/task/api/master-data'
+      masterData: '/task/api/master-data',
+      projectAssignments: '/task/api/project-assignments',
+      enhancedModules: '/task/api/enhanced-modules',
+      priority: '/task/api/priority',
+      timeline: '/task/api/timeline'
     }
   });
 });
@@ -132,6 +140,10 @@ app.use('/task/api/task-dependencies', taskDependencyRoutes);
 app.use('/task/api/task-templates', taskTemplateRoutes);
 app.use('/task/api/user-roles', userRoleRoutes);
 app.use('/task/api/master-data', masterDataRoutes);
+app.use('/task/api/project-assignments', projectAssignmentRoutes);
+app.use('/task/api/enhanced-modules', enhancedModuleRoutes);
+app.use('/task/api/priority', priorityRoutes);
+app.use('/task/api/timeline', timelineRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

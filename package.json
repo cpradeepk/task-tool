@@ -1,0 +1,42 @@
+{
+  "name": "swargfood-task-management-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive test suite for SwargFood Task Management application",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:auth": "playwright test tests/e2e/01-authentication.spec.js",
+    "test:projects": "playwright test tests/e2e/02-project-management.spec.js",
+    "test:tasks": "playwright test tests/e2e/03-task-management.spec.js",
+    "test:time": "playwright test tests/e2e/04-time-tracking.spec.js",
+    "test:api": "playwright test tests/api/api-endpoints.spec.js",
+    "test:smoke": "playwright test tests/smoke/basic-smoke.spec.js",
+    "test:regression": "playwright test --grep '@regression'",
+    "test:chrome": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:safari": "playwright test --project=webkit",
+    "test:mobile": "playwright test --project='Mobile Chrome'",
+    "report": "playwright show-report",
+    "install-browsers": "playwright install",
+    "install-deps": "playwright install-deps"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "e2e",
+    "automation",
+    "swargfood",
+    "task-management"
+  ],
+  "author": "SwargFood Development Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
