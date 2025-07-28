@@ -31,9 +31,9 @@ The Google OAuth implementation has been committed to Git, but the production se
    # Edit the backend .env file
    nano backend/.env
    
-   # Ensure these lines are present:
-   GOOGLE_CLIENT_ID="792432621176-nrigk87pmes9f28db8oj49dgc6obh24m.apps.googleusercontent.com"
-   GOOGLE_CLIENT_SECRET="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"
+   # Ensure these lines are present (replace with your actual credentials):
+   GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+   GOOGLE_CLIENT_SECRET="your-google-client-secret"
    ```
 
 5. **Rebuild the Flutter frontend:**
