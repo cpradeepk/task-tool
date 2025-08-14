@@ -221,14 +221,36 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           Text('Dependencies', style: Theme.of(context).textTheme.titleMedium),
           ..._deps.map((d) => ListTile(title: Text('Depends on task ${d['depends_on_task_id']}'), subtitle: Text(d['type']))),
           Row(children:[
-            ElevatedButton(onPressed: ()=>_addDep(widget.taskId-1, 'PRE'), child: const Text('Add PRE on prev task')), // demo action
+            ElevatedButton(onPressed: () async {
+              final idCtl = TextEditingController();
+              final type = await showDialog<String?>(context: context, builder: (ctx){
+                String? pickedType = 'PRE';
+                return AlertDialog(title: const Text('Add dependency'), content: Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(controller: idCtl, decoration: const InputDecoration(labelText: 'Depends on Task ID')),
+                  DropdownButton<String>(value: pickedType, items: const [DropdownMenuItem(value:'PRE', child: Text('PRE')), DropdownMenuItem(value:'POST', child: Text('POST'))], onChanged: (v){ pickedType = v; }),
+                ]), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('Cancel')), TextButton(onPressed: ()=>Navigator.pop(ctx, pickedType), child: const Text('Add'))]);
+              });
+              if (type!=null) _addDep(int.tryParse(idCtl.text) ?? 0, type);
+            }, child: const Text('Add dependency')),
           ]),
           const Divider(height: 24),
           // PERT
           Text('PERT', style: Theme.of(context).textTheme.titleMedium),
           Text('Current: ${_pert ?? {}}'),
           Row(children:[
-            ElevatedButton(onPressed: ()=>_savePert(1,2,3), child: const Text('Set O=1, M=2, P=3')),
+            ElevatedButton(onPressed: () async {
+              final oCtl = TextEditingController(text: (_pert?['optimistic'] ?? 1).toString());
+              final mCtl = TextEditingController(text: (_pert?['most_likely'] ?? 1).toString());
+              final pCtl = TextEditingController(text: (_pert?['pessimistic'] ?? 1).toString());
+              final ok = await showDialog<bool>(context: context, builder: (ctx){
+                return AlertDialog(title: const Text('Set PERT'), content: Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(controller: oCtl, decoration: const InputDecoration(labelText: 'Optimistic'), keyboardType: TextInputType.number),
+                  TextField(controller: mCtl, decoration: const InputDecoration(labelText: 'Most likely'), keyboardType: TextInputType.number),
+                  TextField(controller: pCtl, decoration: const InputDecoration(labelText: 'Pessimistic'), keyboardType: TextInputType.number),
+                ]), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx,false), child: const Text('Cancel')), TextButton(onPressed: ()=>Navigator.pop(ctx,true), child: const Text('Save'))]);
+              });
+              if (ok==true) _savePert(int.tryParse(oCtl.text) ?? 1, int.tryParse(mCtl.text) ?? 1, int.tryParse(pCtl.text) ?? 1);
+            }, child: const Text('Set PERT')),
           ]),
           const SizedBox(height: 40),
         ])
