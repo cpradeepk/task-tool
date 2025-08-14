@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'auth.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -30,7 +30,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _health = '-';
-  String _auth = '-';
+  String? _email;
+  final _authCtl = AuthController();
 
   Future<void> _checkHealth() async {
     try {
@@ -41,10 +42,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _mockLogin() async {
-    // Placeholder for Google Sign-In web; will be replaced with real flow
-    // For now, we show the endpoint and expected payload
-    setState(() => _auth = 'POST /task/api/auth/session with Google ID token');
+  Future<void> _login() async {
+    await _authCtl.signIn();
+    setState(() => _email = _authCtl.email);
+  }
+
+  Future<void> _logout() async {
+    await _authCtl.signOut();
+    setState(() => _email = null);
   }
 
   @override
@@ -63,12 +68,15 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 12),
               Text('Health: $_health')
             ]),
-            const SizedBox(height: 24),
-            Row(children: [
-              ElevatedButton(onPressed: _mockLogin, child: const Text('Login (Google)')),
-              const SizedBox(width: 12),
-              Expanded(child: Text(_auth))
-            ]),
+            const Divider(height: 32),
+            if (_email == null)
+              ElevatedButton(onPressed: _login, child: const Text('Login with Google'))
+            else
+              Row(children: [
+                Text('Signed in as $_email'),
+                const SizedBox(width: 12),
+                TextButton(onPressed: _logout, child: const Text('Sign out')),
+              ]),
           ],
         ),
       ),

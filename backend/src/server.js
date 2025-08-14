@@ -12,7 +12,11 @@ import { emailQueue, startWorkers } from './queue/index.js';
 
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') || '*', credentials: true }));
+const corsOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['*'];
+const corsOptions = corsOrigins.includes('*')
+  ? { origin: true, credentials: false }
+  : { origin: corsOrigins, credentials: true };
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(morgan('dev'));
 
