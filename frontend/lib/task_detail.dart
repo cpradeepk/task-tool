@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'master_data.dart';
 import 'socket.dart';
+import 'mention_textfield.dart';
 import 'dart:typed_data';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
@@ -232,7 +233,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             )),
             Wrap(spacing: 8, children: _pendingAttachments.map((a) => Chip(label: Text(a['filename'] ?? 'file'))).toList()),
             Row(children:[
-              Expanded(child: TextField(controller: _messageCtl, decoration: const InputDecoration(labelText: 'Write a comment (use @email to mention)'))),
+              Expanded(child: MentionTextField(controller: _messageCtl, onSubmitted: (v) async {
+                if (_threadId == null) return; final jwt = await _jwt();
+                await http.post(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'kind':'text','body': v, 'attachments': _pendingAttachments}));
+                _messageCtl.clear(); setState(() { _pendingAttachments = []; }); _load();
+              })),
               const SizedBox(width: 8),
               OutlinedButton(onPressed: () async {
                 // pick file (web)
