@@ -9,7 +9,8 @@ const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://
 class MentionTextField extends StatefulWidget {
   final TextEditingController controller;
   final void Function(String value) onSubmitted;
-  const MentionTextField({super.key, required this.controller, required this.onSubmitted});
+  final Future<List<String>> Function(String term)? searchFn;
+  const MentionTextField({super.key, required this.controller, required this.onSubmitted, this.searchFn});
   @override
   State<MentionTextField> createState() => _MentionTextFieldState();
 }
@@ -24,6 +25,12 @@ class _MentionTextFieldState extends State<MentionTextField> {
 
   Future<void> _queryUsers(String q) async {
     if (q.isEmpty) { _hide(); return; }
+    if (widget.searchFn != null) {
+      final list = await widget.searchFn!(q);
+      setState(() { _suggestions = list.take(8).toList(); });
+      _show();
+      return;
+    }
     final jwt = await _jwt();
     final r = await http.get(Uri.parse('$apiBase/task/api/users?email=$q'), headers: { 'Authorization': 'Bearer $jwt' });
     if (r.statusCode == 200) {
