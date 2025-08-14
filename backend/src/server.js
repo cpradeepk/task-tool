@@ -53,6 +53,14 @@ app.use('/task/api/me', meRouter);
 import masterRouter from './api/master.js';
 app.use('/task/api/master', masterRouter);
 
+// Uploads (presigned URLs)
+import uploadsRouter from './api/uploads.js';
+app.use('/task/api/uploads', uploadsRouter);
+
+// Exports
+import exportsRouter from './api/exports.js';
+app.use('/task/api/exports', exportsRouter);
+
 const server = http.createServer(app);
 
 // Socket.io under /task/socket.io
