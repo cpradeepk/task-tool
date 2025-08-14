@@ -15,7 +15,11 @@ router.post('/threads', async (req, res) => {
 
 router.get('/threads/:id/messages', async (req, res) => {
   const threadId = Number(req.params.id);
-  const rows = await knex('messages').where({ thread_id: threadId }).orderBy('id', 'asc');
+  const rows = await knex('messages')
+    .leftJoin('users','users.id','messages.user_id')
+    .where({ thread_id: threadId })
+    .orderBy('messages.id', 'asc')
+    .select('messages.*','users.email');
   res.json(rows);
 });
 

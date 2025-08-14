@@ -41,6 +41,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     _threadId = row['id'] as int?;
   }
 
+  List<dynamic> _messages = [];
+
   Future<void> _load() async {
     final jwt = await _jwt();
     final tRes = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks'), headers: { 'Authorization': 'Bearer $jwt' });
@@ -55,6 +57,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     final pRes = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/pert'), headers: { 'Authorization': 'Bearer $jwt' });
     _pert = jsonDecode(pRes.body) as Map<String, dynamic>?;
+
+    if (_threadId != null) {
+      final mRes = await http.get(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt' });
+      _messages = jsonDecode(mRes.body) as List<dynamic>;
+    }
 
     setState((){});
   }
@@ -169,12 +176,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           const Divider(height: 24),
           // Comments
           Text('Comments', style: Theme.of(context).textTheme.titleMedium),
-          Row(children:[Expanded(child: TextField(controller: _messageCtl, decoration: const InputDecoration(labelText: 'Write a comment (use @email to mention)'))), const SizedBox(width: 8), ElevatedButton(onPressed: () async {
-            if (_threadId == null) return; final jwt = await _jwt();
-            await http.post(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'kind':'text','body': _messageCtl.text}));
-            _messageCtl.clear();
-            _load();
-          }, child: const Text('Post'))]),
+          Column(children: [
+            ..._messages.map((m) => ListTile(title: Text(m['email'] ?? 'Unknown'), subtitle: Text(m['body'] ?? ''))),
+            Row(children:[Expanded(child: TextField(controller: _messageCtl, decoration: const InputDecoration(labelText: 'Write a comment (use @email to mention)'))), const SizedBox(width: 8), ElevatedButton(onPressed: () async {
+              if (_threadId == null) return; final jwt = await _jwt();
+              await http.post(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'kind':'text','body': _messageCtl.text}));
+              _messageCtl.clear();
+              _load();
+            }, child: const Text('Post'))])
+          ]),
           const Divider(height: 24),
           // Dependencies
           Text('Dependencies', style: Theme.of(context).textTheme.titleMedium),
