@@ -32,5 +32,13 @@ router.put('/profile', async (req, res) => {
   res.json(row);
 });
 
+router.get('/roles', async (req, res) => {
+  const rows = await knex('user_roles')
+    .join('roles','user_roles.role_id','roles.id')
+    .where('user_roles.user_id', req.user.id)
+    .select('roles.name');
+  res.json(rows.map(r=>r.name));
+});
+
 export default router;
 

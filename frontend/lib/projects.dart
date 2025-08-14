@@ -56,7 +56,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Projects')),
+      appBar: AppBar(title: const Text('Projects'), actions: [
+        TextButton(onPressed: () => Navigator.of(context).pushNamed('/projects/${_selectedProjectId ?? 0}/modules'), child: const Text('Modules', style: TextStyle(color: Colors.white))),
+        TextButton(onPressed: () => Navigator.of(context).pushNamed('/projects/${_selectedProjectId ?? 0}/tasks'), child: const Text('Tasks', style: TextStyle(color: Colors.white))),
+      ]),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

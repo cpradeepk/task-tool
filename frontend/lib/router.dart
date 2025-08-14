@@ -5,6 +5,8 @@ import 'main.dart';
 import 'auth.dart';
 import 'projects.dart';
 import 'profile.dart';
+import 'modules.dart';
+import 'tasks.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -25,6 +27,8 @@ class AppRouter {
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
         GoRoute(path: '/profile', builder: (ctx, st) => const ProfileEditScreen()),
         GoRoute(path: '/projects', builder: (ctx, st) => const ProjectsScreen()),
+        GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => ModulesScreen(projectId: int.parse(st.pathParameters['id']!))),
+        GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => TasksScreen(projectId: int.parse(st.pathParameters['id']!))),
       ],
     );
   }
