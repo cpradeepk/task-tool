@@ -33,6 +33,18 @@ router.put('/:taskId', requireAnyRole(['Admin','Project Manager']), async (req, 
 
   const [row] = await knex('tasks').where({ id: taskId }).update(patch).returning('*');
   try { const { emitTaskUpdated } = await import('../events.js'); emitTaskUpdated(row); } catch {}
+
+  // Email notify assignees on status change
+  if (patch.status_id) {
+    try {
+      const emails = await knex('task_assignments').join('users','users.id','task_assignments.user_id').where('task_assignments.task_id', taskId).select('users.email');
+      const { emailQueue } = await import('../queue/index.js');
+      for (const e of emails) {
+        await emailQueue.add('send', { to: e.email, subject: 'Task status updated', html: `<p>Task #${taskId} status changed.</p>` }, { removeOnComplete: true });
+      }
+    } catch {}
+  }
+
   res.json(row);
 });
 
@@ -55,6 +67,14 @@ router.post('/:taskId/assignments', requireAnyRole(['Admin','Project Manager']),
     .insert({ task_id: taskId, user_id, is_owner: !!is_owner, role })
     .onConflict(['task_id','user_id']).merge(['is_owner','role'])
     .returning('*');
+
+  // Email notify assigned user
+  try {
+    const assignee = await knex('users').where({ id: user_id }).first();
+    const { emailQueue } = await import('../queue/index.js');
+    await emailQueue.add('send', { to: assignee.email, subject: 'You were assigned to a task', html: `<p>You were assigned to Task #${taskId}.</p>` }, { removeOnComplete: true });
+  } catch {}
+
   res.status(201).json(row);
 });
 
