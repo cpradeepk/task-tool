@@ -165,13 +165,44 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           const Divider(height: 24),
           // Time entries list
           Text('Time entries', style: Theme.of(context).textTheme.titleMedium),
-          ..._timeEntries.map((e) => ListTile(title: Text('${e['minutes'] ?? '-'} min'), subtitle: Text(e['notes'] ?? ''))),
+          ..._timeEntries.map((e) => ListTile(
+            title: Text('${e['minutes'] ?? '-'} min - ${e['email'] ?? ''}'),
+            subtitle: Text(e['notes'] ?? ''),
+            trailing: Wrap(spacing: 8, children: [
+              IconButton(icon: const Icon(Icons.edit), onPressed: () async {
+                final c = TextEditingController(text: (e['minutes'] ?? '').toString());
+                final n = TextEditingController(text: e['notes'] ?? '');
+                final ok = await showDialog<bool>(context: context, builder: (ctx){
+                  return AlertDialog(title: const Text('Edit entry'), content: Column(mainAxisSize: MainAxisSize.min, children: [
+                    TextField(controller: c, decoration: const InputDecoration(labelText: 'Minutes'), keyboardType: TextInputType.number),
+                    TextField(controller: n, decoration: const InputDecoration(labelText: 'Notes')),
+                  ]), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx,false), child: const Text('Cancel')), TextButton(onPressed: ()=>Navigator.pop(ctx,true), child: const Text('Save'))]);
+                });
+                if (ok==true) {
+                  final jwt = await _jwt();
+                  await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/time-entries/${e['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'minutes': int.tryParse(c.text) ?? e['minutes'], 'notes': n.text}));
+                  _load();
+                }
+              }),
+              IconButton(icon: const Icon(Icons.delete), onPressed: () async {
+                final jwt = await _jwt();
+                await http.delete(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/time-entries/${e['id']}'), headers: { 'Authorization': 'Bearer $jwt' });
+                _load();
+              })
+            ]),
+          )),
           Row(children:[
             ElevatedButton.icon(onPressed: () async {
               final jwt = await _jwt();
-              await http.post(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/time-entries'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'minutes': 15, 'notes': 'Quick log'}));
+              await http.post(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/time-entries'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'start': DateTime.now().toIso8601String(), 'notes': 'Started'}));
               _load();
-            }, icon: const Icon(Icons.add), label: const Text('Add 15 min')),
+            }, icon: const Icon(Icons.play_arrow), label: const Text('Start')),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(onPressed: () async {
+              final jwt = await _jwt();
+              await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/time-entries/stop'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' });
+              _load();
+            }, icon: const Icon(Icons.stop), label: const Text('Stop')),
           ]),
           const Divider(height: 24),
           // Comments

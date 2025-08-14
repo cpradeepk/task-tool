@@ -7,6 +7,15 @@ const router = express.Router({ mergeParams: true });
 router.use(requireAuth);
 
 // Update task with status rules
+async function userHasRole(userId, roles) {
+  const rows = await knex('user_roles')
+    .join('roles','roles.id','user_roles.role_id')
+    .where('user_roles.user_id', userId)
+    .whereIn('roles.name', roles)
+    .select('roles.name');
+  return rows.length > 0;
+}
+
 router.put('/:taskId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
   const taskId = Number(req.params.taskId);
   const patch = { ...req.body };
@@ -59,7 +68,11 @@ router.delete('/:taskId/assignments/:userId', requireAnyRole(['Admin','Project M
 // Time entries
 router.get('/:taskId/time-entries', async (req, res) => {
   const taskId = Number(req.params.taskId);
-  const rows = await knex('time_entries').where({ task_id: taskId }).orderBy('id', 'desc');
+  const rows = await knex('time_entries')
+    .leftJoin('users','users.id','time_entries.user_id')
+    .where({ task_id: taskId })
+    .orderBy('time_entries.id', 'desc')
+    .select('time_entries.*','users.email');
   res.json(rows);
 });
 
@@ -68,6 +81,28 @@ router.post('/:taskId/time-entries', async (req, res) => {
   const { start, end, minutes, notes } = req.body;
   const [row] = await knex('time_entries').insert({ task_id: taskId, user_id: req.user.id, start: start || new Date(), end, minutes, notes }).returning('*');
   res.status(201).json(row);
+});
+
+router.put('/:taskId/time-entries/:id', async (req, res) => {
+  const taskId = Number(req.params.taskId);
+  const id = Number(req.params.id);
+  const patch = req.body;
+  // Allow owner of entry or Admin/PM
+  const entry = await knex('time_entries').where({ id, task_id: taskId }).first();
+  if (!entry) return res.status(404).json({ error: 'Not found' });
+  if (entry.user_id !== req.user.id && !(await userHasRole(req.user.id, ['Admin','Project Manager']))) return res.status(403).json({ error: 'Forbidden' });
+  const [row] = await knex('time_entries').where({ id }).update(patch).returning('*');
+  res.json(row);
+});
+
+router.delete('/:taskId/time-entries/:id', async (req, res) => {
+  const taskId = Number(req.params.taskId);
+  const id = Number(req.params.id);
+  const entry = await knex('time_entries').where({ id, task_id: taskId }).first();
+  if (!entry) return res.status(404).json({ error: 'Not found' });
+  if (entry.user_id !== req.user.id && !(await userHasRole(req.user.id, ['Admin','Project Manager']))) return res.status(403).json({ error: 'Forbidden' });
+  await knex('time_entries').where({ id }).del();
+  res.json({ ok: true });
 });
 
 router.put('/:taskId/time-entries/stop', async (req, res) => {
