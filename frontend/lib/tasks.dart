@@ -103,33 +103,33 @@ class _TasksScreenState extends State<TasksScreen> {
                         DropdownButton<int>(
                           value: t['status_id'] as int?,
                           items: [for (final s in statuses) DropdownMenuItem(value: s['id'] as int, child: Text(s['name']))],
-                          onChanged: (v) async {
+                          onChanged: (_roles.contains('Admin') || _roles.contains('Project Manager')) ? (v) async {
                             final jwt = await _jwt();
                             final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'status_id': v}));
                             if (res.statusCode==200) _load();
-                          },
+                          } : null,
                         ),
                         const SizedBox(width:16),
                         const Text('Priority:'), const SizedBox(width: 8),
                         DropdownButton<int>(
                           value: t['priority_id'] as int?,
                           items: [for (final p in priorities) DropdownMenuItem(value: p['id'] as int, child: Text(p['name']))],
-                          onChanged: (v) async {
+                          onChanged: (_roles.contains('Admin') || _roles.contains('Project Manager')) ? (v) async {
                             final jwt = await _jwt();
                             final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'priority_id': v}));
                             if (res.statusCode==200) _load();
-                          },
+                          } : null,
                         ),
                         const SizedBox(width:16),
                         const Text('Type:'), const SizedBox(width:8),
                         DropdownButton<int>(
                           value: t['task_type_id'] as int?,
                           items: [for (final tp in taskTypes) DropdownMenuItem(value: tp['id'] as int, child: Text(tp['name']))],
-                          onChanged: (v) async {
+                          onChanged: (_roles.contains('Admin') || _roles.contains('Project Manager')) ? (v) async {
                             final jwt = await _jwt();
                             final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'task_type_id': v}));
                             if (res.statusCode==200) _load();
-                          },
+                          } : null,
                         ),
                       ]),
                       const SizedBox(height: 8),

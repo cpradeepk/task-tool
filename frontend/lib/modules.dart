@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'rbac.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -16,6 +17,7 @@ class _ModulesScreenState extends State<ModulesScreen> {
   List<dynamic> _modules = [];
   bool _busy = false;
   final _nameCtl = TextEditingController();
+  List<String> _roles = const [];
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
@@ -45,8 +47,13 @@ class _ModulesScreenState extends State<ModulesScreen> {
     _load();
   }
 
+  Future<void> _loadRoles() async {
+    final roles = await RBAC.roles();
+    setState(() { _roles = roles; });
+  }
+
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() { super.initState(); _loadRoles(); _load(); }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +62,7 @@ class _ModulesScreenState extends State<ModulesScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(children: [
-          Row(children: [ Expanded(child: TextField(controller: _nameCtl, decoration: const InputDecoration(labelText: 'New module'))), const SizedBox(width: 8), ElevatedButton(onPressed: _create, child: const Text('Add')) ]),
+          Row(children: [ Expanded(child: TextField(controller: _nameCtl, decoration: const InputDecoration(labelText: 'New module'))), const SizedBox(width: 8), if (_roles.contains('Admin') || _roles.contains('Project Manager')) ElevatedButton(onPressed: _create, child: const Text('Add')) ]),
           const Divider(),
           if (_busy) const LinearProgressIndicator(),
           Expanded(child: ListView.builder(
@@ -65,14 +72,14 @@ class _ModulesScreenState extends State<ModulesScreen> {
               return ListTile(
                 title: Text(m['name'] ?? ''),
                 trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                  IconButton(icon: const Icon(Icons.edit), onPressed: () async {
+                  if (_roles.contains('Admin') || _roles.contains('Project Manager')) IconButton(icon: const Icon(Icons.edit), onPressed: () async {
                     final c = TextEditingController(text: m['name'] as String? ?? '');
                     final newName = await showDialog<String?>(context: context, builder: (ctx){
                       return AlertDialog(title: const Text('Rename'), content: TextField(controller: c), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('Cancel')), TextButton(onPressed: ()=>Navigator.pop(ctx, c.text), child: const Text('Save'))]);
                     });
                     if (newName != null) _rename(m['id'] as int, newName);
                   }),
-                  IconButton(icon: const Icon(Icons.delete), onPressed: () => _delete(m['id'] as int))
+                  if (_roles.contains('Admin') || _roles.contains('Project Manager')) IconButton(icon: const Icon(Icons.delete), onPressed: () => _delete(m['id'] as int))
                 ]),
               );
             }
