@@ -257,15 +257,24 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           ..._deps.map((d) => ListTile(title: Text('Depends on task ${d['depends_on_task_id']}'), subtitle: Text(d['type']))),
           Row(children:[
             ElevatedButton(onPressed: () async {
-              final idCtl = TextEditingController();
-              final type = await showDialog<String?>(context: context, builder: (ctx){
-                String? pickedType = 'PRE';
-                return AlertDialog(title: const Text('Add dependency'), content: Column(mainAxisSize: MainAxisSize.min, children: [
-                  TextField(controller: idCtl, decoration: const InputDecoration(labelText: 'Depends on Task ID')),
-                  DropdownButton<String>(value: pickedType, items: const [DropdownMenuItem(value:'PRE', child: Text('PRE')), DropdownMenuItem(value:'POST', child: Text('POST'))], onChanged: (v){ pickedType = v; }),
-                ]), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx), child: const Text('Cancel')), TextButton(onPressed: ()=>Navigator.pop(ctx, pickedType), child: const Text('Add'))]);
+              final jwt = await _jwt();
+              // fetch project tasks for picker
+              final r = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks'), headers: { 'Authorization': 'Bearer $jwt' });
+              final all = (jsonDecode(r.body) as List<dynamic>).where((x)=>x['id']!=widget.taskId).toList();
+              int? pickedId;
+              String pickedType = 'PRE';
+              if (!mounted) return;
+              final ok = await showDialog<bool>(context: context, builder: (ctx){
+                return AlertDialog(title: const Text('Add dependency'), content: StatefulBuilder(
+                  builder: (ctx, setS) {
+                    return Column(mainAxisSize: MainAxisSize.min, children: [
+                      DropdownButton<int?>(value: pickedId, items: [for (final t in all) DropdownMenuItem(value: t['id'] as int, child: Text('${t['id']}: ${t['title']}'))], onChanged: (v){ setS(()=>pickedId=v); }),
+                      DropdownButton<String>(value: pickedType, items: const [DropdownMenuItem(value:'PRE', child: Text('PRE')), DropdownMenuItem(value:'POST', child: Text('POST'))], onChanged: (v){ setS(()=>pickedType = v ?? 'PRE'); }),
+                    ]);
+                  }
+                ), actions: [TextButton(onPressed: ()=>Navigator.pop(ctx,false), child: const Text('Cancel')), TextButton(onPressed: ()=>Navigator.pop(ctx,true), child: const Text('Add'))]);
               });
-              if (type!=null) _addDep(int.tryParse(idCtl.text) ?? 0, type);
+              if (ok==true && pickedId!=null) _addDep(pickedId as int, pickedType);
             }, child: const Text('Add dependency')),
           ]),
           const Divider(height: 24),
