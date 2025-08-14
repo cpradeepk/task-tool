@@ -20,5 +20,18 @@ router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) =
   res.status(201).json(row);
 });
 
+router.put('/:moduleId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
+  const moduleId = Number(req.params.moduleId);
+  const { name } = req.body;
+  const [row] = await knex('modules').where({ id: moduleId }).update({ name }).returning('*');
+  res.json(row);
+});
+
+router.delete('/:moduleId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
+  const moduleId = Number(req.params.moduleId);
+  await knex('modules').where({ id: moduleId }).del();
+  res.json({ ok: true });
+});
+
 export default router;
 

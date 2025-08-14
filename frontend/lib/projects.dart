@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'task_form.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -15,6 +16,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   List<dynamic> _projects = [];
   bool _busy = false;
   final _nameCtl = TextEditingController();
+  int? _selectedProjectId;
 
   Future<String?> _jwt() async {
     final prefs = await SharedPreferences.getInstance();
@@ -71,7 +73,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 itemCount: _projects.length,
                 itemBuilder: (ctx, i) {
                   final p = _projects[i];
-                  return ListTile(title: Text(p['name'] ?? ''), subtitle: Text('ID ${p['id']}'));
+                  return ListTile(
+                    title: Text(p['name'] ?? ''),
+                    subtitle: Text('ID ${p['id']}'),
+                    onTap: () => setState(() => _selectedProjectId = p['id'] as int),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(icon: const Icon(Icons.playlist_add), onPressed: () async {
+                          if (!mounted) return;
+                          final ok = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => TaskForm(projectId: p['id'] as int)));
+                          if (ok == true) _load();
+                        }),
+                      ],
+                    ),
+                  );
                 },
               ),
             )
