@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { knex } from '../db/index.js';
+import { requireAnyRole } from '../middleware/rbac.js';
 
 const router = express.Router({ mergeParams: true });
 router.use(requireAuth);
@@ -11,7 +12,7 @@ router.get('/', async (req, res) => {
   res.json(rows);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
   const projectId = Number(req.params.projectId);
   const { name } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
