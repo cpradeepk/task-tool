@@ -7,6 +7,7 @@ import 'projects.dart';
 import 'profile.dart';
 import 'modules.dart';
 import 'tasks.dart';
+import 'critical_path.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -29,6 +30,7 @@ class AppRouter {
         GoRoute(path: '/projects', builder: (ctx, st) => const ProjectsScreen()),
         GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => ModulesScreen(projectId: int.parse(st.pathParameters['id']!))),
         GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => TasksScreen(projectId: int.parse(st.pathParameters['id']!))),
+        GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => CriticalPathView(projectId: int.parse(st.pathParameters['id']!))),
       ],
     );
   }

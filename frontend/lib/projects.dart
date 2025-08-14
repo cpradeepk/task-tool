@@ -59,6 +59,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       appBar: AppBar(title: const Text('Projects'), actions: [
         TextButton(onPressed: () => Navigator.of(context).pushNamed('/projects/${_selectedProjectId ?? 0}/modules'), child: const Text('Modules', style: TextStyle(color: Colors.white))),
         TextButton(onPressed: () => Navigator.of(context).pushNamed('/projects/${_selectedProjectId ?? 0}/tasks'), child: const Text('Tasks', style: TextStyle(color: Colors.white))),
+        TextButton(onPressed: () => Navigator.of(context).pushNamed('/projects/${_selectedProjectId ?? 0}/critical'), child: const Text('Critical', style: TextStyle(color: Colors.white))),
       ]),
       body: Padding(
         padding: const EdgeInsets.all(24),

@@ -25,9 +25,14 @@ router.get('/threads/:id/messages', async (req, res) => {
 
 router.post('/threads/:id/messages', async (req, res) => {
   const threadId = Number(req.params.id);
-  const { kind, body } = req.body;
+  const { kind, body, attachments } = req.body;
   const [row] = await knex('messages').insert({ thread_id: threadId, user_id: req.user.id, kind: kind || 'text', body }).returning('*');
   try { const { emitMessageCreated } = await import('../events.js'); emitMessageCreated(row); } catch {}
+
+  // Save attachments if any
+  if (Array.isArray(attachments) && attachments.length) {
+    await knex('attachments').insert(attachments.map(a => ({ message_id: row.id, url: a.url, type: a.type, filename: a.filename, size: a.size })));
+  }
 
   // Mention notifications: naive parsing for @email
   const mentionMatches = (body || '').toString().match(/@[^\s@]+@[^\s@]+\.[^\s@]+/g) || [];
@@ -45,6 +50,15 @@ router.post('/threads/:id/messages', async (req, res) => {
   }
 
   res.status(201).json(row);
+});
+
+router.get('/threads/:id/attachments', async (req, res) => {
+  const threadId = Number(req.params.id);
+  const rows = await knex('attachments')
+    .join('messages','messages.id','attachments.message_id')
+    .where('messages.thread_id', threadId)
+    .select('attachments.*','attachments.message_id');
+  res.json(rows);
 });
 
 export default router;
