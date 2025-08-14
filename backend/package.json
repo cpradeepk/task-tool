@@ -11,7 +11,9 @@
     "test": "node -e \"console.log('No tests yet')\"",
     "migrate:latest": "knex migrate:latest --knexfile src/db/knexfile.cjs",
     "migrate:rollback": "knex migrate:rollback --knexfile src/db/knexfile.cjs",
-    "migrate:make": "knex migrate:make --knexfile src/db/knexfile.cjs"
+    "migrate:make": "knex migrate:make --knexfile src/db/knexfile.cjs",
+    "seed:run": "knex seed:run --knexfile src/db/knexfile.cjs",
+    "seed:make": "knex seed:make --knexfile src/db/knexfile.cjs"
   },
   "dependencies": {
     "bullmq": "^5.7.8",

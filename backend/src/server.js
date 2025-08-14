@@ -8,6 +8,7 @@ import morgan from 'morgan';
 
 import { initEmail } from './services/email.js';
 import authRouter from './routes/auth.js';
+import { emailQueue, startWorkers } from './queue/index.js';
 
 const app = express();
 app.use(helmet());
@@ -42,15 +43,22 @@ io.on('connection', (socket) => {
 
 // Initialize email (Gmail SMTP)
 const email = initEmail();
+startWorkers({
+  emailHandler: async (job) => {
+    const { to, subject, html, text } = job.data;
+    await email.send({ to, subject, html, text });
+  }
+});
+
 app.post('/task/api/test-email', async (req, res) => {
   try {
     const to = req.body?.to || process.env.SMTP_USER;
-    await email.send({
+    await emailQueue.add('send', {
       to,
       subject: 'Task Tool SMTP Test',
       html: '<p>This is a test email from Task Tool via Gmail SMTP.</p>'
     });
-    res.json({ ok: true });
+    res.json({ ok: true, queued: true });
   } catch (err) {
     console.error('Email test failed', err);
     res.status(500).json({ ok: false, error: 'Email failed' });
