@@ -42,6 +42,8 @@ import modulesRouter from './api/modules.js';
 import tasksRouter from './api/tasks.js';
 app.use('/task/api/projects/:projectId/modules', modulesRouter);
 app.use('/task/api/projects/:projectId/tasks', tasksRouter);
+import tasksAdvancedRouter from './api/tasks-advanced.js';
+app.use('/task/api/projects/:projectId/tasks', tasksAdvancedRouter);
 
 // Me (profile)
 import meRouter from './api/me.js';
