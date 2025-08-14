@@ -50,9 +50,15 @@ router.post('/:taskId/pert', requireAnyRole(['Admin','Project Manager']), async 
 router.get('/project/:projectId/critical-path', async (req, res) => {
   const projectId = Number(req.params.projectId);
   const tasks = await knex('tasks').where({ project_id: projectId }).select('id','title');
-  // NOTE: For brevity we return tasks and dependencies; client can render. Full CP calc to be extended.
   const deps = await knex('task_dependencies').join('tasks','task_dependencies.task_id','tasks.id').where('tasks.project_id', projectId).select('task_dependencies.*');
-  res.json({ tasks, dependencies: deps });
+  const pert = await knex('pert_estimates').whereIn('task_id', tasks.map(t=>t.id));
+  const pertMap = new Map(pert.map(p => [p.task_id, p]));
+  const withET = tasks.map(t => {
+    const p = pertMap.get(t.id);
+    const expected_time = p ? (p.optimistic + 4*p.most_likely + p.pessimistic) / 6 : 1;
+    return { ...t, expected_time };
+  });
+  res.json({ tasks: withET, dependencies: deps });
 });
 
 export default router;
