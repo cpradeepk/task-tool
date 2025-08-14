@@ -27,6 +27,13 @@ router.put('/:taskId', requireAnyRole(['Admin','Project Manager']), async (req, 
   res.json(row);
 });
 
+// Assignments
+router.get('/:taskId/assignments', async (req, res) => {
+  const taskId = Number(req.params.taskId);
+  const rows = await knex('task_assignments').join('users','users.id','task_assignments.user_id').where('task_id', taskId).select('task_assignments.*','users.email');
+  res.json(rows);
+});
+
 // Assign/unassign users to task
 router.post('/:taskId/assignments', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
   const taskId = Number(req.params.taskId);

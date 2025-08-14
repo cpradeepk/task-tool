@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'master_data.dart';
+import 'socket.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -14,7 +15,10 @@ class TaskDetailScreen extends StatefulWidget {
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
 }
 
+import 'socket.dart';
+
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
+  Realtime? _rt;
   Map<String, dynamic>? _task;
   Map<String, dynamic>? _md;
   List<dynamic> _assignments = [];
@@ -27,6 +31,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
   Future<void> _loadMD() async { setState((){}); _md = await fetchMasterData(); }
+
+  Future<void> _ensureThread() async {
+    final jwt = await _jwt();
+    await http.post(Uri.parse('$apiBase/task/api/chat/threads'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'scope':'TASK','scope_id': widget.taskId}));
+  }
 
   Future<void> _load() async {
     final jwt = await _jwt();
@@ -72,7 +81,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
   @override
-  void initState() { super.initState(); _loadMD(); _load(); }
+  void initState() {
+    super.initState();
+    _loadMD();
+    _ensureThread().then((_) => _load());
+    _rt = Realtime(apiBase);
+    _rt!.connect();
+    _rt!.on('task.updated', (_) => _load());
+    _rt!.on('chat.message', (_) => _load());
+  }
 
   @override
   Widget build(BuildContext context) {

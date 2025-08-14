@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'master_data.dart';
 import 'task_detail.dart';
 import 'rbac.dart';
+import 'socket.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -15,7 +16,10 @@ class TasksScreen extends StatefulWidget {
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
+import 'socket.dart';
+
 class _TasksScreenState extends State<TasksScreen> {
+  Realtime? _rt;
   List<dynamic> _tasks = [];
   List<dynamic> _modules = [];
   Map<String, dynamic>? _md;
@@ -46,7 +50,16 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   @override
-  void initState() { super.initState(); _loadMD(); _load(); _loadRoles(); }
+  void initState() {
+    super.initState();
+    _loadMD();
+    _load();
+    _loadRoles();
+    _rt = Realtime(apiBase);
+    _rt!.connect();
+    _rt!.on('task.created', (_) => _load());
+    _rt!.on('task.updated', (_) => _load());
+  }
 
   @override
   Widget build(BuildContext context) {
