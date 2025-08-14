@@ -15,7 +15,11 @@ class CriticalPathView extends StatefulWidget {
 class _CriticalPathViewState extends State<CriticalPathView> {
   List<dynamic> _tasks = [];
   List<dynamic> _deps = [];
+  List<dynamic> _modules = [];
+  List<dynamic> _assignments = [];
   bool _busy = false;
+  int? _moduleFilter;
+  String _assigneeFilter = '';
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
@@ -27,6 +31,8 @@ class _CriticalPathViewState extends State<CriticalPathView> {
     final j = jsonDecode(r.body) as Map<String, dynamic>;
     _tasks = j['tasks'] as List<dynamic>;
     _deps = j['dependencies'] as List<dynamic>;
+    _modules = j['modules'] as List<dynamic>? ?? [];
+    _assignments = j['assignments'] as List<dynamic>? ?? [];
     setState(() { _busy = false; });
   }
 
@@ -95,6 +101,10 @@ class _CriticalPathViewState extends State<CriticalPathView> {
 
   @override
   Widget build(BuildContext context) {
+    final modulesById = {for (final m in _modules) m['id'] as int : m['name']};
+    final assignmentsByTask = <int, List<String>>{};
+    for (final a in _assignments) { final tid = a['task_id'] as int; assignmentsByTask.putIfAbsent(tid, ()=>[]).add(a['email'] as String); }
+
     final layers = _layers();
     final critical = _longestPath(_tasks, _deps);
     return Scaffold(
@@ -104,12 +114,27 @@ class _CriticalPathViewState extends State<CriticalPathView> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Tasks: ${_tasks.length}, Dependencies: ${_deps.length}, Layers: ${layers.length}'),
           const SizedBox(height: 8),
+          Row(children:[
+            const Text('Module:'), const SizedBox(width: 8),
+            DropdownButton<int?>(
+              value: _moduleFilter,
+              items: [const DropdownMenuItem(value: null, child: Text('All')), ..._modules.map((m)=>DropdownMenuItem(value: m['id'] as int, child: Text(m['name'])))],
+              onChanged: (v){ setState(()=>_moduleFilter=v); },
+            ),
+            const SizedBox(width: 16),
+            const Text('Assignee:'), const SizedBox(width: 8),
+            SizedBox(width: 200, child: TextField(decoration: const InputDecoration(hintText: 'email contains'), onChanged: (v){ setState(()=>_assigneeFilter=v); })),
+          ]),
+          const SizedBox(height: 8),
           Text('Critical chain: ${critical.join(' -> ')}'),
           const SizedBox(height: 8),
           Expanded(child: ListView.builder(
             itemCount: layers.length,
             itemBuilder: (ctx, i){
-              final layer = layers[i];
+              var layer = layers[i];
+              // apply filters
+              if (_moduleFilter != null) layer = layer.where((t)=>t['module_id']==_moduleFilter).toList();
+              if (_assigneeFilter.isNotEmpty) layer = layer.where((t)=> (assignmentsByTask[t['id']] ?? const <String>[]).any((e)=> e.toLowerCase().contains(_assigneeFilter.toLowerCase())) ).toList();
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Wrap(spacing: 8, children: [

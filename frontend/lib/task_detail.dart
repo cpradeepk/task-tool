@@ -224,7 +224,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 Text(m['body'] ?? ''),
                 Wrap(spacing: 6, children: [
                   for (final a in (_attachmentsByMsg[m['id']] ?? const []))
-                    InkWell(onTap: (){ html.window.open(a['url'], '_blank'); }, child: Chip(label: Text(a['filename'] ?? 'file')))
+                    a['type'] != null && (a['type'] as String).startsWith('image/')
+                      ? GestureDetector(onTap: (){ html.window.open(a['url'], '_blank'); }, child: Image.network(a['url'], width: 96, height: 96, fit: BoxFit.cover))
+                      : InkWell(onTap: (){ html.window.open(a['url'], '_blank'); }, child: Chip(label: Text(a['filename'] ?? 'file')))
                 ])
               ]),
             )),
