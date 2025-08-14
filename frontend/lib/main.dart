@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'auth.dart';
 import 'router.dart';
+import 'nav.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -57,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Task Tool')),
+      appBar: const AppNav(),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(

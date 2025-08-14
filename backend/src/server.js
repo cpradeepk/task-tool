@@ -47,6 +47,10 @@ app.use('/task/api/projects/:projectId/tasks', tasksRouter);
 import meRouter from './api/me.js';
 app.use('/task/api/me', meRouter);
 
+// Master data
+import masterRouter from './api/master.js';
+app.use('/task/api/master', masterRouter);
+
 const server = http.createServer(app);
 
 // Socket.io under /task/socket.io
