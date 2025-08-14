@@ -37,6 +37,16 @@ app.use('/task/api/auth', authRouter);
 import projectsRouter from './api/projects.js';
 app.use('/task/api/projects', projectsRouter);
 
+// Nested routes: modules and tasks under projects
+import modulesRouter from './api/modules.js';
+import tasksRouter from './api/tasks.js';
+app.use('/task/api/projects/:projectId/modules', modulesRouter);
+app.use('/task/api/projects/:projectId/tasks', tasksRouter);
+
+// Me (profile)
+import meRouter from './api/me.js';
+app.use('/task/api/me', meRouter);
+
 const server = http.createServer(app);
 
 // Socket.io under /task/socket.io

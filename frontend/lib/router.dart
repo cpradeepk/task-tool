@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'main.dart';
 import 'auth.dart';
 import 'projects.dart';
+import 'profile.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -22,7 +23,7 @@ class AppRouter {
       routes: [
         GoRoute(path: '/', builder: (ctx, st) => const HomeScreen()),
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
-        GoRoute(path: '/profile', builder: (ctx, st) => const ProfileScreen()),
+        GoRoute(path: '/profile', builder: (ctx, st) => const ProfileEditScreen()),
         GoRoute(path: '/projects', builder: (ctx, st) => const ProjectsScreen()),
       ],
     );
