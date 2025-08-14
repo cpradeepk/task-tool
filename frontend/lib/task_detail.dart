@@ -4,6 +4,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'master_data.dart';
 import 'socket.dart';
+import 'dart:typed_data';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -14,8 +17,6 @@ class TaskDetailScreen extends StatefulWidget {
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
 }
-
-import 'socket.dart';
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Realtime? _rt;
@@ -29,6 +30,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   final _commentCtl = TextEditingController();
   final _messageCtl = TextEditingController();
   int? _threadId;
+  List<Map<String, dynamic>> _pendingAttachments = [];
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
@@ -208,13 +210,46 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           // Comments
           Text('Comments', style: Theme.of(context).textTheme.titleMedium),
           Column(children: [
-            ..._messages.map((m) => ListTile(title: Text(m['email'] ?? 'Unknown'), subtitle: Text(m['body'] ?? ''))),
-            Row(children:[Expanded(child: TextField(controller: _messageCtl, decoration: const InputDecoration(labelText: 'Write a comment (use @email to mention)'))), const SizedBox(width: 8), ElevatedButton(onPressed: () async {
-              if (_threadId == null) return; final jwt = await _jwt();
-              await http.post(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'kind':'text','body': _messageCtl.text}));
-              _messageCtl.clear();
-              _load();
-            }, child: const Text('Post'))])
+            ..._messages.map((m) => ListTile(
+              title: Text(m['email'] ?? 'Unknown'),
+              subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(m['body'] ?? ''),
+              ]),
+            )),
+            Wrap(spacing: 8, children: _pendingAttachments.map((a) => Chip(label: Text(a['filename'] ?? 'file'))).toList()),
+            Row(children:[
+              Expanded(child: TextField(controller: _messageCtl, decoration: const InputDecoration(labelText: 'Write a comment (use @email to mention)'))),
+              const SizedBox(width: 8),
+              OutlinedButton(onPressed: () async {
+                // pick file (web)
+                final input = html.FileUploadInputElement();
+                input.click();
+                await input.onChange.first;
+                if (input.files == null || input.files!.isEmpty) return;
+                final file = input.files!.first;
+                final jwt = await _jwt();
+                // presign
+                final pres = await http.post(Uri.parse('$apiBase/task/api/uploads/presign'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'filename': file.name, 'contentType': file.type}));
+                final data = jsonDecode(pres.body) as Map<String, dynamic>;
+                final url = data['url'] as String; final key = data['key'] as String;
+                // read bytes and upload
+                final reader = html.FileReader();
+                reader.readAsArrayBuffer(file);
+                await reader.onLoadEnd.first;
+                final bytes = (reader.result as ByteBuffer).asUint8List();
+                await http.put(Uri.parse(url), headers: { 'Content-Type': file.type }, body: bytes);
+                final publicUrl = '${apiBase.replaceFirst(RegExp(r"^http"), 'https')}/task/uploads/$key';
+                setState(() { _pendingAttachments = [..._pendingAttachments, {'url': publicUrl, 'filename': file.name, 'type': file.type, 'size': file.size}]; });
+              }, child: const Text('Attach')),
+              const SizedBox(width: 8),
+              ElevatedButton(onPressed: () async {
+                if (_threadId == null) return; final jwt = await _jwt();
+                await http.post(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'kind':'text','body': _messageCtl.text, 'attachments': _pendingAttachments}));
+                _messageCtl.clear();
+                setState(() { _pendingAttachments = []; });
+                _load();
+              }, child: const Text('Post'))
+            ])
           ]),
           const Divider(height: 24),
           // Dependencies
