@@ -17,6 +17,7 @@ router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) =
   const { title, description, module_id, status_id, priority_id, task_type_id, planned_end_date, start_date, end_date } = req.body;
   if (!title) return res.status(400).json({ error: 'title required' });
   const [row] = await knex('tasks').insert({ project_id: projectId, module_id, title, description, status_id, priority_id, task_type_id, planned_end_date, start_date, end_date }).returning('*');
+  try { const { emitTaskCreated } = await import('../events.js'); emitTaskCreated(row); } catch {}
   res.status(201).json(row);
 });
 

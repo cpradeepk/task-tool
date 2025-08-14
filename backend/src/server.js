@@ -77,6 +77,9 @@ const io = new SocketIOServer(server, {
   cors: { origin: process.env.CORS_ORIGIN?.split(',') || '*', credentials: true }
 });
 
+import { registerIO } from './events.js';
+registerIO(io);
+
 io.on('connection', (socket) => {
   socket.emit('welcome', { message: 'Connected to Task Tool realtime gateway' });
 });

@@ -23,6 +23,7 @@ router.post('/threads/:id/messages', async (req, res) => {
   const threadId = Number(req.params.id);
   const { kind, body } = req.body;
   const [row] = await knex('messages').insert({ thread_id: threadId, user_id: req.user.id, kind: kind || 'text', body }).returning('*');
+  try { const { emitMessageCreated } = await import('../events.js'); emitMessageCreated(row); } catch {}
   res.status(201).json(row);
 });
 

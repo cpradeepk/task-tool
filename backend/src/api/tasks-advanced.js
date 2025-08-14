@@ -23,6 +23,7 @@ router.put('/:taskId', requireAnyRole(['Admin','Project Manager']), async (req, 
   }
 
   const [row] = await knex('tasks').where({ id: taskId }).update(patch).returning('*');
+  try { const { emitTaskUpdated } = await import('../events.js'); emitTaskUpdated(row); } catch {}
   res.json(row);
 });
 
