@@ -61,6 +61,14 @@ app.use('/task/api/uploads', uploadsRouter);
 import exportsRouter from './api/exports.js';
 app.use('/task/api/exports', exportsRouter);
 
+// Dependencies & PERT
+import depsPertRouter from './api/deps_pert.js';
+app.use('/task/api/projects/:projectId/tasks', depsPertRouter);
+
+// Chat
+import chatRouter from './api/chat.js';
+app.use('/task/api/chat', chatRouter);
+
 const server = http.createServer(app);
 
 // Socket.io under /task/socket.io
