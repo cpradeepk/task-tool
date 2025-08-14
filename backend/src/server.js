@@ -7,6 +7,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 
 import { initEmail } from './services/email.js';
+import authRouter from './routes/auth.js';
 
 const app = express();
 app.use(helmet());
@@ -23,6 +24,9 @@ app.get('/task/health', (req, res) => {
 app.get('/task/api/hello', (req, res) => {
   res.json({ message: 'Task Tool API is running' });
 });
+
+// Auth routes
+app.use('/task/api/auth', authRouter);
 
 const server = http.createServer(app);
 

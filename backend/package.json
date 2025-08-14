@@ -8,7 +8,10 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "lint": "eslint .",
-    "test": "node -e \"console.log('No tests yet')\""
+    "test": "node -e \"console.log('No tests yet')\"",
+    "migrate:latest": "knex migrate:latest --knexfile src/db/knexfile.cjs",
+    "migrate:rollback": "knex migrate:rollback --knexfile src/db/knexfile.cjs",
+    "migrate:make": "knex migrate:make --knexfile src/db/knexfile.cjs"
   },
   "dependencies": {
     "bullmq": "^5.7.8",
@@ -19,7 +22,11 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "nodemailer": "^6.9.13",
-    "socket.io": "^4.7.5"
+    "socket.io": "^4.7.5",
+    "knex": "^3.1.0",
+    "objection": "^3.1.4",
+    "pg": "^8.12.0",
+    "google-auth-library": "^9.14.2"
   },
   "devDependencies": {
     "eslint": "^9.8.0",
