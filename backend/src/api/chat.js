@@ -24,6 +24,22 @@ router.post('/threads/:id/messages', async (req, res) => {
   const { kind, body } = req.body;
   const [row] = await knex('messages').insert({ thread_id: threadId, user_id: req.user.id, kind: kind || 'text', body }).returning('*');
   try { const { emitMessageCreated } = await import('../events.js'); emitMessageCreated(row); } catch {}
+
+  // Mention notifications: naive parsing for @email
+  const mentionMatches = (body || '').toString().match(/@[^\s@]+@[^\s@]+\.[^\s@]+/g) || [];
+  if (mentionMatches.length) {
+    const emails = mentionMatches.map(s => s.slice(1));
+    const users = await knex('users').whereIn('email', emails).select('email');
+    const { emailQueue } = await import('../queue/index.js');
+    for (const u of users) {
+      await emailQueue.add('send', {
+        to: u.email,
+        subject: 'You were mentioned in Task Tool',
+        html: `<p>${req.user.email} mentioned you: ${body}</p>`
+      }, { removeOnComplete: true });
+    }
+  }
+
   res.status(201).json(row);
 });
 

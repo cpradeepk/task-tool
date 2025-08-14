@@ -27,6 +27,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Map<String, dynamic>? _pert;
   List<dynamic> _users = [];
   final _commentCtl = TextEditingController();
+  final _messageCtl = TextEditingController();
+  int? _threadId;
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
@@ -34,7 +36,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
   Future<void> _ensureThread() async {
     final jwt = await _jwt();
-    await http.post(Uri.parse('$apiBase/task/api/chat/threads'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'scope':'TASK','scope_id': widget.taskId}));
+    final r = await http.post(Uri.parse('$apiBase/task/api/chat/threads'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'scope':'TASK','scope_id': widget.taskId}));
+    final row = jsonDecode(r.body) as Map<String, dynamic>;
+    _threadId = row['id'] as int?;
   }
 
   Future<void> _load() async {
@@ -162,6 +166,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               _load();
             }, icon: const Icon(Icons.add), label: const Text('Add 15 min')),
           ]),
+          const Divider(height: 24),
+          // Comments
+          Text('Comments', style: Theme.of(context).textTheme.titleMedium),
+          Row(children:[Expanded(child: TextField(controller: _messageCtl, decoration: const InputDecoration(labelText: 'Write a comment (use @email to mention)'))), const SizedBox(width: 8), ElevatedButton(onPressed: () async {
+            if (_threadId == null) return; final jwt = await _jwt();
+            await http.post(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'kind':'text','body': _messageCtl.text}));
+            _messageCtl.clear();
+            _load();
+          }, child: const Text('Post'))]),
           const Divider(height: 24),
           // Dependencies
           Text('Dependencies', style: Theme.of(context).textTheme.titleMedium),

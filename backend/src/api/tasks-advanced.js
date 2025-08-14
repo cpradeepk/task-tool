@@ -66,8 +66,20 @@ router.get('/:taskId/time-entries', async (req, res) => {
 router.post('/:taskId/time-entries', async (req, res) => {
   const taskId = Number(req.params.taskId);
   const { start, end, minutes, notes } = req.body;
-  const [row] = await knex('time_entries').insert({ task_id: taskId, user_id: req.user.id, start, end, minutes, notes }).returning('*');
+  const [row] = await knex('time_entries').insert({ task_id: taskId, user_id: req.user.id, start: start || new Date(), end, minutes, notes }).returning('*');
   res.status(201).json(row);
+});
+
+router.put('/:taskId/time-entries/stop', async (req, res) => {
+  const taskId = Number(req.params.taskId);
+  // Find the latest open entry (no end) by this user
+  const last = await knex('time_entries').where({ task_id: taskId, user_id: req.user.id }).whereNull('end').orderBy('id','desc').first();
+  if (!last) return res.status(404).json({ error: 'No running timer' });
+  const end = new Date();
+  const start = new Date(last.start);
+  const minutes = Math.max(1, Math.round((end.getTime() - start.getTime())/60000));
+  const [row] = await knex('time_entries').where({ id: last.id }).update({ end, minutes }).returning('*');
+  res.json(row);
 });
 
 export default router;
