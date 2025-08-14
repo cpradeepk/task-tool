@@ -33,6 +33,10 @@ app.get('/task/api/hello', (req, res) => {
 // Auth routes
 app.use('/task/api/auth', authRouter);
 
+// Projects CRUD
+import projectsRouter from './api/projects.js';
+app.use('/task/api/projects', projectsRouter);
+
 const server = http.createServer(app);
 
 // Socket.io under /task/socket.io

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main.dart';
 import 'auth.dart';
+import 'projects.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -22,6 +23,7 @@ class AppRouter {
         GoRoute(path: '/', builder: (ctx, st) => const HomeScreen()),
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
         GoRoute(path: '/profile', builder: (ctx, st) => const ProfileScreen()),
+        GoRoute(path: '/projects', builder: (ctx, st) => const ProjectsScreen()),
       ],
     );
   }
