@@ -1,0 +1,20 @@
+name: task_tool_frontend
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  http: ^1.2.2
+  go_router: ^14.2.0
+  flutter_riverpod: ^2.5.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+
