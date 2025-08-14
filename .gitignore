@@ -1,0 +1,39 @@
+# Node
+node_modules/
+.npm/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env
+.env
+backend/.env
+frontend/.env
+
+# Editor/OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Flutter
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/pubspec.lock
+**/android/.gradle/
+**/ios/Pods/
+**/web/.dart_tool/
+
+# Coverage
+coverage/
+
+# PM2
+.pm2/
+
