@@ -73,6 +73,10 @@ app.use('/task/api/chat', chatRouter);
 import calendarRouter from './api/calendar.js';
 app.use('/task/api/calendar', calendarRouter);
 
+// Users (search for assignment)
+import usersRouter from './api/users.js';
+app.use('/task/api/users', usersRouter);
+
 const server = http.createServer(app);
 
 // Socket.io under /task/socket.io

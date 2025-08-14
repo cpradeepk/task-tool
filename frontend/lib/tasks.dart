@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'master_data.dart';
+import 'task_detail.dart';
+import 'rbac.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -19,12 +21,18 @@ class _TasksScreenState extends State<TasksScreen> {
   Map<String, dynamic>? _md;
   int? _moduleFilter;
   bool _busy = false;
+  List<String> _roles = const [];
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
   Future<void> _loadMD() async {
     final md = await fetchMasterData();
     setState(() { _md = md; });
+  }
+
+  Future<void> _loadRoles() async {
+    final roles = await RBAC.roles();
+    setState(() { _roles = roles; });
   }
 
   Future<void> _load() async {
@@ -38,7 +46,7 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   @override
-  void initState() { super.initState(); _loadMD(); _load(); }
+  void initState() { super.initState(); _loadMD(); _load(); _loadRoles(); }
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +77,9 @@ class _TasksScreenState extends State<TasksScreen> {
               final t = filtered[i];
               return ExpansionTile(
                 title: Text(t['title'] ?? ''), subtitle: Text('Task #${t['id']}'),
+                trailing: TextButton(onPressed: (){
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => TaskDetailScreen(projectId: widget.projectId, taskId: t['id'] as int)));
+                }, child: const Text('Open')),
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(8.0),
@@ -140,11 +151,12 @@ class _TasksScreenState extends State<TasksScreen> {
                       ]),
                       const SizedBox(height: 8),
                       Row(children:[
-                        ElevatedButton.icon(onPressed: () async {
-                          final jwt = await _jwt();
-                          await http.delete(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt' });
-                          _load();
-                        }, icon: const Icon(Icons.delete), label: const Text('Delete')),
+                        if (_roles.contains('Admin') || _roles.contains('Project Manager'))
+                          ElevatedButton.icon(onPressed: () async {
+                            final jwt = await _jwt();
+                            await http.delete(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt' });
+                            _load();
+                          }, icon: const Icon(Icons.delete), label: const Text('Delete')),
                       ])
                     ]),
                   ),

@@ -31,6 +31,10 @@ router.put('/:taskId', requireAnyRole(['Admin','Project Manager']), async (req, 
 router.post('/:taskId/assignments', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
   const taskId = Number(req.params.taskId);
   const { user_id, is_owner, role } = req.body;
+  // Only one owner at a time: if setting is_owner true, clear others
+  if (is_owner) {
+    await knex('task_assignments').where({ task_id: taskId, is_owner: true }).update({ is_owner: false });
+  }
   const [row] = await knex('task_assignments')
     .insert({ task_id: taskId, user_id, is_owner: !!is_owner, role })
     .onConflict(['task_id','user_id']).merge(['is_owner','role'])

@@ -1,0 +1,168 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'master_data.dart';
+
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+
+class TaskDetailScreen extends StatefulWidget {
+  final int projectId;
+  final int taskId;
+  const TaskDetailScreen({super.key, required this.projectId, required this.taskId});
+  @override
+  State<TaskDetailScreen> createState() => _TaskDetailScreenState();
+}
+
+class _TaskDetailScreenState extends State<TaskDetailScreen> {
+  Map<String, dynamic>? _task;
+  Map<String, dynamic>? _md;
+  List<dynamic> _assignments = [];
+  List<dynamic> _timeEntries = [];
+  List<dynamic> _deps = [];
+  Map<String, dynamic>? _pert;
+  List<dynamic> _users = [];
+  final _commentCtl = TextEditingController();
+
+  Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
+
+  Future<void> _loadMD() async { setState((){}); _md = await fetchMasterData(); }
+
+  Future<void> _load() async {
+    final jwt = await _jwt();
+    final tRes = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks'), headers: { 'Authorization': 'Bearer $jwt' });
+    final tasks = jsonDecode(tRes.body) as List<dynamic>;
+    _task = tasks.firstWhere((e) => e['id'] == widget.taskId);
+
+    final aRes = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/time-entries'), headers: { 'Authorization': 'Bearer $jwt' });
+    _timeEntries = jsonDecode(aRes.body) as List<dynamic>;
+
+    final dRes = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/dependencies'), headers: { 'Authorization': 'Bearer $jwt' });
+    _deps = jsonDecode(dRes.body) as List<dynamic>;
+
+    final pRes = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/pert'), headers: { 'Authorization': 'Bearer $jwt' });
+    _pert = jsonDecode(pRes.body) as Map<String, dynamic>?;
+
+    setState((){});
+  }
+
+  Future<void> _searchUsers(String q) async {
+    final jwt = await _jwt();
+    final r = await http.get(Uri.parse('$apiBase/task/api/users?email=$q'), headers: { 'Authorization': 'Bearer $jwt' });
+    _users = jsonDecode(r.body) as List<dynamic>;
+    setState((){});
+  }
+
+  Future<void> _assign(int userId, {bool owner=false}) async {
+    final jwt = await _jwt();
+    await http.post(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/assignments'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'user_id': userId, 'is_owner': owner}));
+    _load();
+  }
+
+  Future<void> _addDep(int dependsOnTaskId, String type) async {
+    final jwt = await _jwt();
+    await http.post(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/dependencies'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'depends_on_task_id': dependsOnTaskId, 'type': type}));
+    _load();
+  }
+
+  Future<void> _savePert(int o, int m, int p) async {
+    final jwt = await _jwt();
+    await http.post(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/pert'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'optimistic': o, 'most_likely': m, 'pessimistic': p}));
+    _load();
+  }
+
+  @override
+  void initState() { super.initState(); _loadMD(); _load(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final statuses = _md?['statuses'] as List<dynamic>? ?? [];
+    final priorities = _md?['priorities'] as List<dynamic>? ?? [];
+    final taskTypes = _md?['task_types'] as List<dynamic>? ?? [];
+    final t = _task;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Task Detail')),
+      body: t == null ? const Center(child: CircularProgressIndicator()) : Padding(
+        padding: const EdgeInsets.all(16),
+        child: ListView(children: [
+          Text('Title: ${t['title'] ?? ''}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Row(children:[
+            const Text('Status:'), const SizedBox(width: 8),
+            DropdownButton<int>(value: t['status_id'] as int?, items: [for (final s in statuses) DropdownMenuItem(value: s['id'] as int, child: Text(s['name']))], onChanged: (v) async {
+              final jwt = await _jwt();
+              final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'status_id': v}));
+              if (res.statusCode==200) _load();
+            }),
+            const SizedBox(width: 16),
+            const Text('Priority:'), const SizedBox(width: 8),
+            DropdownButton<int>(value: t['priority_id'] as int?, items: [for (final p in priorities) DropdownMenuItem(value: p['id'] as int, child: Text(p['name']))], onChanged: (v) async {
+              final jwt = await _jwt();
+              final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'priority_id': v}));
+              if (res.statusCode==200) _load();
+            }),
+            const SizedBox(width: 16),
+            const Text('Type:'), const SizedBox(width: 8),
+            DropdownButton<int>(value: t['task_type_id'] as int?, items: [for (final ty in taskTypes) DropdownMenuItem(value: ty['id'] as int, child: Text(ty['name']))], onChanged: (v) async {
+              final jwt = await _jwt();
+              final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'task_type_id': v}));
+              if (res.statusCode==200) _load();
+            }),
+          ]),
+          const SizedBox(height: 8),
+          Row(children:[
+            const Text('Planned end:'), const SizedBox(width: 8), Text('${t['planned_end_date'] ?? '-'}'),
+            const SizedBox(width: 12),
+            OutlinedButton(onPressed: () async {
+              final d = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime(2100));
+              if (d != null) {
+                final jwt = await _jwt();
+                final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'planned_end_date': d.toIso8601String().substring(0,10)}));
+                if (res.statusCode==200) _load();
+              }
+            }, child: const Text('Change')),
+          ]),
+          const Divider(height: 24),
+          // Assignments
+          Text('Assignments', style: Theme.of(context).textTheme.titleMedium),
+          Row(children:[
+            Expanded(child: TextField(controller: _commentCtl, decoration: const InputDecoration(labelText: 'Search user by email'))),
+            const SizedBox(width: 8),
+            ElevatedButton(onPressed: () => _searchUsers(_commentCtl.text), child: const Text('Search')),
+          ]),
+          Wrap(children: _users.map((u) => Padding(padding: const EdgeInsets.all(4), child: OutlinedButton(onPressed: ()=>_assign(u['id'] as int), child: Text(u['email'])))).toList()),
+          const SizedBox(height: 8),
+          Row(children:[TextButton(onPressed: (){ if(_users.isNotEmpty) _assign(_users.first['id'] as int, owner: true); }, child: const Text('Set first result as owner'))]),
+          const Divider(height: 24),
+          // Time entries list
+          Text('Time entries', style: Theme.of(context).textTheme.titleMedium),
+          ..._timeEntries.map((e) => ListTile(title: Text('${e['minutes'] ?? '-'} min'), subtitle: Text(e['notes'] ?? ''))),
+          Row(children:[
+            ElevatedButton.icon(onPressed: () async {
+              final jwt = await _jwt();
+              await http.post(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${widget.taskId}/time-entries'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'minutes': 15, 'notes': 'Quick log'}));
+              _load();
+            }, icon: const Icon(Icons.add), label: const Text('Add 15 min')),
+          ]),
+          const Divider(height: 24),
+          // Dependencies
+          Text('Dependencies', style: Theme.of(context).textTheme.titleMedium),
+          ..._deps.map((d) => ListTile(title: Text('Depends on task ${d['depends_on_task_id']}'), subtitle: Text(d['type']))),
+          Row(children:[
+            ElevatedButton(onPressed: ()=>_addDep(widget.taskId-1, 'PRE'), child: const Text('Add PRE on prev task')), // demo action
+          ]),
+          const Divider(height: 24),
+          // PERT
+          Text('PERT', style: Theme.of(context).textTheme.titleMedium),
+          Text('Current: ${_pert ?? {}}'),
+          Row(children:[
+            ElevatedButton(onPressed: ()=>_savePert(1,2,3), child: const Text('Set O=1, M=2, P=3')),
+          ]),
+          const SizedBox(height: 40),
+        ])
+      ),
+    );
+  }
+}
+
