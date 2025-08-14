@@ -31,6 +31,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   final _messageCtl = TextEditingController();
   int? _threadId;
   List<Map<String, dynamic>> _pendingAttachments = [];
+  Map<int, List<dynamic>> _attachmentsByMsg = {};
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
@@ -62,7 +63,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     if (_threadId != null) {
       final mRes = await http.get(Uri.parse('$apiBase/task/api/chat/threads/$_threadId/messages'), headers: { 'Authorization': 'Bearer $jwt' });
-      _messages = jsonDecode(mRes.body) as List<dynamic>;
+      final jr = jsonDecode(mRes.body) as Map<String, dynamic>;
+      _messages = jr['messages'] as List<dynamic>;
+      final atts = jr['attachments'] as List<dynamic>;
+      _attachmentsByMsg = <int, List<dynamic>>{};
+      for (final a in atts) {
+        final mid = a['message_id'] as int;
+        _attachmentsByMsg.putIfAbsent(mid, () => []).add(a);
+      }
     }
 
     setState((){});
@@ -214,6 +222,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               title: Text(m['email'] ?? 'Unknown'),
               subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(m['body'] ?? ''),
+                Wrap(spacing: 6, children: [
+                  for (final a in (_attachmentsByMsg[m['id']] ?? const []))
+                    InkWell(onTap: (){ html.window.open(a['url'], '_blank'); }, child: Chip(label: Text(a['filename'] ?? 'file')))
+                ])
               ]),
             )),
             Wrap(spacing: 8, children: _pendingAttachments.map((a) => Chip(label: Text(a['filename'] ?? 'file'))).toList()),

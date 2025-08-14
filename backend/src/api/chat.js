@@ -20,7 +20,8 @@ router.get('/threads/:id/messages', async (req, res) => {
     .where({ thread_id: threadId })
     .orderBy('messages.id', 'asc')
     .select('messages.*','users.email');
-  res.json(rows);
+  const atts = await knex('attachments').join('messages','messages.id','attachments.message_id').where('messages.thread_id', threadId).select('attachments.*');
+  res.json({ messages: rows, attachments: atts });
 });
 
 router.post('/threads/:id/messages', async (req, res) => {
