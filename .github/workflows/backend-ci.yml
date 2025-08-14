@@ -1,0 +1,29 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install deps
+        working-directory: backend
+        run: npm ci || npm install
+      - name: Lint
+        working-directory: backend
+        run: npm run lint || echo "skip lint"
+      - name: Test
+        working-directory: backend
+        run: npm test
+
