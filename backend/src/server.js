@@ -69,6 +69,10 @@ app.use('/task/api/projects/:projectId/tasks', depsPertRouter);
 import chatRouter from './api/chat.js';
 app.use('/task/api/chat', chatRouter);
 
+// Calendar
+import calendarRouter from './api/calendar.js';
+app.use('/task/api/calendar', calendarRouter);
+
 const server = http.createServer(app);
 
 // Socket.io under /task/socket.io
@@ -92,6 +96,10 @@ startWorkers({
     await email.send({ to, subject, html, text });
   }
 });
+
+// Start cron jobs (daily summary)
+import { startCron } from './jobs/index.js';
+startCron();
 
 app.post('/task/api/test-email', async (req, res) => {
   try {
