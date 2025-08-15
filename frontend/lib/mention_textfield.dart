@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,23 +52,28 @@ class _MentionTextFieldState extends State<MentionTextField> {
         width: box.size.width,
         child: Material(
           elevation: 4,
-          child: ListView(
-            padding: EdgeInsets.zero,
-            shrinkWrap: true,
-            children: _suggestions.map((s) => ListTile(title: Text(s), onTap: (){
-              final base = widget.controller.text;
-              final idx = base.lastIndexOf('@');
-              final before = idx >= 0 ? base.substring(0, idx+1) : '$base@';
-              final newText = '$before$s';
-              widget.controller.text = newText;
-              widget.controller.selection = TextSelection.fromPosition(TextPosition(offset: newText.length));
-              _hide();
-            })).toList(),
+          child: _SuggestionList(
+            suggestions: _suggestions,
+            onPick: (s){ _insertSuggestion(s); },
           ),
         ),
       );
     });
     Overlay.of(context).insert(_overlay!);
+  }
+
+  void _insertSuggestion(String s) {
+    final base = widget.controller.text;
+    final sel = widget.controller.selection;
+    final caret = sel.start;
+    final lastAt = base.lastIndexOf('@', caret >= 0 ? caret : base.length);
+    final before = lastAt >= 0 ? base.substring(0, lastAt+1) : '${base.substring(0, caret)}@';
+    final after = base.substring(caret);
+    final newText = '$before$s$after';
+    widget.controller.text = newText;
+    final newOffset = (before + s).length;
+    widget.controller.selection = TextSelection.fromPosition(TextPosition(offset: newOffset));
+    _hide();
   }
 
   void _hide() { _overlay?.remove(); _overlay = null; }
@@ -102,3 +108,36 @@ class Debouncer {
   void run(void Function() f) { _t?.cancel(); _t = Timer(duration, f); }
 }
 
+
+class _SuggestionList extends StatefulWidget {
+  const _SuggestionList({required this.suggestions, required this.onPick});
+  final List<String> suggestions; final void Function(String) onPick;
+  @override State<_SuggestionList> createState() => _SuggestionListState();
+}
+class _SuggestionListState extends State<_SuggestionList> {
+  int _index = 0;
+  @override
+  Widget build(BuildContext context) {
+    return KeyboardListener(
+      focusNode: FocusNode(),
+      onKeyEvent: (e) {
+        if (e is KeyDownEvent && e.logicalKey == LogicalKeyboardKey.arrowDown) setState(()=>_index = (_index+1)%widget.suggestions.length);
+        if (e is KeyDownEvent && e.logicalKey == LogicalKeyboardKey.arrowUp) setState(()=>_index = (_index-1+widget.suggestions.length)%widget.suggestions.length);
+        if (e is KeyDownEvent && e.logicalKey == LogicalKeyboardKey.enter) widget.onPick(widget.suggestions[_index]);
+      },
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        itemCount: widget.suggestions.length,
+        itemBuilder: (ctx,i){
+          final s = widget.suggestions[i];
+          return ListTile(
+            selected: i==_index,
+            title: Text(s),
+            onTap: ()=>widget.onPick(s),
+          );
+        },
+      ),
+    );
+  }
+}

@@ -155,12 +155,11 @@ class _TasksScreenState extends State<TasksScreen> {
                         }, icon: const Icon(Icons.play_arrow), label: const Text('Start')),
                         const SizedBox(width: 8),
                         ElevatedButton.icon(onPressed: () async {
-                          // Timer stop: update latest time entry by setting end and minutes
-                          // For brevity this demo posts a manual entry
+                          // Stop last running time entry
                           final jwt = await _jwt();
-                          await http.post(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}/time-entries'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'end': DateTime.now().toIso8601String(), 'minutes': 30, 'notes': 'Manual add'}));
+                          await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}/time-entries/stop'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' });
                           _load();
-                        }, icon: const Icon(Icons.stop), label: const Text('Stop (demo)')),
+                        }, icon: const Icon(Icons.stop), label: const Text('Stop')),
                       ]),
                       const SizedBox(height: 8),
                       Row(children:[
