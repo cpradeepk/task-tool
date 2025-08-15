@@ -131,7 +131,8 @@ class _CriticalPathViewState extends State<CriticalPathView> {
           Expanded(child: ListView.builder(
             itemCount: layers.length,
             itemBuilder: (ctx, i){
-              var layer = layers[i];
+              var layer = [...layers[i]]; // copy to avoid mutating base
+              layer.sort((a,b)=> ((b['expected_time']??1) as num).compareTo(((a['expected_time']??1) as num)));
               // apply filters
               if (_moduleFilter != null) layer = layer.where((t)=>t['module_id']==_moduleFilter).toList();
               if (_assigneeFilter.isNotEmpty) layer = layer.where((t)=> (assignmentsByTask[t['id']] ?? const <String>[]).any((e)=> e.toLowerCase().contains(_assigneeFilter.toLowerCase())) ).toList();

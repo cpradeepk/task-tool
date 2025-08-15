@@ -255,26 +255,31 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 _messageCtl.clear(); setState(() { _pendingAttachments = []; }); _load();
               })),
               const SizedBox(width: 8),
-              OutlinedButton(onPressed: () async {
-                // pick file (web)
-                final input = html.FileUploadInputElement();
-                input.click();
-                await input.onChange.first;
-                if (input.files == null || input.files!.isEmpty) return;
-                final file = input.files!.first;
-                final jwt = await _jwt();
-                // presign
-                final pres = await http.post(Uri.parse('$apiBase/task/api/uploads/presign'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'filename': file.name, 'contentType': file.type}));
-                final data = jsonDecode(pres.body) as Map<String, dynamic>;
-                final url = data['url'] as String; final key = data['key'] as String;
-                // read bytes and upload
-                final reader = html.FileReader();
-                reader.readAsArrayBuffer(file);
-                await reader.onLoadEnd.first;
-                final bytes = (reader.result as ByteBuffer).asUint8List();
-                await http.put(Uri.parse(url), headers: { 'Content-Type': file.type }, body: bytes);
-                final publicUrl = '${apiBase.replaceFirst(RegExp(r"^http"), 'https')}/task/uploads/$key';
-                setState(() { _pendingAttachments = [..._pendingAttachments, {'url': publicUrl, 'filename': file.name, 'type': file.type, 'size': file.size}]; });
+              OutlinedButton(onPressed: _uploading ? null : () async {
+                setState(() { _uploading = true; });
+                try {
+                  // pick file (web)
+                  final input = html.FileUploadInputElement();
+                  input.click();
+                  await input.onChange.first;
+                  if (input.files == null || input.files!.isEmpty) return;
+                  final file = input.files!.first;
+                  final jwt = await _jwt();
+                  // presign
+                  final pres = await http.post(Uri.parse('$apiBase/task/api/uploads/presign'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'filename': file.name, 'contentType': file.type}));
+                  final data = jsonDecode(pres.body) as Map<String, dynamic>;
+                  final url = data['url'] as String; final key = data['key'] as String;
+                  // read bytes and upload
+                  final reader = html.FileReader();
+                  reader.readAsArrayBuffer(file);
+                  await reader.onLoadEnd.first;
+                  final bytes = (reader.result as ByteBuffer).asUint8List();
+                  await http.put(Uri.parse(url), headers: { 'Content-Type': file.type }, body: bytes);
+                  final publicUrl = '${apiBase.replaceFirst(RegExp(r"^http"), 'https')}/task/uploads/$key';
+                  setState(() { _pendingAttachments = [..._pendingAttachments, {'url': publicUrl, 'filename': file.name, 'type': file.type, 'size': file.size}]; });
+                } finally {
+                  setState(() { _uploading = false; });
+                }
               }, child: const Text('Attach')),
               const SizedBox(width: 8),
               ElevatedButton(onPressed: () async {
