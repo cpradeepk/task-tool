@@ -138,7 +138,14 @@ class _CriticalPathViewState extends State<CriticalPathView> {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Wrap(spacing: 8, children: [
-                  for (final t in layer) Chip(label: Text('${t['id']}: ${t['title']}'), backgroundColor: critical.contains(t['id']) ? Colors.redAccent : null)
+                  for (final t in layer) Chip(
+                    label: Row(mainAxisSize: MainAxisSize.min, children:[
+                      Text('${t['id']}: ${t['title']}'),
+                      if (t['module_id'] != null) Padding(padding: const EdgeInsets.only(left:6), child: Chip(label: Text('M:${t['module_id']}'), visualDensity: VisualDensity.compact)),
+                      if ((assignmentsByTask[t['id']] ?? const <String>[]).isNotEmpty) Padding(padding: const EdgeInsets.only(left:6), child: Chip(label: Text((assignmentsByTask[t['id']] ?? const <String>[]).join(',')), visualDensity: VisualDensity.compact)),
+                    ]),
+                    backgroundColor: critical.contains(t['id']) ? Colors.redAccent : null,
+                  )
                 ]),
               );
             }

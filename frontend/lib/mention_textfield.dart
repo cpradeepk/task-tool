@@ -46,18 +46,22 @@ class _MentionTextFieldState extends State<MentionTextField> {
     final RenderBox box = context.findRenderObject() as RenderBox;
     final Offset pos = box.localToGlobal(Offset.zero);
     _overlay = OverlayEntry(builder: (ctx) {
-      return Positioned(
-        left: pos.dx,
-        top: pos.dy + box.size.height + 4,
-        width: box.size.width,
-        child: Material(
-          elevation: 4,
-          child: _SuggestionList(
-            suggestions: _suggestions,
-            onPick: (s){ _insertSuggestion(s); },
+      return Stack(children: [
+        Positioned.fill(child: GestureDetector(onTap: _hide, child: Container(color: Colors.transparent))),
+        Positioned(
+          left: pos.dx,
+          top: pos.dy + box.size.height + 4,
+          width: box.size.width,
+          child: Material(
+            elevation: 4,
+            child: _SuggestionList(
+              suggestions: _suggestions,
+              onPick: (s){ _insertSuggestion(s); },
+              onCancel: _hide,
+            ),
           ),
-        ),
-      );
+        )
+      ]);
     });
     Overlay.of(context).insert(_overlay!);
   }
@@ -110,8 +114,8 @@ class Debouncer {
 
 
 class _SuggestionList extends StatefulWidget {
-  const _SuggestionList({required this.suggestions, required this.onPick});
-  final List<String> suggestions; final void Function(String) onPick;
+  const _SuggestionList({required this.suggestions, required this.onPick, this.onCancel});
+  final List<String> suggestions; final void Function(String) onPick; final VoidCallback? onCancel;
   @override State<_SuggestionList> createState() => _SuggestionListState();
 }
 class _SuggestionListState extends State<_SuggestionList> {

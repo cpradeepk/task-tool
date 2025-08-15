@@ -11,6 +11,20 @@ import 'dart:html' as html;
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
+class _OverlayImageViewer extends StatelessWidget {
+  const _OverlayImageViewer({required this.url});
+  final String url;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: ()=>Navigator.of(context).pop(),
+      child: Container(color: const Color.fromRGBO(0, 0, 0, 0.85), alignment: Alignment.center,
+        child: InteractiveViewer(child: Image.network(url)),
+      ),
+    );
+  }
+}
+
 class TaskDetailScreen extends StatefulWidget {
   final int projectId;
   final int taskId;
@@ -33,6 +47,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   int? _threadId;
   List<Map<String, dynamic>> _pendingAttachments = [];
   Map<int, List<dynamic>> _attachmentsByMsg = {};
+  bool _uploading = false;
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
@@ -176,6 +191,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           const Divider(height: 24),
           // Time entries list
           Text('Time entries', style: Theme.of(context).textTheme.titleMedium),
+          if (_uploading) const LinearProgressIndicator(),
           ..._timeEntries.map((e) => ListTile(
             title: Text('${e['minutes'] ?? '-'} min - ${e['email'] ?? ''}'),
             subtitle: Text(e['notes'] ?? ''),
@@ -226,7 +242,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 Wrap(spacing: 6, children: [
                   for (final a in (_attachmentsByMsg[m['id']] ?? const []))
                     a['type'] != null && (a['type'] as String).startsWith('image/')
-                      ? GestureDetector(onTap: (){ html.window.open(a['url'], '_blank'); }, child: Image.network(a['url'], width: 96, height: 96, fit: BoxFit.cover))
+                      ? GestureDetector(onTap: (){ showDialog(context: context, builder: (ctx)=>_OverlayImageViewer(url: a['url'])); }, child: Image.network(a['url'], width: 96, height: 96, fit: BoxFit.cover))
                       : InkWell(onTap: (){ html.window.open(a['url'], '_blank'); }, child: Chip(label: Text(a['filename'] ?? 'file')))
                 ])
               ]),
