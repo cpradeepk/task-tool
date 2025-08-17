@@ -11,6 +11,9 @@ import 'dashboard.dart';
 import 'main_layout.dart';
 import 'tasks.dart';
 import 'critical_path.dart';
+import 'admin_login.dart';
+import 'admin/user_management.dart';
+import 'admin/daily_summary_report.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -79,6 +82,10 @@ class AppRouter {
           child: const Center(child: Text('Other People\'s Tasks - Coming Soon')),
         )),
 
+        // Admin routes
+        GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const UserManagementScreen()),
+        GoRoute(path: '/admin/reporting/daily-summary', builder: (ctx, st) => const DailySummaryReportScreen()),
+
         // Personal routes
         GoRoute(path: '/personal/notes', builder: (ctx, st) => MainLayout(
           title: 'My Notes',
@@ -138,10 +145,32 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showAdminLogin(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AdminLoginDialog(
+        onSuccess: () {
+          if (mounted) context.go('/dashboard');
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Task Tool Login')),
+      appBar: AppBar(
+        title: const Text('Task Tool Login'),
+        actions: [
+          IconButton(
+            onPressed: () => _showAdminLogin(context),
+            icon: const Icon(Icons.admin_panel_settings),
+            tooltip: 'Admin Login',
+            color: Colors.red,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

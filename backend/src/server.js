@@ -41,6 +41,10 @@ app.use('/task/api/admin-auth', adminAuthRouter);
 import pinAuthRouter from './routes/pin-auth.js';
 app.use('/task/api/pin-auth', pinAuthRouter);
 
+// Admin routes
+import adminUsersRouter from './api/admin-users.js';
+app.use('/task/api/admin/users', adminUsersRouter);
+
 // Projects CRUD
 import projectsRouter from './api/projects.js';
 app.use('/task/api/projects', projectsRouter);

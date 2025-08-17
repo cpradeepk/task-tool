@@ -19,7 +19,6 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
   final _emailController = TextEditingController();
   final _pinController = TextEditingController();
   bool _isLoading = false;
-  bool _isRegistering = false;
   String? _errorMessage;
   bool _hasPin = false;
 
@@ -54,9 +53,8 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
     });
 
     try {
-      final endpoint = _isRegistering ? 'register' : 'login';
       final response = await http.post(
-        Uri.parse('$apiBase/task/api/pin-auth/$endpoint'),
+        Uri.parse('$apiBase/task/api/pin-auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': _emailController.text,
@@ -64,7 +62,7 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
         }),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data['token'];
         final user = data['user'];
@@ -102,7 +100,7 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
                 const Icon(Icons.pin, color: Colors.blue),
                 const SizedBox(width: 8),
                 Text(
-                  _isRegistering ? 'Register with PIN' : 'Login with PIN',
+                  'Login with PIN',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ],
@@ -122,11 +120,11 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
             const SizedBox(height: 16),
             TextField(
               controller: _pinController,
-              decoration: InputDecoration(
-                labelText: _isRegistering ? 'Create PIN (4-6 digits)' : 'Enter PIN',
-                prefixIcon: const Icon(Icons.lock),
-                border: const OutlineInputBorder(),
-                helperText: _isRegistering ? 'Choose a 4-6 digit PIN' : null,
+              decoration: const InputDecoration(
+                labelText: 'Enter PIN',
+                prefixIcon: Icon(Icons.lock),
+                border: OutlineInputBorder(),
+                helperText: 'Enter your 4-6 digit PIN',
               ),
               keyboardType: TextInputType.number,
               inputFormatters: [
@@ -167,21 +165,17 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
                       height: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text(_isRegistering ? 'Register' : 'Login'),
+                  : const Text('Login'),
             ),
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: _isLoading ? null : () {
-                setState(() {
-                  _isRegistering = !_isRegistering;
-                  _errorMessage = null;
-                });
-              },
-              child: Text(
-                _isRegistering 
-                    ? 'Already have a PIN? Login instead'
-                    : 'New user? Register with PIN',
+            const SizedBox(height: 8),
+            Text(
+              'New users must be added by administrators',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
