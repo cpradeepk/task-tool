@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main.dart';
 import 'auth.dart';
+import 'pin_auth.dart';
 import 'projects.dart';
 import 'profile.dart';
 import 'modules.dart';
@@ -68,18 +69,59 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign in')),
+      appBar: AppBar(title: const Text('Task Tool Login')),
       body: Center(
-        child: _busy
-          ? const CircularProgressIndicator()
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_err != null) Text(_err!, style: const TextStyle(color: Colors.red)),
-                const SizedBox(height: 12),
-                ElevatedButton(onPressed: _doLogin, child: const Text('Continue with Google')),
-              ],
-            ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Task Tool', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 32),
+
+              // Test Account Login
+              Card(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.bug_report, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Text('Test Account', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (_err != null) ...[
+                        Text(_err!, style: const TextStyle(color: Colors.red)),
+                        const SizedBox(height: 16),
+                      ],
+                      ElevatedButton(
+                        onPressed: _busy ? null : _doLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: _busy ? const CircularProgressIndicator() : const Text('Login with Test Account'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // PIN Authentication
+              PinAuthWidget(
+                onSuccess: () {
+                  if (mounted) context.go('/');
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

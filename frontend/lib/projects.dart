@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'task_form.dart';
+import 'project_expandable_card.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -73,27 +74,28 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             const Divider(height: 24),
             if (_busy) const LinearProgressIndicator(),
             Expanded(
-              child: ListView.builder(
-                itemCount: _projects.length,
-                itemBuilder: (ctx, i) {
-                  final p = _projects[i];
-                  return ListTile(
-                    title: Text(p['name'] ?? ''),
-                    subtitle: Text('ID ${p['id']}'),
-                    onTap: () => setState(() => _selectedProjectId = p['id'] as int),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(icon: const Icon(Icons.playlist_add), onPressed: () async {
-                          if (!mounted) return;
-                          final ok = await Navigator.of(context).push(MaterialPageRoute(builder: (_) => TaskForm(projectId: p['id'] as int)));
-                          if (ok == true) _load();
-                        }),
-                      ],
+              child: _projects.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.folder_open, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('No projects yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                          Text('Create your first project above', style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _projects.length,
+                      itemBuilder: (ctx, i) {
+                        final p = _projects[i];
+                        return ProjectExpandableCard(
+                          project: p,
+                          onTap: () => setState(() => _selectedProjectId = p['id'] as int),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             )
           ],
         ),

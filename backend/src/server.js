@@ -33,6 +33,14 @@ app.get('/task/api/hello', (req, res) => {
 // Auth routes
 app.use('/task/api/auth', authRouter);
 
+// Admin auth routes
+import adminAuthRouter from './routes/admin-auth.js';
+app.use('/task/api/admin-auth', adminAuthRouter);
+
+// PIN auth routes
+import pinAuthRouter from './routes/pin-auth.js';
+app.use('/task/api/pin-auth', pinAuthRouter);
+
 // Projects CRUD
 import projectsRouter from './api/projects.js';
 app.use('/task/api/projects', projectsRouter);

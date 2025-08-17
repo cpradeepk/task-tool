@@ -11,6 +11,11 @@ export async function getUserRoles(userId) {
 export function requireAnyRole(allowedRoles = []) {
   return async (req, res, next) => {
     try {
+      // Admin users have all permissions
+      if (req.user.isAdmin) {
+        return next();
+      }
+
       // Handle test user with predefined roles
       if (req.user.testRoles) {
         if (req.user.testRoles.some(r => allowedRoles.includes(r))) return next();
