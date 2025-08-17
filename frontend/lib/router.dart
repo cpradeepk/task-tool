@@ -17,6 +17,9 @@ import 'features/calendar_view.dart';
 import 'features/chat_system.dart';
 import 'features/alerts_system.dart';
 import 'features/other_people_tasks.dart';
+import 'features/tagging_system.dart';
+import 'features/notification_system.dart';
+import 'features/advanced_search.dart';
 import 'admin/jsr_reports.dart';
 import 'admin/project_create.dart';
 import 'admin/project_settings.dart';
@@ -96,6 +99,9 @@ class AppRouter {
         GoRoute(path: '/admin/reporting/jsr/planned', builder: (ctx, st) => const JSRReportsScreen()),
         GoRoute(path: '/admin/reporting/jsr/completed', builder: (ctx, st) => const JSRReportsScreen()),
         GoRoute(path: '/admin/master-data', builder: (ctx, st) => const MasterDataScreen()),
+        GoRoute(path: '/admin/tags', builder: (ctx, st) => const TaggingSystemScreen()),
+        GoRoute(path: '/notifications', builder: (ctx, st) => const NotificationSystemScreen()),
+        GoRoute(path: '/search', builder: (ctx, st) => const AdvancedSearchScreen()),
         GoRoute(path: '/admin/roles/assign', builder: (ctx, st) => const RoleAssignScreen()),
         GoRoute(path: '/admin/roles/manage', builder: (ctx, st) => const RoleManageScreen()),
         GoRoute(path: '/admin/modules/manage', builder: (ctx, st) => const ModuleManagementScreen()),

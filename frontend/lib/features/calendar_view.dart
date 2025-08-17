@@ -21,15 +21,21 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
   List<dynamic> _selectedDateTasks = [];
   List<dynamic> _projects = [];
   List<dynamic> _modules = [];
+  List<dynamic> _tags = [];
+  List<dynamic> _filteredTasks = [];
   bool _isLoading = false;
   String? _errorMessage;
   String _viewMode = 'month'; // 'month' or 'agenda'
+  List<String> _selectedTags = [];
+  String _selectedProject = 'All';
+  String _selectedModule = 'All';
 
   @override
   void initState() {
     super.initState();
     _loadTasks();
     _loadProjects();
+    _loadTags();
   }
 
   Future<String?> _getJwt() async {
@@ -61,6 +67,52 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
       setState(() => _isLoading = false);
       _updateSelectedDateTasks();
     }
+    _applyFilters();
+  }
+
+  Future<void> _loadTags() async {
+    try {
+      final jwt = await _getJwt();
+      if (jwt != null) {
+        final response = await http.get(
+          Uri.parse('$apiBase/task/api/admin/tags'),
+          headers: {'Authorization': 'Bearer $jwt'},
+        );
+
+        if (response.statusCode == 200) {
+          setState(() => _tags = jsonDecode(response.body));
+        }
+      }
+    } catch (e) {
+      // Use mock tags for development
+      setState(() => _tags = [
+        {'id': 1, 'name': 'urgent', 'color': 0xFFFF0000},
+        {'id': 2, 'name': 'frontend', 'color': 0xFF2196F3},
+        {'id': 3, 'name': 'backend', 'color': 0xFF4CAF50},
+        {'id': 4, 'name': 'bug-fix', 'color': 0xFFFF9800},
+        {'id': 5, 'name': 'enhancement', 'color': 0xFF9C27B0},
+      ]);
+    }
+  }
+
+  void _applyFilters() {
+    setState(() {
+      _filteredTasks = _tasks.where((task) {
+        // Project filter
+        final matchesProject = _selectedProject == 'All' || task['project'] == _selectedProject;
+
+        // Module filter
+        final matchesModule = _selectedModule == 'All' || task['module'] == _selectedModule;
+
+        // Tag filter
+        final taskTags = (task['tags'] as List<dynamic>?) ?? [];
+        final matchesTags = _selectedTags.isEmpty ||
+            _selectedTags.any((selectedTag) => taskTags.contains(selectedTag));
+
+        return matchesProject && matchesModule && matchesTags;
+      }).toList();
+    });
+    _updateSelectedDateTasks();
   }
 
   List<dynamic> _generateMockTasks() {
@@ -489,6 +541,123 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                         ],
                       ),
                     ),
+
+                    // Filter Controls
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        border: Border(
+                          top: BorderSide(color: Colors.grey.shade300),
+                          bottom: BorderSide(color: Colors.grey.shade300),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Filters',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Project and Module filters
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Project',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  ),
+                                  value: _selectedProject,
+                                  items: ['All', ..._projects.map((p) => p['name'] as String)].map((project) =>
+                                    DropdownMenuItem(value: project, child: Text(project, style: const TextStyle(fontSize: 12)))
+                                  ).toList(),
+                                  onChanged: (value) {
+                                    setState(() => _selectedProject = value!);
+                                    _applyFilters();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Module',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  ),
+                                  value: _selectedModule,
+                                  items: ['All', ..._modules.map((m) => m['name'] as String)].map((module) =>
+                                    DropdownMenuItem(value: module, child: Text(module, style: const TextStyle(fontSize: 12)))
+                                  ).toList(),
+                                  onChanged: (value) {
+                                    setState(() => _selectedModule = value!);
+                                    _applyFilters();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Tag filters
+                          const Text('Tags:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: _tags.map<Widget>((tag) {
+                              final isSelected = _selectedTags.contains(tag['name']);
+                              return FilterChip(
+                                label: Text(
+                                  tag['name'],
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: isSelected ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _selectedTags.add(tag['name']);
+                                    } else {
+                                      _selectedTags.remove(tag['name']);
+                                    }
+                                  });
+                                  _applyFilters();
+                                },
+                                backgroundColor: Color(tag['color']).withValues(alpha: 0.2),
+                                selectedColor: Color(tag['color']),
+                                checkmarkColor: Colors.white,
+                              );
+                            }).toList(),
+                          ),
+
+                          // Clear filters
+                          if (_selectedProject != 'All' || _selectedModule != 'All' || _selectedTags.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedProject = 'All';
+                                    _selectedModule = 'All';
+                                    _selectedTags.clear();
+                                  });
+                                  _applyFilters();
+                                },
+                                icon: const Icon(Icons.clear, size: 14),
+                                label: const Text('Clear Filters', style: TextStyle(fontSize: 12)),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
                     // Calendar Grid or Agenda View
                     Expanded(
                       child: _viewMode == 'month'
