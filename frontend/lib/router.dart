@@ -14,15 +14,7 @@ class AppRouter {
 
   AppRouter() {
     router = GoRouter(
-      initialLocation: '/',
-      redirect: (context, state) async {
-        final prefs = await SharedPreferences.getInstance();
-        final jwt = prefs.getString('jwt');
-        final loggingIn = state.fullPath == '/login';
-        if (jwt == null && !loggingIn) return '/login';
-        if (jwt != null && loggingIn) return '/';
-        return null;
-      },
+      initialLocation: '/login',
       routes: [
         GoRoute(path: '/', builder: (ctx, st) => const HomeScreen()),
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
@@ -46,6 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final _auth = AuthController();
   bool _busy = false;
   String? _err;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingAuth();
+  }
+
+  Future<void> _checkExistingAuth() async {
+    await _auth.load();
+    if (_auth.isAuthed && mounted) {
+      context.go('/');
+    }
+  }
 
   Future<void> _doLogin() async {
     setState(() { _busy = true; _err = null; });

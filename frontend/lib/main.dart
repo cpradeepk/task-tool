@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:go_router/go_router.dart';
 import 'auth.dart';
 import 'router.dart';
 import 'nav.dart';
@@ -36,6 +37,21 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _email;
   final _authCtl = AuthController();
 
+  @override
+  void initState() {
+    super.initState();
+    _checkAuth();
+  }
+
+  Future<void> _checkAuth() async {
+    await _authCtl.load();
+    if (!_authCtl.isAuthed && mounted) {
+      context.go('/login');
+      return;
+    }
+    setState(() => _email = _authCtl.email);
+  }
+
   Future<void> _checkHealth() async {
     try {
       final r = await http.get(Uri.parse('$apiBase/task/health'));
@@ -53,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _logout() async {
     await _authCtl.signOut();
     setState(() => _email = null);
+    if (mounted) context.go('/login');
   }
 
   @override
