@@ -32,15 +32,27 @@ router.use(requireAdmin);
 // Get all users
 router.get('/', async (req, res) => {
   try {
-    // Check if users table exists
-    const tableExists = await knex.schema.hasTable('users');
-    if (!tableExists) {
-      return res.json([]); // Return empty array if table doesn't exist
+    // Try to query users, create table if it doesn't exist
+    let users;
+    try {
+      users = await knex('users')
+        .select('id', 'email', 'created_at', 'updated_at', 'pin_created_at', 'pin_last_used')
+        .orderBy('created_at', 'desc');
+    } catch (tableError) {
+      // If table doesn't exist, create it and return empty array
+      console.log('Users table does not exist, creating...');
+      await knex.schema.createTable('users', (table) => {
+        table.increments('id').primary();
+        table.string('email').unique().notNullable();
+        table.string('pin_hash');
+        table.timestamp('pin_created_at');
+        table.timestamp('pin_last_used');
+        table.integer('pin_attempts').defaultTo(0);
+        table.timestamp('pin_locked_until');
+        table.timestamps(true, true);
+      });
+      users = [];
     }
-
-    const users = await knex('users')
-      .select('id', 'email', 'created_at', 'updated_at', 'pin_created_at', 'pin_last_used')
-      .orderBy('created_at', 'desc');
 
     res.json(users);
   } catch (err) {
@@ -62,14 +74,24 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Check if users table exists
-    const tableExists = await knex.schema.hasTable('users');
-    if (!tableExists) {
-      return res.status(500).json({ error: 'Database not initialized. Please restart the server.' });
+    // Check if user already exists (create table if needed)
+    let existingUser;
+    try {
+      existingUser = await knex('users').where({ email }).first();
+    } catch (tableError) {
+      // Create table if it doesn't exist
+      await knex.schema.createTable('users', (table) => {
+        table.increments('id').primary();
+        table.string('email').unique().notNullable();
+        table.string('pin_hash');
+        table.timestamp('pin_created_at');
+        table.timestamp('pin_last_used');
+        table.integer('pin_attempts').defaultTo(0);
+        table.timestamp('pin_locked_until');
+        table.timestamps(true, true);
+      });
+      existingUser = null;
     }
-
-    // Check if user already exists
-    const existingUser = await knex('users').where({ email }).first();
     if (existingUser) {
       return res.status(409).json({ error: 'User with this email already exists' });
     }

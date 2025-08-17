@@ -88,7 +88,7 @@ export async function initializeTables() {
         table.increments('id').primary();
         table.string('name').unique().notNullable();
         table.text('description');
-        table.json('permissions');
+        table.text('permissions');
         table.timestamps(true, true);
       });
       console.log('Created roles table');
@@ -136,7 +136,7 @@ export async function initializeTables() {
         table.string('title').notNullable();
         table.text('content');
         table.string('category').defaultTo('Work');
-        table.json('tags');
+        table.text('tags');
         table.timestamps(true, true);
       });
       console.log('Created notes table');
