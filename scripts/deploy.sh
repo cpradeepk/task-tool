@@ -51,6 +51,10 @@ npm install || error "Failed to install backend dependencies"
 log "Running database migrations..."
 npm run migrate:latest || warn "Database migration failed - continuing anyway"
 
+# Run database seeds
+log "Running database seeds..."
+npm run seed:run || warn "Database seeding failed - continuing anyway"
+
 # Restart backend with PM2
 log "Restarting backend service..."
 pm2 restart task-tool-backend || error "Failed to restart backend"
