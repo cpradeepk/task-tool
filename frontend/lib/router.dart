@@ -15,6 +15,10 @@ import 'admin/daily_summary_report.dart';
 import 'features/pert_analysis.dart';
 import 'features/calendar_view.dart';
 import 'features/chat_system.dart';
+import 'features/alerts_system.dart';
+import 'admin/jsr_reports.dart';
+import 'personal/notes_system.dart';
+import 'personal/profile_edit.dart' as personal;
 
 class AppRouter {
   late final GoRouter router;
@@ -65,10 +69,7 @@ class AppRouter {
         GoRoute(path: '/pert', builder: (ctx, st) => const PertAnalysisScreen()),
         GoRoute(path: '/calendar', builder: (ctx, st) => const CalendarViewScreen()),
         GoRoute(path: '/chat', builder: (ctx, st) => const ChatSystemScreen()),
-        GoRoute(path: '/alerts', builder: (ctx, st) => MainLayout(
-          title: 'Alerts',
-          child: const Center(child: Text('Alerts - Coming Soon')),
-        )),
+        GoRoute(path: '/alerts', builder: (ctx, st) => const AlertsSystemScreen()),
         GoRoute(path: '/others-tasks', builder: (ctx, st) => MainLayout(
           title: 'Other People\'s Tasks',
           child: const Center(child: Text('Other People\'s Tasks - Coming Soon')),
@@ -77,20 +78,15 @@ class AppRouter {
         // Admin routes
         GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const UserManagementScreen()),
         GoRoute(path: '/admin/reporting/daily-summary', builder: (ctx, st) => const DailySummaryReportScreen()),
+        GoRoute(path: '/admin/reporting/jsr', builder: (ctx, st) => const JSRReportsScreen()),
 
         // Personal routes
-        GoRoute(path: '/personal/notes', builder: (ctx, st) => MainLayout(
-          title: 'My Notes',
-          child: const Center(child: Text('Notes - Coming Soon')),
-        )),
+        GoRoute(path: '/personal/notes', builder: (ctx, st) => const NotesSystemScreen()),
         GoRoute(path: '/personal/customize', builder: (ctx, st) => MainLayout(
           title: 'Customize',
           child: const Center(child: Text('Customize - Coming Soon')),
         )),
-        GoRoute(path: '/personal/profile', builder: (ctx, st) => MainLayout(
-          title: 'Edit Profile',
-          child: const Center(child: Text('Edit Profile - Coming Soon')),
-        )),
+        GoRoute(path: '/personal/profile', builder: (ctx, st) => const personal.ProfileEditScreen()),
         GoRoute(path: '/personal/notifications', builder: (ctx, st) => MainLayout(
           title: 'Notifications',
           child: const Center(child: Text('Notifications - Coming Soon')),
