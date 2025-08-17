@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import knex from '../db/index.js';
+import { knex } from '../db/index.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 const MAX_PIN_ATTEMPTS = 5;
