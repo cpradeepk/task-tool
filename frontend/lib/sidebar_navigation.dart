@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'constants/task_constants.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -23,7 +24,9 @@ class SidebarNavigation extends StatefulWidget {
 class _SidebarNavigationState extends State<SidebarNavigation> {
   List<dynamic> _projects = [];
   Map<int, List<dynamic>> _projectModules = {};
+  Map<int, List<dynamic>> _moduleTasks = {};
   Set<int> _expandedProjects = {};
+  Set<int> _expandedModules = {};
   bool _isAdmin = false;
   String? _userEmail;
 
@@ -81,7 +84,44 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       if (response.statusCode == 200) {
         final modules = jsonDecode(response.body) as List;
         setState(() => _projectModules[projectId] = modules);
+
+        // Load tasks for each module
+        for (final module in modules) {
+          _loadTasksForModule(module['id']);
+        }
       }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  Future<void> _loadTasksForModule(int moduleId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jwt = prefs.getString('jwt');
+    if (jwt == null) return;
+
+    try {
+      // Mock tasks for development
+      final mockTasks = [
+        {
+          'id': 1,
+          'task_id': 'JSR-20250117-001',
+          'title': 'Implement authentication',
+          'status': 'In Progress',
+          'priority': 'Important & Urgent',
+          'assigned_to': 'John Doe',
+        },
+        {
+          'id': 2,
+          'task_id': 'JSR-20250117-002',
+          'title': 'Design user interface',
+          'status': 'Open',
+          'priority': 'Important & Not Urgent',
+          'assigned_to': 'Jane Smith',
+        },
+      ];
+
+      setState(() => _moduleTasks[moduleId] = mockTasks);
     } catch (e) {
       // Handle error silently
     }
@@ -449,19 +489,109 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
         });
       },
       children: modules.map<Widget>((module) {
+        final moduleId = module['id'] as int;
+        final tasks = _moduleTasks[moduleId] ?? [];
+        final isModuleExpanded = _expandedModules.contains(moduleId);
+
         return Container(
           margin: const EdgeInsets.only(left: 16),
-          child: ListTile(
+          child: ExpansionTile(
             dense: true,
-            leading: const Icon(Icons.view_module, size: 16, color: Colors.green),
+            leading: Icon(
+              isModuleExpanded ? Icons.folder_open : Icons.view_module,
+              size: 16,
+              color: Colors.green,
+            ),
             title: Text(
               module['name'] ?? 'Unnamed Module',
               style: const TextStyle(fontSize: 12),
             ),
-            onTap: () => context.go('/projects/$projectId/modules/${module['id']}'),
+            onExpansionChanged: (expanded) {
+              setState(() {
+                if (expanded) {
+                  _expandedModules.add(moduleId);
+                } else {
+                  _expandedModules.remove(moduleId);
+                }
+              });
+            },
+            children: tasks.map<Widget>((task) {
+              return Container(
+                margin: const EdgeInsets.only(left: 16),
+                child: ListTile(
+                  dense: true,
+                  leading: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: _getTaskStatusColor(task['status']),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  title: Text(
+                    task['title'] ?? 'Untitled Task',
+                    style: const TextStyle(fontSize: 11),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    task['task_id'] ?? '',
+                    style: const TextStyle(fontSize: 9, color: Colors.grey),
+                  ),
+                  onTap: () => _showTaskDetailDialog(task),
+                ),
+              );
+            }).toList(),
           ),
         );
       }).toList(),
+    );
+  }
+
+  Color _getTaskStatusColor(String? status) {
+    return TaskStatus.getColor(status ?? TaskStatus.open);
+  }
+
+  void _showTaskDetailDialog(Map<String, dynamic> task) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(task['title'] ?? 'Task Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (task['task_id'] != null) ...[
+              Row(
+                children: [
+                  const Icon(Icons.tag, size: 16),
+                  const SizedBox(width: 4),
+                  Text('ID: ${task['task_id']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+            Text('Status: ${task['status'] ?? 'Unknown'}'),
+            const SizedBox(height: 8),
+            Text('Priority: ${task['priority'] ?? 'Unknown'}'),
+            const SizedBox(height: 8),
+            Text('Assigned to: ${task['assigned_to'] ?? 'Unassigned'}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // TODO: Navigate to task edit screen or start timer
+            },
+            child: const Text('Start Timer'),
+          ),
+        ],
+      ),
     );
   }
 }

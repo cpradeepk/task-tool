@@ -13,21 +13,23 @@ class ProfileEditScreen extends StatefulWidget {
   State<ProfileEditScreen> createState() => _ProfileEditScreenState();
 }
 
-class _ProfileEditScreenState extends State<ProfileEditScreen> {
+class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+  final _nameController = TextEditingController(); // Single name field
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _departmentController = TextEditingController();
-  final _jobTitleController = TextEditingController();
+  final _telegramController = TextEditingController();
+  final _whatsappController = TextEditingController();
   final _bioController = TextEditingController();
-  
+
+  late TabController _tabController;
   bool _isLoading = false;
   bool _emailNotifications = true;
   bool _pushNotifications = false;
   String _timezone = 'UTC';
   String _language = 'English';
+  String _selectedTheme = 'Blue';
+  String _selectedFont = 'Default';
+  String? _avatarPath;
 
   final List<String> _timezones = [
     'UTC',
@@ -53,6 +55,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadProfile();
   }
 
@@ -105,17 +108,18 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   void _populateForm(Map<String, dynamic> profile) {
     setState(() {
-      _firstNameController.text = profile['first_name'] ?? '';
-      _lastNameController.text = profile['last_name'] ?? '';
+      _nameController.text = profile['name'] ?? '${profile['first_name'] ?? ''} ${profile['last_name'] ?? ''}'.trim();
       _emailController.text = profile['email'] ?? '';
-      _phoneController.text = profile['phone'] ?? '';
-      _departmentController.text = profile['department'] ?? '';
-      _jobTitleController.text = profile['job_title'] ?? '';
+      _telegramController.text = profile['telegram'] ?? '';
+      _whatsappController.text = profile['whatsapp'] ?? '';
       _bioController.text = profile['bio'] ?? '';
       _emailNotifications = profile['email_notifications'] ?? true;
       _pushNotifications = profile['push_notifications'] ?? false;
       _timezone = profile['timezone'] ?? 'UTC';
       _language = profile['language'] ?? 'English';
+      _selectedTheme = profile['theme'] ?? 'Blue';
+      _selectedFont = profile['font'] ?? 'Default';
+      _avatarPath = profile['avatar'];
     });
   }
 
@@ -128,17 +132,18 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     if (jwt == null) return;
 
     final profileData = {
-      'first_name': _firstNameController.text.trim(),
-      'last_name': _lastNameController.text.trim(),
+      'name': _nameController.text.trim(),
       'email': _emailController.text.trim(),
-      'phone': _phoneController.text.trim(),
-      'department': _departmentController.text.trim(),
-      'job_title': _jobTitleController.text.trim(),
+      'telegram': _telegramController.text.trim(),
+      'whatsapp': _whatsappController.text.trim(),
       'bio': _bioController.text.trim(),
       'email_notifications': _emailNotifications,
       'push_notifications': _pushNotifications,
       'timezone': _timezone,
       'language': _language,
+      'theme': _selectedTheme,
+      'font': _selectedFont,
+      'avatar': _avatarPath,
     };
 
     try {
@@ -469,12 +474,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _tabController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
-    _departmentController.dispose();
-    _jobTitleController.dispose();
+    _telegramController.dispose();
+    _whatsappController.dispose();
     _bioController.dispose();
     super.dispose();
   }
