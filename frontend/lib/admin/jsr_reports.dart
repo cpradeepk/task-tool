@@ -17,9 +17,18 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
   late TabController _tabController;
   List<dynamic> _plannedTasks = [];
   List<dynamic> _completedTasks = [];
+  List<dynamic> _filteredPlannedTasks = [];
+  List<dynamic> _filteredCompletedTasks = [];
   bool _isLoading = false;
   String? _errorMessage;
-  DateTime _selectedDate = DateTime.now();
+  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
+  DateTime _endDate = DateTime.now();
+  String _selectedProject = 'All';
+  String _selectedStatus = 'All';
+  String _selectedPriority = 'All';
+  List<String> _projects = ['All'];
+  List<String> _statuses = ['All', 'Open', 'In Progress', 'Completed', 'Hold', 'Cancelled'];
+  List<String> _priorities = ['All', 'Important & Urgent', 'Important & Not Urgent', 'Not Important & Urgent', 'Not Important & Not Urgent'];
 
   @override
   void initState() {
@@ -40,17 +49,18 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
     if (jwt == null) return;
 
     try {
-      final dateStr = _selectedDate.toIso8601String().substring(0, 10);
-      
+      final startDateStr = _startDate.toIso8601String().substring(0, 10);
+      final endDateStr = _endDate.toIso8601String().substring(0, 10);
+
       // Load planned tasks
       final plannedResponse = await http.get(
-        Uri.parse('$apiBase/task/api/admin/jsr/planned?date=$dateStr'),
+        Uri.parse('$apiBase/task/api/admin/jsr/planned?start_date=$startDateStr&end_date=$endDateStr'),
         headers: {'Authorization': 'Bearer $jwt'},
       );
 
       // Load completed tasks
       final completedResponse = await http.get(
-        Uri.parse('$apiBase/task/api/admin/jsr/completed?date=$dateStr'),
+        Uri.parse('$apiBase/task/api/admin/jsr/completed?start_date=$startDateStr&end_date=$endDateStr'),
         headers: {'Authorization': 'Bearer $jwt'},
       );
 
@@ -73,6 +83,70 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
       });
     } finally {
       setState(() => _isLoading = false);
+
+      // Extract unique projects for filtering
+      final allTasks = [..._plannedTasks, ..._completedTasks];
+      final projects = allTasks.map((task) => task['project'] as String).toSet().toList();
+      setState(() => _projects = ['All', ...projects]);
+
+      _applyFilters();
+    }
+  }
+
+  void _applyFilters() {
+    setState(() {
+      // Filter planned tasks
+      _filteredPlannedTasks = _plannedTasks.where((task) {
+        final matchesProject = _selectedProject == 'All' || task['project'] == _selectedProject;
+        final matchesStatus = _selectedStatus == 'All' || task['status'] == _selectedStatus;
+        final matchesPriority = _selectedPriority == 'All' || task['priority'] == _selectedPriority;
+
+        // Date range filtering
+        final taskDate = DateTime.parse(task['due_date']);
+        final matchesDateRange = taskDate.isAfter(_startDate.subtract(const Duration(days: 1))) &&
+                                taskDate.isBefore(_endDate.add(const Duration(days: 1)));
+
+        return matchesProject && matchesStatus && matchesPriority && matchesDateRange;
+      }).toList();
+
+      // Filter completed tasks
+      _filteredCompletedTasks = _completedTasks.where((task) {
+        final matchesProject = _selectedProject == 'All' || task['project'] == _selectedProject;
+        final matchesStatus = _selectedStatus == 'All' || task['status'] == _selectedStatus;
+        final matchesPriority = _selectedPriority == 'All' || task['priority'] == _selectedPriority;
+
+        // Date range filtering
+        final taskDate = DateTime.parse(task['completed_date']);
+        final matchesDateRange = taskDate.isAfter(_startDate.subtract(const Duration(days: 1))) &&
+                                taskDate.isBefore(_endDate.add(const Duration(days: 1)));
+
+        return matchesProject && matchesStatus && matchesPriority && matchesDateRange;
+      }).toList();
+    });
+  }
+
+  Future<void> _selectDateRange() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+      _loadJSRData();
     }
   }
 
@@ -85,7 +159,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
         'assignee': 'john@example.com',
         'priority': 'High',
         'estimated_hours': 8,
-        'due_date': _selectedDate.add(const Duration(days: 1)).toIso8601String().substring(0, 10),
+        'due_date': _endDate.add(const Duration(days: 1)).toIso8601String().substring(0, 10),
         'status': 'In Progress',
         'progress': 60,
         'dependencies': ['JSR-20250116003'],
@@ -97,7 +171,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
         'assignee': 'sarah@example.com',
         'priority': 'Medium',
         'estimated_hours': 6,
-        'due_date': _selectedDate.add(const Duration(days: 2)).toIso8601String().substring(0, 10),
+        'due_date': _endDate.add(const Duration(days: 2)).toIso8601String().substring(0, 10),
         'status': 'Open',
         'progress': 0,
         'dependencies': [],
@@ -109,7 +183,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
         'assignee': 'mike@example.com',
         'priority': 'High',
         'estimated_hours': 12,
-        'due_date': _selectedDate.add(const Duration(days: 3)).toIso8601String().substring(0, 10),
+        'due_date': _endDate.add(const Duration(days: 3)).toIso8601String().substring(0, 10),
         'status': 'Open',
         'progress': 0,
         'dependencies': ['JSR-20250117001'],
@@ -121,7 +195,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
         'assignee': 'lisa@example.com',
         'priority': 'Low',
         'estimated_hours': 4,
-        'due_date': _selectedDate.add(const Duration(days: 5)).toIso8601String().substring(0, 10),
+        'due_date': _endDate.add(const Duration(days: 5)).toIso8601String().substring(0, 10),
         'status': 'Open',
         'progress': 0,
         'dependencies': [],
@@ -139,7 +213,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
         'priority': 'High',
         'estimated_hours': 2,
         'actual_hours': 2.5,
-        'completed_date': _selectedDate.subtract(const Duration(days: 1)).toIso8601String().substring(0, 10),
+        'completed_date': _endDate.subtract(const Duration(days: 1)).toIso8601String().substring(0, 10),
         'status': 'Completed',
         'quality_score': 95,
         'notes': 'Repository setup with CI/CD pipeline configured',
@@ -152,7 +226,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
         'priority': 'Medium',
         'estimated_hours': 6,
         'actual_hours': 7,
-        'completed_date': _selectedDate.subtract(const Duration(days: 1)).toIso8601String().substring(0, 10),
+        'completed_date': _endDate.subtract(const Duration(days: 1)).toIso8601String().substring(0, 10),
         'status': 'Completed',
         'quality_score': 88,
         'notes': 'Schema designed with proper indexing and relationships',
@@ -165,7 +239,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
         'priority': 'Medium',
         'estimated_hours': 8,
         'actual_hours': 6,
-        'completed_date': _selectedDate.subtract(const Duration(days: 2)).toIso8601String().substring(0, 10),
+        'completed_date': _endDate.subtract(const Duration(days: 2)).toIso8601String().substring(0, 10),
         'status': 'Completed',
         'quality_score': 92,
         'notes': 'Mockups approved by stakeholders',
@@ -192,26 +266,124 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
-                  onPressed: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (date != null) {
-                      setState(() => _selectedDate = date);
-                      _loadJSRData();
-                    }
-                  },
-                  icon: const Icon(Icons.calendar_today),
-                  label: Text(_selectedDate.toIso8601String().substring(0, 10)),
+                  onPressed: _selectDateRange,
+                  icon: const Icon(Icons.date_range),
+                  label: Text('${_startDate.toIso8601String().substring(0, 10)} - ${_endDate.toIso8601String().substring(0, 10)}'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
                   onPressed: _loadJSRData,
                   icon: const Icon(Icons.refresh),
                   tooltip: 'Refresh Data',
+                ),
+              ],
+            ),
+          ),
+
+          // Filter Controls
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Filters',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    // Project filter
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Project',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        value: _selectedProject,
+                        items: _projects.map((project) => DropdownMenuItem(
+                          value: project,
+                          child: Text(project),
+                        )).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedProject = value!);
+                          _applyFilters();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Status filter
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        value: _selectedStatus,
+                        items: _statuses.map((status) => DropdownMenuItem(
+                          value: status,
+                          child: Text(status),
+                        )).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedStatus = value!);
+                          _applyFilters();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Priority filter
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Priority',
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        value: _selectedPriority,
+                        items: _priorities.map((priority) => DropdownMenuItem(
+                          value: priority,
+                          child: Text(priority),
+                        )).toList(),
+                        onChanged: (value) {
+                          setState(() => _selectedPriority = value!);
+                          _applyFilters();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Clear filters button
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _selectedProject = 'All';
+                          _selectedStatus = 'All';
+                          _selectedPriority = 'All';
+                        });
+                        _applyFilters();
+                      },
+                      icon: const Icon(Icons.clear),
+                      label: const Text('Clear'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -225,7 +397,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
                 Expanded(
                   child: _buildSummaryCard(
                     'Planned Tasks',
-                    '${_plannedTasks.length}',
+                    '${_filteredPlannedTasks.length}',
                     Icons.schedule,
                     Colors.blue,
                   ),
@@ -234,7 +406,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
                 Expanded(
                   child: _buildSummaryCard(
                     'Completed Tasks',
-                    '${_completedTasks.length}',
+                    '${_filteredCompletedTasks.length}',
                     Icons.check_circle,
                     Colors.green,
                   ),
@@ -285,7 +457,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
                     children: [
                       const Icon(Icons.schedule),
                       const SizedBox(width: 8),
-                      Text('Planned (${_plannedTasks.length})'),
+                      Text('Planned (${_filteredPlannedTasks.length})'),
                     ],
                   ),
                 ),
@@ -295,7 +467,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
                     children: [
                       const Icon(Icons.check_circle),
                       const SizedBox(width: 8),
-                      Text('Completed (${_completedTasks.length})'),
+                      Text('Completed (${_filteredCompletedTasks.length})'),
                     ],
                   ),
                 ),
@@ -361,7 +533,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
   }
 
   Widget _buildPlannedTasksTab() {
-    if (_plannedTasks.isEmpty) {
+    if (_filteredPlannedTasks.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -426,7 +598,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
                   DataColumn(label: Text('Progress')),
                   DataColumn(label: Text('Dependencies')),
                 ],
-                rows: _plannedTasks.map<DataRow>((task) {
+                rows: _filteredPlannedTasks.map<DataRow>((task) {
                   return DataRow(
                     cells: [
                       DataCell(
@@ -520,7 +692,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
   }
 
   Widget _buildCompletedTasksTab() {
-    if (_completedTasks.isEmpty) {
+    if (_filteredCompletedTasks.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -585,7 +757,7 @@ class _JSRReportsScreenState extends State<JSRReportsScreen> with TickerProvider
                   DataColumn(label: Text('Quality Score')),
                   DataColumn(label: Text('Notes')),
                 ],
-                rows: _completedTasks.map<DataRow>((task) {
+                rows: _filteredCompletedTasks.map<DataRow>((task) {
                   return DataRow(
                     cells: [
                       DataCell(

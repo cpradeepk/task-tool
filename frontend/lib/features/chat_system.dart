@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import '../main_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
@@ -18,9 +19,11 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
   final _scrollController = ScrollController();
   List<dynamic> _channels = [];
   List<dynamic> _messages = [];
+  List<dynamic> _users = [];
   int? _selectedChannelId;
   String? _currentUserEmail;
   bool _isLoading = false;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -38,149 +41,116 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _currentUserEmail = prefs.getString('email');
+      _isAdmin = prefs.getBool('isAdmin') ?? false;
     });
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    // Mock users for development
+    setState(() => _users = [
+      {'id': '1', 'name': 'John Doe', 'email': 'john@example.com'},
+      {'id': '2', 'name': 'Jane Smith', 'email': 'jane@example.com'},
+      {'id': '3', 'name': 'Mike Johnson', 'email': 'mike@example.com'},
+      {'id': '4', 'name': 'Sarah Wilson', 'email': 'sarah@example.com'},
+    ]);
   }
 
   Future<void> _loadChannels() async {
-    final jwt = await _getJwt();
-    if (jwt == null) return;
-
     try {
-      final response = await http.get(
-        Uri.parse('$apiBase/task/api/chat/channels'),
-        headers: {'Authorization': 'Bearer $jwt'},
-      );
-
-      if (response.statusCode == 200) {
-        setState(() => _channels = jsonDecode(response.body));
-      } else {
-        // Use mock data
-        setState(() => _channels = _generateMockChannels());
-      }
+      setState(() => _channels = _generateMockChannels());
     } catch (e) {
       setState(() => _channels = _generateMockChannels());
     }
   }
 
   List<dynamic> _generateMockChannels() {
+    final now = DateTime.now();
     return [
-      {'id': 1, 'name': 'General', 'description': 'General discussion', 'type': 'public'},
-      {'id': 2, 'name': 'Development', 'description': 'Development team chat', 'type': 'public'},
-      {'id': 3, 'name': 'Project Alpha', 'description': 'Project Alpha team', 'type': 'private'},
-      {'id': 4, 'name': 'Announcements', 'description': 'Company announcements', 'type': 'public'},
+      {
+        'id': 1, 
+        'name': 'General', 
+        'description': 'General discussion for all team members', 
+        'type': 'public',
+        'created_at': now.subtract(const Duration(days: 30)).toIso8601String(),
+        'member_count': 25,
+        'is_archived': false,
+      },
+      {
+        'id': 2, 
+        'name': 'Development', 
+        'description': 'Development team discussions and updates', 
+        'type': 'public',
+        'created_at': now.subtract(const Duration(days: 20)).toIso8601String(),
+        'member_count': 8,
+        'is_archived': false,
+      },
+      {
+        'id': 3, 
+        'name': 'Project Alpha', 
+        'description': 'Private channel for Project Alpha team', 
+        'type': 'private',
+        'created_at': now.subtract(const Duration(days: 15)).toIso8601String(),
+        'member_count': 5,
+        'is_archived': false,
+      },
     ];
   }
 
   Future<void> _loadMessages(int channelId) async {
     setState(() => _isLoading = true);
 
-    final jwt = await _getJwt();
-    if (jwt == null) return;
-
     try {
-      final response = await http.get(
-        Uri.parse('$apiBase/task/api/chat/channels/$channelId/messages'),
-        headers: {'Authorization': 'Bearer $jwt'},
-      );
-
-      if (response.statusCode == 200) {
-        setState(() => _messages = jsonDecode(response.body));
-      } else {
-        // Use mock data
-        setState(() => _messages = _generateMockMessages(channelId));
-      }
+      // Mock messages for development
+      final now = DateTime.now();
+      setState(() => _messages = [
+        {
+          'id': 1,
+          'message': 'Welcome to the team chat! 🎉',
+          'user_email': 'admin@example.com',
+          'timestamp': now.subtract(const Duration(hours: 2)).toIso8601String(),
+          'channel_id': channelId,
+        },
+        {
+          'id': 2,
+          'message': 'Thanks for the warm welcome! Excited to be here.',
+          'user_email': _currentUserEmail ?? 'user@example.com',
+          'timestamp': now.subtract(const Duration(hours: 1)).toIso8601String(),
+          'channel_id': channelId,
+        },
+        {
+          'id': 3,
+          'message': 'Let\'s discuss the upcoming project milestones.',
+          'user_email': 'john@example.com',
+          'timestamp': now.subtract(const Duration(minutes: 30)).toIso8601String(),
+          'channel_id': channelId,
+        },
+      ]);
     } catch (e) {
-      setState(() => _messages = _generateMockMessages(channelId));
+      setState(() => _messages = []);
     } finally {
       setState(() => _isLoading = false);
-      _scrollToBottom();
     }
-  }
-
-  List<dynamic> _generateMockMessages(int channelId) {
-    final now = DateTime.now();
-    return [
-      {
-        'id': 1,
-        'user_email': 'john@example.com',
-        'message': 'Hello everyone! How is the project going?',
-        'timestamp': now.subtract(const Duration(hours: 2)).toIso8601String(),
-        'channel_id': channelId,
-      },
-      {
-        'id': 2,
-        'user_email': _currentUserEmail,
-        'message': 'Hi John! We\'re making good progress on the dashboard.',
-        'timestamp': now.subtract(const Duration(hours: 1, minutes: 30)).toIso8601String(),
-        'channel_id': channelId,
-      },
-      {
-        'id': 3,
-        'user_email': 'sarah@example.com',
-        'message': 'The PERT analysis feature is almost complete!',
-        'timestamp': now.subtract(const Duration(minutes: 45)).toIso8601String(),
-        'channel_id': channelId,
-      },
-      {
-        'id': 4,
-        'user_email': 'mike@example.com',
-        'message': 'Great work team! Let me know if you need any help with testing.',
-        'timestamp': now.subtract(const Duration(minutes: 15)).toIso8601String(),
-        'channel_id': channelId,
-      },
-    ];
   }
 
   Future<void> _sendMessage() async {
     if (_messageController.text.trim().isEmpty || _selectedChannelId == null) return;
 
-    final jwt = await _getJwt();
-    if (jwt == null) return;
-
     final message = _messageController.text.trim();
     _messageController.clear();
 
-    try {
-      final response = await http.post(
-        Uri.parse('$apiBase/task/api/chat/channels/$_selectedChannelId/messages'),
-        headers: {
-          'Authorization': 'Bearer $jwt',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'message': message}),
-      );
-
-      if (response.statusCode == 201) {
-        _loadMessages(_selectedChannelId!);
-      } else {
-        // Add message locally for demo
-        setState(() {
-          _messages.add({
-            'id': _messages.length + 1,
-            'user_email': _currentUserEmail,
-            'message': message,
-            'timestamp': DateTime.now().toIso8601String(),
-            'channel_id': _selectedChannelId,
-          });
-        });
-        _scrollToBottom();
-      }
-    } catch (e) {
-      // Add message locally for demo
-      setState(() {
-        _messages.add({
-          'id': _messages.length + 1,
-          'user_email': _currentUserEmail,
-          'message': message,
-          'timestamp': DateTime.now().toIso8601String(),
-          'channel_id': _selectedChannelId,
-        });
+    // Add message locally for demo
+    setState(() {
+      _messages.add({
+        'id': _messages.length + 1,
+        'message': message,
+        'user_email': _currentUserEmail ?? 'user@example.com',
+        'timestamp': DateTime.now().toIso8601String(),
+        'channel_id': _selectedChannelId,
       });
-      _scrollToBottom();
-    }
-  }
+    });
 
-  void _scrollToBottom() {
+    // Scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -190,6 +160,126 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
         );
       }
     });
+  }
+
+  String _formatMessageTime(String timestamp) {
+    final messageTime = DateTime.parse(timestamp);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final messageDate = DateTime(messageTime.year, messageTime.month, messageTime.day);
+
+    if (messageDate == today) {
+      return DateFormat('HH:mm').format(messageTime);
+    } else if (messageDate == yesterday) {
+      return 'Yesterday ${DateFormat('HH:mm').format(messageTime)}';
+    } else if (now.difference(messageTime).inDays < 7) {
+      return '${DateFormat('EEEE HH:mm').format(messageTime)}';
+    } else if (messageTime.year == now.year) {
+      return DateFormat('MMM dd, HH:mm').format(messageTime);
+    } else {
+      return DateFormat('MMM dd, yyyy HH:mm').format(messageTime);
+    }
+  }
+
+  void _showCreateChannelDialog() {
+    if (!_isAdmin) return;
+
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    String channelType = 'public';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create New Channel'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Channel Name',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.tag),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.description),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: channelType,
+                decoration: const InputDecoration(
+                  labelText: 'Channel Type',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.security),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'public', child: Text('Public')),
+                  DropdownMenuItem(value: 'private', child: Text('Private')),
+                ],
+                onChanged: (value) => setDialogState(() => channelType = value!),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.trim().isNotEmpty) {
+                  _createChannel(
+                    nameController.text.trim(),
+                    descriptionController.text.trim(),
+                    channelType,
+                  );
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Create'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _createChannel(String name, String description, String type) {
+    final newChannel = {
+      'id': _channels.length + 1,
+      'name': name,
+      'description': description,
+      'type': type,
+      'created_at': DateTime.now().toIso8601String(),
+      'member_count': 1,
+      'is_archived': false,
+    };
+
+    setState(() {
+      _channels.add(newChannel);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Channel "$name" created successfully')),
+    );
+  }
+
+  Map<String, dynamic> _getSelectedChannel() {
+    return _channels.firstWhere(
+      (channel) => channel['id'] == _selectedChannelId,
+      orElse: () => {'name': 'Unknown', 'type': 'public'},
+    );
   }
 
   @override
@@ -212,19 +302,12 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade600,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 2,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.chat, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text(
+                      const Icon(Icons.chat, color: Colors.white),
+                      const SizedBox(width: 8),
+                      const Text(
                         'Channels',
                         style: TextStyle(
                           color: Colors.white,
@@ -232,6 +315,13 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const Spacer(),
+                      if (_isAdmin)
+                        IconButton(
+                          onPressed: _showCreateChannelDialog,
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          tooltip: 'Create Channel',
+                        ),
                     ],
                   ),
                 ),
@@ -259,6 +349,19 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                           channel['description'],
                           style: const TextStyle(fontSize: 12),
                         ),
+                        trailing: channel['member_count'] != null
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${channel['member_count']}',
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                              )
+                            : null,
                         selected: isSelected,
                         selectedTileColor: Colors.blue.shade50,
                         onTap: () {
@@ -296,13 +399,6 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 2,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
                         ),
                         child: Row(
                           children: [
@@ -312,7 +408,7 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _getSelectedChannel()['name'],
+                              _getSelectedChannel()['name'] ?? 'Unknown',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -326,92 +422,98 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                           ],
                         ),
                       ),
-                      // Messages Area
+                      // Messages
                       Expanded(
                         child: _isLoading
                             ? const Center(child: CircularProgressIndicator())
-                            : ListView.builder(
-                                controller: _scrollController,
-                                padding: const EdgeInsets.all(16),
-                                itemCount: _messages.length,
-                                itemBuilder: (context, index) {
-                                  final message = _messages[index];
-                                  final isCurrentUser = message['user_email'] == _currentUserEmail;
-                                  final timestamp = DateTime.parse(message['timestamp']);
-                                  
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: isCurrentUser
-                                          ? MainAxisAlignment.end
-                                          : MainAxisAlignment.start,
-                                      children: [
-                                        if (!isCurrentUser) ...[
-                                          CircleAvatar(
-                                            backgroundColor: Colors.blue,
-                                            radius: 16,
-                                            child: Text(
-                                              message['user_email'].substring(0, 1).toUpperCase(),
-                                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                        ],
-                                        Flexible(
-                                          child: Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: isCurrentUser ? Colors.blue : Colors.grey.shade200,
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                if (!isCurrentUser)
-                                                  Text(
-                                                    message['user_email'].split('@')[0],
-                                                    style: const TextStyle(
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                Text(
-                                                  message['message'],
-                                                  style: TextStyle(
-                                                    color: isCurrentUser ? Colors.white : Colors.black,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}',
-                                                  style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: isCurrentUser 
-                                                        ? Colors.white.withOpacity(0.7)
-                                                        : Colors.grey.shade600,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        if (isCurrentUser) ...[
-                                          const SizedBox(width: 8),
-                                          CircleAvatar(
-                                            backgroundColor: Colors.green,
-                                            radius: 16,
-                                            child: Text(
-                                              message['user_email'].substring(0, 1).toUpperCase(),
-                                              style: const TextStyle(color: Colors.white, fontSize: 12),
-                                            ),
-                                          ),
-                                        ],
-                                      ],
+                            : _messages.isEmpty
+                                ? const Center(
+                                    child: Text(
+                                      'No messages yet. Start the conversation!',
+                                      style: TextStyle(color: Colors.grey),
                                     ),
-                                  );
-                                },
-                              ),
+                                  )
+                                : ListView.builder(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.all(16),
+                                    itemCount: _messages.length,
+                                    itemBuilder: (context, index) {
+                                      final message = _messages[index];
+                                      final isCurrentUser = message['user_email'] == _currentUserEmail;
+                                      
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        child: Row(
+                                          mainAxisAlignment: isCurrentUser 
+                                              ? MainAxisAlignment.end 
+                                              : MainAxisAlignment.start,
+                                          children: [
+                                            if (!isCurrentUser) ...[
+                                              CircleAvatar(
+                                                backgroundColor: Colors.blue,
+                                                radius: 16,
+                                                child: Text(
+                                                  message['user_email'].substring(0, 1).toUpperCase(),
+                                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                            ],
+                                            Flexible(
+                                              child: Container(
+                                                padding: const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: isCurrentUser ? Colors.blue : Colors.grey.shade200,
+                                                  borderRadius: BorderRadius.circular(16),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    if (!isCurrentUser)
+                                                      Text(
+                                                        message['user_email'].split('@')[0],
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.blue,
+                                                        ),
+                                                      ),
+                                                    Text(
+                                                      message['message'],
+                                                      style: TextStyle(
+                                                        color: isCurrentUser ? Colors.white : Colors.black,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      _formatMessageTime(message['timestamp']),
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: isCurrentUser 
+                                                            ? Colors.white.withValues(alpha: 0.7)
+                                                            : Colors.grey.shade600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                            if (isCurrentUser) ...[
+                                              const SizedBox(width: 8),
+                                              CircleAvatar(
+                                                backgroundColor: Colors.green,
+                                                radius: 16,
+                                                child: Text(
+                                                  message['user_email'].substring(0, 1).toUpperCase(),
+                                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
                       ),
                       // Message Input
                       Container(
@@ -452,13 +554,6 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Map<String, dynamic> _getSelectedChannel() {
-    return _channels.firstWhere(
-      (channel) => channel['id'] == _selectedChannelId,
-      orElse: () => {'name': 'Unknown', 'type': 'public'},
     );
   }
 
