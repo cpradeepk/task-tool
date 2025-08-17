@@ -16,6 +16,7 @@ import 'features/pert_analysis.dart';
 import 'features/calendar_view.dart';
 import 'features/chat_system.dart';
 import 'features/alerts_system.dart';
+import 'features/other_people_tasks.dart';
 import 'admin/jsr_reports.dart';
 import 'admin/project_create.dart';
 import 'admin/project_settings.dart';
@@ -66,6 +67,13 @@ class AppRouter {
           title: 'Tasks',
           child: TasksScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
+        GoRoute(path: '/projects/:projectId/modules/:moduleId', builder: (ctx, st) => MainLayout(
+          title: 'Module Tasks',
+          child: TasksScreen(
+            projectId: int.parse(st.pathParameters['projectId']!),
+            moduleId: int.parse(st.pathParameters['moduleId']!),
+          ),
+        )),
         GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => MainLayout(
           title: 'Critical Path',
           child: CriticalPathView(projectId: int.parse(st.pathParameters['id']!)),
@@ -76,10 +84,7 @@ class AppRouter {
         GoRoute(path: '/calendar', builder: (ctx, st) => const CalendarViewScreen()),
         GoRoute(path: '/chat', builder: (ctx, st) => const ChatSystemScreen()),
         GoRoute(path: '/alerts', builder: (ctx, st) => const AlertsSystemScreen()),
-        GoRoute(path: '/others-tasks', builder: (ctx, st) => MainLayout(
-          title: 'Other People\'s Tasks',
-          child: const Center(child: Text('Other People\'s Tasks - Coming Soon')),
-        )),
+        GoRoute(path: '/others-tasks', builder: (ctx, st) => const OtherPeopleTasksScreen()),
 
         // Admin routes
         GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const UserManagementScreen()),
@@ -97,15 +102,9 @@ class AppRouter {
 
         // Personal routes
         GoRoute(path: '/personal/notes', builder: (ctx, st) => const NotesSystemScreen()),
-        GoRoute(path: '/personal/customize', builder: (ctx, st) => MainLayout(
-          title: 'Customize',
-          child: const Center(child: Text('Customize - Coming Soon')),
-        )),
+        GoRoute(path: '/personal/customize', builder: (ctx, st) => const personal.ProfileEditScreen()),
         GoRoute(path: '/personal/profile', builder: (ctx, st) => const personal.ProfileEditScreen()),
-        GoRoute(path: '/personal/notifications', builder: (ctx, st) => MainLayout(
-          title: 'Notifications',
-          child: const Center(child: Text('Notifications - Coming Soon')),
-        )),
+        GoRoute(path: '/personal/notifications', builder: (ctx, st) => const AlertsSystemScreen()),
       ],
     );
   }

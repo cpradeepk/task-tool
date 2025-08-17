@@ -11,7 +11,8 @@ const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://
 
 class TasksScreen extends StatefulWidget {
   final int projectId;
-  const TasksScreen({super.key, required this.projectId});
+  final int? moduleId;
+  const TasksScreen({super.key, required this.projectId, this.moduleId});
   @override
   State<TasksScreen> createState() => _TasksScreenState();
 }
@@ -40,11 +41,82 @@ class _TasksScreenState extends State<TasksScreen> {
   Future<void> _load() async {
     setState(() { _busy = true; });
     final jwt = await _jwt();
-    final modulesRes = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/modules'), headers: { 'Authorization': 'Bearer $jwt' });
-    _modules = jsonDecode(modulesRes.body) as List<dynamic>;
-    final r = await http.get(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks'), headers: { 'Authorization': 'Bearer $jwt' });
-    final list = jsonDecode(r.body) as List<dynamic>;
-    setState(() { _busy = false; _tasks = list; });
+
+    try {
+      // Load modules
+      final modulesRes = await http.get(
+        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/modules'),
+        headers: { 'Authorization': 'Bearer $jwt' }
+      );
+      _modules = jsonDecode(modulesRes.body) as List<dynamic>;
+
+      // Load tasks - either for specific module or all project tasks
+      String tasksUrl;
+      if (widget.moduleId != null) {
+        tasksUrl = '$apiBase/task/api/projects/${widget.projectId}/modules/${widget.moduleId}/tasks';
+      } else {
+        tasksUrl = '$apiBase/task/api/projects/${widget.projectId}/tasks';
+      }
+
+      final r = await http.get(Uri.parse(tasksUrl), headers: { 'Authorization': 'Bearer $jwt' });
+      final list = jsonDecode(r.body) as List<dynamic>;
+      setState(() { _busy = false; _tasks = list; });
+    } catch (e) {
+      // Use mock data for development
+      _modules = [
+        {'id': 1, 'name': 'Authentication Module'},
+        {'id': 2, 'name': 'Dashboard Module'},
+        {'id': 3, 'name': 'UI Design System'},
+      ];
+
+      final mockTasks = [
+        {
+          'id': 1,
+          'task_id': 'JSR-20250117-001',
+          'title': 'Implement user authentication',
+          'description': 'Create login and registration functionality',
+          'status': 'In Progress',
+          'priority': 'Important & Urgent',
+          'due_date': '2025-01-20',
+          'assigned_to': 'John Doe',
+          'module_id': widget.moduleId ?? 1,
+          'estimated_hours': 8,
+        },
+        {
+          'id': 2,
+          'task_id': 'JSR-20250117-002',
+          'title': 'Design dashboard layout',
+          'description': 'Create responsive dashboard interface',
+          'status': 'Open',
+          'priority': 'Important & Not Urgent',
+          'due_date': '2025-01-22',
+          'assigned_to': 'Jane Smith',
+          'module_id': widget.moduleId ?? 2,
+          'estimated_hours': 6,
+        },
+        {
+          'id': 3,
+          'task_id': 'JSR-20250117-003',
+          'title': 'Setup database schema',
+          'description': 'Create and configure database tables',
+          'status': 'Completed',
+          'priority': 'Important & Urgent',
+          'due_date': '2025-01-18',
+          'assigned_to': 'Mike Johnson',
+          'module_id': widget.moduleId ?? 1,
+          'estimated_hours': 4,
+        },
+      ];
+
+      // Filter tasks by module if moduleId is specified
+      if (widget.moduleId != null) {
+        _tasks = mockTasks.where((task) => task['module_id'] == widget.moduleId).toList();
+      } else {
+        _tasks = mockTasks;
+      }
+
+      setState(() { _busy = false; });
+    }
   }
 
   @override

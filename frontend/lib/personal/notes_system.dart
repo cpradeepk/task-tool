@@ -23,7 +23,8 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
   String? _errorMessage;
   int? _editingNoteId;
   String _selectedCategory = 'All';
-  final List<String> _categories = ['All', 'Work', 'Personal', 'Ideas', 'Meeting Notes', 'Tasks'];
+  final List<String> _categories = ['All', 'Favorites', 'Work', 'Personal', 'Ideas', 'Meeting Notes', 'Tasks'];
+  bool _showFavoritesOnly = false;
 
   @override
   void initState() {
@@ -72,6 +73,7 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
         'created_at': now.subtract(const Duration(days: 2)).toIso8601String(),
         'updated_at': now.subtract(const Duration(days: 2)).toIso8601String(),
         'tags': ['project', 'planning', 'meeting'],
+        'is_favorite': true,
       },
       {
         'id': 2,
@@ -81,6 +83,7 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
         'created_at': now.subtract(const Duration(days: 5)).toIso8601String(),
         'updated_at': now.subtract(const Duration(days: 1)).toIso8601String(),
         'tags': ['flutter', 'development', 'tips'],
+        'is_favorite': false,
       },
       {
         'id': 3,
@@ -90,6 +93,7 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
         'created_at': now.subtract(const Duration(days: 7)).toIso8601String(),
         'updated_at': now.subtract(const Duration(days: 7)).toIso8601String(),
         'tags': ['projects', 'ideas', 'coding'],
+        'is_favorite': true,
       },
       {
         'id': 4,
@@ -99,6 +103,7 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
         'created_at': now.subtract(const Duration(hours: 2)).toIso8601String(),
         'updated_at': now.subtract(const Duration(hours: 2)).toIso8601String(),
         'tags': ['standup', 'daily', 'work'],
+        'is_favorite': false,
       },
     ];
   }
@@ -106,7 +111,9 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
   void _filterNotes() {
     setState(() {
       _filteredNotes = _notes.where((note) {
-        final matchesCategory = _selectedCategory == 'All' || note['category'] == _selectedCategory;
+        final matchesCategory = _selectedCategory == 'All' ||
+                               (_selectedCategory == 'Favorites' && (note['is_favorite'] ?? false)) ||
+                               note['category'] == _selectedCategory;
         final matchesSearch = _searchController.text.isEmpty ||
             note['title'].toLowerCase().contains(_searchController.text.toLowerCase()) ||
             note['content'].toLowerCase().contains(_searchController.text.toLowerCase());
@@ -270,6 +277,28 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
       _contentController.clear();
       _selectedCategory = 'Work';
     });
+  }
+
+  Future<void> _toggleFavorite(int noteId) async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final noteIndex = _notes.indexWhere((n) => n['id'] == noteId);
+      if (noteIndex != -1) {
+        final currentFavorite = _notes[noteIndex]['is_favorite'] ?? false;
+
+        // For demo, update locally
+        setState(() {
+          _notes[noteIndex]['is_favorite'] = !currentFavorite;
+        });
+
+        _filterNotes();
+        _showSuccessMessage(!currentFavorite ? 'Added to favorites' : 'Removed from favorites');
+      }
+    } catch (e) {
+      _showErrorMessage('Failed to update favorite status');
+    }
   }
 
   void _showSuccessMessage(String message) {
@@ -572,6 +601,15 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IconButton(
+              onPressed: () => _toggleFavorite(note['id']),
+              icon: Icon(
+                (note['is_favorite'] ?? false) ? Icons.favorite : Icons.favorite_border,
+                size: 18,
+                color: (note['is_favorite'] ?? false) ? Colors.red : Colors.grey,
+              ),
+              tooltip: (note['is_favorite'] ?? false) ? 'Remove from favorites' : 'Add to favorites',
+            ),
             IconButton(
               onPressed: () => _editNote(note),
               icon: const Icon(Icons.edit, size: 18),

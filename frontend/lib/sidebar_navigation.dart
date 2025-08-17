@@ -29,12 +29,30 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
   Set<int> _expandedModules = {};
   bool _isAdmin = false;
   String? _userEmail;
+  bool _isProjectsExpanded = true;
+  bool _isAdminExpanded = true;
+  bool _isPersonalExpanded = true;
 
   @override
   void initState() {
     super.initState();
+    _loadMenuStates();
     _loadUserInfo();
     _loadProjects();
+  }
+
+  Future<void> _loadMenuStates() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isProjectsExpanded = prefs.getBool('menu_projects_expanded') ?? true;
+      _isAdminExpanded = prefs.getBool('menu_admin_expanded') ?? true;
+      _isPersonalExpanded = prefs.getBool('menu_personal_expanded') ?? true;
+    });
+  }
+
+  Future<void> _saveMenuState(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
   }
 
   Future<void> _loadUserInfo() async {
@@ -440,6 +458,27 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
       return _buildNavItem(icon: icon, title: title, route: '/${title.toLowerCase()}');
     }
 
+    // Determine initial expansion state based on title
+    bool initiallyExpanded = true;
+    String menuKey = '';
+
+    switch (title.toLowerCase()) {
+      case 'projects':
+        initiallyExpanded = _isProjectsExpanded;
+        menuKey = 'menu_projects_expanded';
+        break;
+      case 'admin':
+        initiallyExpanded = _isAdminExpanded;
+        menuKey = 'menu_admin_expanded';
+        break;
+      case 'personal':
+        initiallyExpanded = _isPersonalExpanded;
+        menuKey = 'menu_personal_expanded';
+        break;
+      default:
+        initiallyExpanded = true;
+    }
+
     return ExpansionTile(
       leading: Icon(icon, size: isSubItem ? 18 : 20),
       title: Text(
@@ -449,6 +488,25 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
           fontWeight: FontWeight.w600,
         ),
       ),
+      initiallyExpanded: initiallyExpanded,
+      onExpansionChanged: (expanded) {
+        if (menuKey.isNotEmpty) {
+          _saveMenuState(menuKey, expanded);
+          setState(() {
+            switch (title.toLowerCase()) {
+              case 'projects':
+                _isProjectsExpanded = expanded;
+                break;
+              case 'admin':
+                _isAdminExpanded = expanded;
+                break;
+              case 'personal':
+                _isPersonalExpanded = expanded;
+                break;
+            }
+          });
+        }
+      },
       children: children,
     );
   }
@@ -586,9 +644,14 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Navigate to task edit screen or start timer
+              // Navigate to task edit screen
+              final moduleId = task['module_id'];
+              final projectId = task['project_id'] ?? 1; // Default project ID
+              if (moduleId != null) {
+                context.go('/projects/$projectId/modules/$moduleId');
+              }
             },
-            child: const Text('Start Timer'),
+            child: const Text('View Module'),
           ),
         ],
       ),

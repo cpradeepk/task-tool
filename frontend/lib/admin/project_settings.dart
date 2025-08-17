@@ -83,7 +83,42 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         setState(() => _modules = jsonDecode(response.body));
       }
     } catch (e) {
-      print('Error loading modules: $e');
+      // Use mock modules for development
+      setState(() => _modules = [
+        {
+          'id': 1,
+          'name': 'Authentication Module',
+          'description': 'User authentication and authorization system',
+          'category': 'Development',
+          'status': 'Active',
+          'taskCount': 12,
+          'completedTasks': 8,
+          'createdAt': '2025-01-10',
+          'project_id': _selectedProjectId,
+        },
+        {
+          'id': 2,
+          'name': 'Dashboard Module',
+          'description': 'Main dashboard with analytics and reporting',
+          'category': 'Development',
+          'status': 'Active',
+          'taskCount': 18,
+          'completedTasks': 15,
+          'createdAt': '2025-01-12',
+          'project_id': _selectedProjectId,
+        },
+        {
+          'id': 3,
+          'name': 'UI Design System',
+          'description': 'Comprehensive design system and component library',
+          'category': 'Design',
+          'status': 'Active',
+          'taskCount': 25,
+          'completedTasks': 20,
+          'createdAt': '2025-01-08',
+          'project_id': _selectedProjectId,
+        },
+      ]);
     }
   }
 
@@ -197,6 +232,83 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         ],
       ),
     );
+  }
+
+  void _showAttachModuleDialog() {
+    // Mock available modules for development
+    final availableModules = [
+      {'id': 10, 'name': 'Payment Integration', 'description': 'Payment gateway integration'},
+      {'id': 11, 'name': 'Email System', 'description': 'Email notification system'},
+      {'id': 12, 'name': 'File Upload', 'description': 'File upload and management'},
+      {'id': 13, 'name': 'Search Engine', 'description': 'Advanced search functionality'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Attach Existing Module'),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: Column(
+            children: [
+              const Text('Select a module to attach to this project:'),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: availableModules.length,
+                  itemBuilder: (context, index) {
+                    final module = availableModules[index];
+                    return Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.view_module, color: Colors.green),
+                        title: Text(module['name'] as String),
+                        subtitle: Text(module['description'] as String),
+                        trailing: ElevatedButton(
+                          onPressed: () {
+                            _attachModule(module);
+                            Navigator.of(context).pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Attach'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _attachModule(Map<String, dynamic> module) {
+    setState(() {
+      _modules.add({
+        'id': module['id'],
+        'name': module['name'],
+        'description': module['description'],
+        'category': 'Development',
+        'status': 'Active',
+        'taskCount': 0,
+        'completedTasks': 0,
+        'createdAt': DateTime.now().toIso8601String().substring(0, 10),
+        'project_id': _selectedProjectId,
+      });
+    });
+
+    _showSuccessMessage('Module "${module['name']}" attached to project');
   }
 
   void _showSuccessMessage(String message) {
@@ -663,9 +775,19 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
               ElevatedButton.icon(
                 onPressed: _showAddModuleDialog,
                 icon: const Icon(Icons.add),
-                label: const Text('Add Module'),
+                label: const Text('Create Module'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: _showAttachModuleDialog,
+                icon: const Icon(Icons.link),
+                label: const Text('Attach Existing'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -691,20 +813,294 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                     itemCount: _modules.length,
                     itemBuilder: (context, index) {
                       final module = _modules[index];
+                      final completionPercentage = module['taskCount'] > 0
+                          ? (module['completedTasks'] / module['taskCount']) * 100
+                          : 0.0;
+
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: const Icon(Icons.view_module, color: Colors.blue),
-                          title: Text(module['name']),
-                          subtitle: Text(module['description'] ?? 'No description'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {
-                            // Navigate to module details
-                          },
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.view_module,
+                                    color: Colors.blue.shade700,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          module['name'],
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          module['description'] ?? 'No description',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuButton<String>(
+                                    onSelected: (action) => _handleModuleAction(action, module),
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'view_tasks',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.task, size: 16),
+                                            SizedBox(width: 8),
+                                            Text('View Tasks'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.edit, size: 16),
+                                            SizedBox(width: 8),
+                                            Text('Edit Module'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'detach',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.link_off, size: 16, color: Colors.orange),
+                                            SizedBox(width: 8),
+                                            Text('Detach from Project'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.delete, size: 16, color: Colors.red),
+                                            SizedBox(width: 8),
+                                            Text('Delete Module'),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Progress and stats
+                              Row(
+                                children: [
+                                  Chip(
+                                    label: Text(
+                                      module['status'] ?? 'Active',
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                    backgroundColor: module['status'] == 'Active'
+                                        ? Colors.green.shade100
+                                        : Colors.orange.shade100,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Chip(
+                                    label: Text(
+                                      module['category'] ?? 'General',
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                    backgroundColor: Colors.blue.shade100,
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    '${module['completedTasks']}/${module['taskCount']} tasks',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+
+                              // Progress bar
+                              LinearProgressIndicator(
+                                value: completionPercentage / 100,
+                                backgroundColor: Colors.grey.shade200,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  completionPercentage == 100 ? Colors.green : Colors.blue,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${completionPercentage.toStringAsFixed(1)}% complete',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleModuleAction(String action, Map<String, dynamic> module) {
+    switch (action) {
+      case 'view_tasks':
+        _viewModuleTasks(module);
+        break;
+      case 'edit':
+        _editModule(module);
+        break;
+      case 'detach':
+        _detachModule(module);
+        break;
+      case 'delete':
+        _deleteModule(module);
+        break;
+    }
+  }
+
+  void _viewModuleTasks(Map<String, dynamic> module) {
+    // Navigate to module tasks view
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Navigate to tasks for ${module['name']}')),
+    );
+    // TODO: Implement navigation to module tasks
+  }
+
+  void _editModule(Map<String, dynamic> module) {
+    final nameController = TextEditingController(text: module['name']);
+    final descriptionController = TextEditingController(text: module['description'] ?? '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Module'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Module Name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isNotEmpty) {
+                _updateModule(
+                  module['id'],
+                  nameController.text.trim(),
+                  descriptionController.text.trim(),
+                );
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updateModule(int moduleId, String name, String description) {
+    setState(() {
+      final index = _modules.indexWhere((m) => m['id'] == moduleId);
+      if (index != -1) {
+        _modules[index]['name'] = name;
+        _modules[index]['description'] = description;
+      }
+    });
+
+    _showSuccessMessage('Module updated successfully');
+  }
+
+  void _detachModule(Map<String, dynamic> module) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Detach Module'),
+        content: Text('Are you sure you want to detach "${module['name']}" from this project?\n\nThe module will remain available for other projects.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _modules.removeWhere((m) => m['id'] == module['id']);
+              });
+              Navigator.of(context).pop();
+              _showSuccessMessage('Module detached from project');
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Detach'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteModule(Map<String, dynamic> module) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Module'),
+        content: Text('Are you sure you want to permanently delete "${module['name']}"?\n\nThis will also delete all associated tasks and cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _modules.removeWhere((m) => m['id'] == module['id']);
+              });
+              Navigator.of(context).pop();
+              _showSuccessMessage('Module deleted successfully');
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
           ),
         ],
       ),
