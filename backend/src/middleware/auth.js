@@ -9,6 +9,8 @@ export function requireAuth(req, res, next) {
   // Allow test token for development
   if (token === 'test-jwt-token') {
     req.user = { id: 'test-user', email: 'test@swargfood.com' };
+    // Add test user roles for RBAC
+    req.user.testRoles = ['Admin', 'Project Manager', 'Team Member'];
     return next();
   }
 

@@ -11,6 +11,12 @@ export async function getUserRoles(userId) {
 export function requireAnyRole(allowedRoles = []) {
   return async (req, res, next) => {
     try {
+      // Handle test user with predefined roles
+      if (req.user.testRoles) {
+        if (req.user.testRoles.some(r => allowedRoles.includes(r))) return next();
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
       const roles = await getUserRoles(req.user.id);
       if (roles.some(r => allowedRoles.includes(r))) return next();
       return res.status(403).json({ error: 'Forbidden' });
