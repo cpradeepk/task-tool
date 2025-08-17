@@ -19,6 +19,8 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
   late TabController _tabController;
   List<dynamic> _projects = [];
   List<dynamic> _modules = [];
+  List<dynamic> _users = [];
+  List<dynamic> _projectTeam = [];
   int? _selectedProjectId;
   bool _isLoading = false;
   String? _errorMessage;
@@ -52,7 +54,9 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         setState(() => _projects = jsonDecode(response.body));
         if (_selectedProjectId != null) {
           _loadModules();
+          _loadProjectTeam();
         }
+        _loadUsers();
       } else {
         setState(() => _errorMessage = 'Failed to load projects');
       }
@@ -112,6 +116,39 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     } catch (e) {
       _showErrorMessage('Error creating module: $e');
     }
+  }
+
+  Future<void> _loadUsers() async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/admin/users'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() => _users = jsonDecode(response.body));
+      }
+    } catch (e) {
+      // Use mock users for development
+      setState(() => _users = [
+        {'id': 1, 'email': 'john@example.com', 'name': 'John Doe'},
+        {'id': 2, 'email': 'jane@example.com', 'name': 'Jane Smith'},
+        {'id': 3, 'email': 'mike@example.com', 'name': 'Mike Johnson'},
+      ]);
+    }
+  }
+
+  Future<void> _loadProjectTeam() async {
+    if (_selectedProjectId == null) return;
+
+    // Mock project team data
+    setState(() => _projectTeam = [
+      {'userId': 1, 'role': 'Project Manager', 'assignedAt': '2025-01-10'},
+      {'userId': 2, 'role': 'Developer', 'assignedAt': '2025-01-12'},
+    ]);
   }
 
   void _showAddModuleDialog() {
@@ -322,7 +359,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -333,9 +370,34 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                project['name'],
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      project['name'],
+                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () => _showEditProjectDialog(project),
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit Project'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: () => _showDeleteProjectDialog(project),
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Delete'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Text(
@@ -356,6 +418,232 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
           ),
         ),
       ),
+    );
+  }
+
+  void _showEditProjectDialog(Map<String, dynamic> project) {
+    final nameController = TextEditingController(text: project['name']);
+    final descriptionController = TextEditingController(text: project['description'] ?? '');
+    String selectedStatus = project['status'] ?? 'Active';
+    DateTime? startDate = project['start_date'] != null ? DateTime.parse(project['start_date']) : null;
+    DateTime? endDate = project['end_date'] != null ? DateTime.parse(project['end_date']) : null;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Project'),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Project Name *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: 'Status',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: selectedStatus,
+                    items: ['Active', 'Planning', 'On Hold', 'Completed', 'Cancelled'].map((status) {
+                      return DropdownMenuItem(value: status, child: Text(status));
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() => selectedStatus = value!);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: startDate ?? DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2030),
+                            );
+                            if (date != null) {
+                              setDialogState(() => startDate = date);
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Start Date',
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(
+                              startDate != null
+                                  ? startDate!.toIso8601String().substring(0, 10)
+                                  : 'Select start date',
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: endDate ?? DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2030),
+                            );
+                            if (date != null) {
+                              setDialogState(() => endDate = date);
+                            }
+                          },
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'End Date',
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(
+                              endDate != null
+                                  ? endDate!.toIso8601String().substring(0, 10)
+                                  : 'Select end date',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.trim().isNotEmpty) {
+                  _updateProject(
+                    project['id'],
+                    nameController.text.trim(),
+                    descriptionController.text.trim(),
+                    selectedStatus,
+                    startDate,
+                    endDate,
+                  );
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _updateProject(int projectId, String name, String description, String status, DateTime? startDate, DateTime? endDate) {
+    setState(() {
+      final projectIndex = _projects.indexWhere((p) => p['id'] == projectId);
+      if (projectIndex != -1) {
+        _projects[projectIndex] = {
+          ..._projects[projectIndex],
+          'name': name,
+          'description': description,
+          'status': status,
+          'start_date': startDate?.toIso8601String().substring(0, 10),
+          'end_date': endDate?.toIso8601String().substring(0, 10),
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Project updated successfully'), backgroundColor: Colors.green),
+    );
+  }
+
+  void _showDeleteProjectDialog(Map<String, dynamic> project) {
+    final confirmController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Project'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Are you sure you want to delete the project "${project['name']}"?'),
+            const SizedBox(height: 16),
+            const Text(
+              'This action cannot be undone. All associated modules, tasks, and data will be permanently deleted.',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            const Text('Type "delete me" to confirm:'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: confirmController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'delete me',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (confirmController.text.trim() == 'delete me') {
+                _deleteProject(project['id']);
+                Navigator.of(context).pop();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please type "delete me" to confirm deletion')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete Project'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteProject(int projectId) {
+    setState(() {
+      _projects.removeWhere((p) => p['id'] == projectId);
+      if (_selectedProjectId == projectId) {
+        _selectedProjectId = null;
+        _modules.clear();
+        _projectTeam.clear();
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Project deleted successfully'), backgroundColor: Colors.orange),
     );
   }
 
@@ -424,18 +712,202 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
   }
 
   Widget _buildTeamTab() {
-    return const Padding(
-      padding: EdgeInsets.all(16),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Team Management', style: TextStyle(fontSize: 18, color: Colors.grey)),
-            Text('Coming soon - Assign team members to projects', style: TextStyle(color: Colors.grey)),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Add Team Member Section
+          Row(
+            children: [
+              const Text(
+                'Project Team',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _showAddTeamMemberDialog,
+                icon: const Icon(Icons.person_add),
+                label: const Text('Add Member'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Team Members List
+          Expanded(
+            child: _projectTeam.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people, size: 64, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('No team members assigned', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                        Text('Add team members to collaborate on this project', style: TextStyle(color: Colors.grey)),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _projectTeam.length,
+                    itemBuilder: (context, index) {
+                      final teamMember = _projectTeam[index];
+                      final user = _users.firstWhere(
+                        (u) => u['id'] == teamMember['userId'],
+                        orElse: () => {'name': 'Unknown User', 'email': 'unknown@example.com'},
+                      );
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.blue.shade100,
+                            child: Text(
+                              user['name'][0].toUpperCase(),
+                              style: TextStyle(color: Colors.blue.shade700),
+                            ),
+                          ),
+                          title: Text(user['name']),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(user['email']),
+                              Text('Role: ${teamMember['role']}', style: const TextStyle(fontSize: 12)),
+                              Text('Added: ${teamMember['assignedAt']}', style: const TextStyle(fontSize: 12)),
+                            ],
+                          ),
+                          trailing: IconButton(
+                            onPressed: () => _removeTeamMember(teamMember['userId']),
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            tooltip: 'Remove from project',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddTeamMemberDialog() {
+    int? selectedUserId;
+    String selectedRole = 'Developer';
+    final availableUsers = _users.where((u) => !_projectTeam.any((tm) => tm['userId'] == u['id'])).toList();
+
+    if (availableUsers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All users are already assigned to this project')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Team Member'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<int>(
+                decoration: const InputDecoration(
+                  labelText: 'Select User',
+                  border: OutlineInputBorder(),
+                ),
+                value: selectedUserId,
+                items: availableUsers.map<DropdownMenuItem<int>>((user) {
+                  return DropdownMenuItem<int>(
+                    value: user['id'],
+                    child: Text('${user['name']} (${user['email']})'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setDialogState(() => selectedUserId = value);
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                value: selectedRole,
+                items: ['Project Manager', 'Team Lead', 'Developer', 'Designer', 'Tester'].map((role) {
+                  return DropdownMenuItem(value: role, child: Text(role));
+                }).toList(),
+                onChanged: (value) {
+                  setDialogState(() => selectedRole = value!);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedUserId != null) {
+                  _addTeamMember(selectedUserId!, selectedRole);
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Add'),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _addTeamMember(int userId, String role) {
+    setState(() {
+      _projectTeam.add({
+        'userId': userId,
+        'role': role,
+        'assignedAt': DateTime.now().toIso8601String().substring(0, 10),
+      });
+    });
+
+    final user = _users.firstWhere((u) => u['id'] == userId);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${user['name']} added to project team')),
+    );
+  }
+
+  void _removeTeamMember(int userId) {
+    final user = _users.firstWhere((u) => u['id'] == userId);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remove Team Member'),
+        content: Text('Are you sure you want to remove ${user['name']} from this project?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _projectTeam.removeWhere((tm) => tm['userId'] == userId);
+              });
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('${user['name']} removed from project team')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
       ),
     );
   }

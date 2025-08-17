@@ -455,6 +455,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (task['task_id'] != null) ...[
+              Row(
+                children: [
+                  const Icon(Icons.tag, size: 16),
+                  const SizedBox(width: 4),
+                  Text('Task ID: ${task['task_id']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             Text('Project: ${task['project'] ?? 'Unknown'}'),
             const SizedBox(height: 8),
             Text('Status: ${task['status'] ?? 'Unknown'}'),
@@ -462,6 +472,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text('Priority: ${task['priority'] ?? 'Unknown'}'),
             const SizedBox(height: 8),
             Text('Due Date: ${task['due_date'] ?? 'Not set'}'),
+            if (task['estimated_hours'] != null) ...[
+              const SizedBox(height: 8),
+              Text('Estimated Hours: ${task['estimated_hours']}'),
+            ],
             if (task['description'] != null) ...[
               const SizedBox(height: 8),
               Text('Description: ${task['description']}'),
@@ -573,29 +587,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // Mock data methods
   List<Map<String, dynamic>> _getMockThisWeekTasks() {
+    final now = DateTime.now();
+    final dateStr = now.toIso8601String().substring(0, 10).replaceAll('-', '');
+
     return [
       {
+        'task_id': 'JSR-$dateStr-001',
         'title': 'Complete user authentication',
         'project': 'Task Tool',
-        'status': 'In Progress',
+        'status': TaskStatus.inProgress,
+        'priority': TaskPriority.importantUrgent,
         'due_date': '2025-01-20',
+        'estimated_hours': 8,
       },
       {
+        'task_id': 'JSR-$dateStr-002',
         'title': 'Design dashboard wireframes',
         'project': 'UI/UX Project',
-        'status': 'Open',
+        'status': TaskStatus.open,
+        'priority': TaskPriority.importantNotUrgent,
         'due_date': '2025-01-22',
+        'estimated_hours': 6,
       },
     ];
   }
 
   List<Map<String, dynamic>> _getMockPriorityTasks() {
+    final now = DateTime.now();
+    final dateStr = now.toIso8601String().substring(0, 10).replaceAll('-', '');
+
     return [
       {
+        'task_id': 'JSR-$dateStr-003',
         'title': 'Fix critical security vulnerability',
         'project': 'Security Audit',
-        'status': 'Open',
+        'status': TaskStatus.open,
+        'priority': TaskPriority.importantUrgent,
         'due_date': '2025-01-18',
+        'estimated_hours': 12,
+      },
+      {
+        'task_id': 'JSR-$dateStr-004',
+        'title': 'Complete API documentation',
+        'project': 'Backend Development',
+        'status': TaskStatus.inProgress,
+        'priority': TaskPriority.importantUrgent,
+        'due_date': '2025-01-19',
+        'estimated_hours': 6,
       },
     ];
   }

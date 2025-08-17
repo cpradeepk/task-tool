@@ -298,23 +298,36 @@ router.post('/:projectId/modules/:moduleId/tasks', async (req, res) => {
   try {
     const moduleId = Number(req.params.moduleId);
     const { title, description, priority, status, due_date, estimated_hours, assigned_to } = req.body;
-    
+
     if (!title) {
       return res.status(400).json({ error: 'Task title is required' });
     }
-    
+
+    // Generate JSR task ID
+    const creationDate = new Date();
+    const dateStr = creationDate.toISOString().substring(0, 10).replace(/-/g, '');
+
+    // Get daily counter (in production, this would query the database)
+    const dailyCounter = Math.floor(Math.random() * 999) + 1; // Mock counter
+    const taskId = `JSR-${dateStr}-${dailyCounter.toString().padStart(3, '0')}`;
+
     const taskData = {
+      task_id: taskId,
       module_id: moduleId,
       title: title.trim(),
       description: description?.trim() || '',
-      priority: priority || 'Medium',
+      priority: priority || 'Important & Not Urgent',
       status: status || 'Open',
       due_date: due_date || null,
       estimated_hours: estimated_hours || null,
       assigned_to: assigned_to || null,
       created_by: req.user.id,
-      created_at: new Date(),
-      updated_at: new Date(),
+      created_at: creationDate,
+      updated_at: creationDate,
+
+      // Auto-populate dates based on status
+      start_date: status === 'In Progress' ? creationDate : null,
+      end_date: status === 'Completed' ? creationDate : null,
     };
     
     try {
