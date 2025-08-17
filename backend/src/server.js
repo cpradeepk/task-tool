@@ -145,8 +145,6 @@ app.post('/task/api/test-email', async (req, res) => {
 
 const PORT = process.env.PORT || 3003;
 
-const PORT = process.env.PORT || 3003;
-
 // Start server with basic database connection test
 async function startServer() {
   try {
