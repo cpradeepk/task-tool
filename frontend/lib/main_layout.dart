@@ -22,6 +22,11 @@ class _MainLayoutState extends State<MainLayout> {
   bool _isAdmin = false;
   String? _userEmail;
 
+  // Menu expansion states - default to expanded for main sections
+  bool _projectsExpanded = true;
+  bool _adminExpanded = true;
+  bool _personalExpanded = true;
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +46,9 @@ class _MainLayoutState extends State<MainLayout> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isSidebarCollapsed = prefs.getBool('sidebar_collapsed') ?? false;
+      _projectsExpanded = prefs.getBool('projects_expanded') ?? true;
+      _adminExpanded = prefs.getBool('admin_expanded') ?? true;
+      _personalExpanded = prefs.getBool('personal_expanded') ?? true;
     });
   }
 
@@ -50,6 +58,26 @@ class _MainLayoutState extends State<MainLayout> {
       _isSidebarCollapsed = !_isSidebarCollapsed;
     });
     await prefs.setBool('sidebar_collapsed', _isSidebarCollapsed);
+  }
+
+  Future<void> _toggleMenuSection(String section) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      switch (section) {
+        case 'projects':
+          _projectsExpanded = !_projectsExpanded;
+          prefs.setBool('projects_expanded', _projectsExpanded);
+          break;
+        case 'admin':
+          _adminExpanded = !_adminExpanded;
+          prefs.setBool('admin_expanded', _adminExpanded);
+          break;
+        case 'personal':
+          _personalExpanded = !_personalExpanded;
+          prefs.setBool('personal_expanded', _personalExpanded);
+          break;
+      }
+    });
   }
 
   void _showAdminLogin() {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main_layout.dart';
+import '../constants/task_constants.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -169,8 +170,8 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
     final descriptionController = TextEditingController();
     int? selectedProjectId;
     int? selectedModuleId;
-    String priority = 'Medium';
-    String status = 'Open';
+    String priority = TaskPriority.importantNotUrgent;
+    String status = TaskStatus.open;
     int? estimatedHours;
 
     showDialog(
@@ -248,8 +249,25 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                             border: OutlineInputBorder(),
                           ),
                           value: priority,
-                          items: ['Low', 'Medium', 'High', 'Critical'].map((p) {
-                            return DropdownMenuItem(value: p, child: Text(p));
+                          items: TaskPriority.values.map((p) {
+                            return DropdownMenuItem(
+                              value: p,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: TaskPriority.getColor(p),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: Colors.grey.shade300),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(p, style: const TextStyle(fontSize: 12))),
+                                ],
+                              ),
+                            );
                           }).toList(),
                           onChanged: (value) {
                             setDialogState(() => priority = value!);
@@ -839,18 +857,29 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                 ),
               ),
               ...tasks.map((task) => ListTile(
-                leading: Icon(
-                  Icons.assignment,
-                  color: _getPriorityColor(task['priority']),
+                leading: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: TaskPriority.getColor(task['priority']),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${TaskPriority.getOrder(task['priority'] ?? '')}',
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ),
                 title: Text(task['title'] ?? 'Untitled Task'),
                 subtitle: Text(task['description'] ?? 'No description'),
                 trailing: Chip(
                   label: Text(
-                    task['status'] ?? 'Open',
+                    task['status'] ?? TaskStatus.open,
                     style: const TextStyle(fontSize: 12),
                   ),
-                  backgroundColor: _getStatusColor(task['status']),
+                  backgroundColor: TaskStatus.getBackgroundColor(task['status']),
                 ),
                 onTap: () {
                   // Navigate to task details - will implement later

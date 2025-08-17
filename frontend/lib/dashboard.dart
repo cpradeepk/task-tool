@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main_layout.dart';
+import 'constants/task_constants.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -563,33 +564,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Color _getPriorityColor(String? priority) {
-    switch (priority?.toLowerCase()) {
-      case 'critical':
-        return Colors.red.shade100;
-      case 'high':
-        return Colors.orange.shade100;
-      case 'medium':
-        return Colors.blue.shade100;
-      case 'low':
-        return Colors.green.shade100;
-      default:
-        return Colors.grey.shade100;
-    }
+    return TaskPriority.getColor(priority ?? '');
   }
 
   Color _getStatusColor(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'completed':
-        return Colors.green;
-      case 'in progress':
-        return Colors.blue;
-      case 'delayed':
-        return Colors.red;
-      case 'hold':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
+    return TaskStatus.getBackgroundColor(status ?? TaskStatus.open);
   }
 
   // Mock data methods

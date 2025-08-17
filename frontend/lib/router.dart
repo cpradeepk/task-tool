@@ -19,6 +19,10 @@ import 'features/alerts_system.dart';
 import 'admin/jsr_reports.dart';
 import 'admin/project_create.dart';
 import 'admin/project_settings.dart';
+import 'admin/master_data.dart';
+import 'admin/role_assign.dart';
+import 'admin/role_manage.dart';
+import 'admin/module_management.dart';
 import 'personal/notes_system.dart';
 import 'personal/profile_edit.dart' as personal;
 
@@ -86,6 +90,10 @@ class AppRouter {
         GoRoute(path: '/admin/projects/:id/settings', builder: (ctx, st) => ProjectSettingsScreen(projectId: st.pathParameters['id'])),
         GoRoute(path: '/admin/reporting/jsr/planned', builder: (ctx, st) => const JSRReportsScreen()),
         GoRoute(path: '/admin/reporting/jsr/completed', builder: (ctx, st) => const JSRReportsScreen()),
+        GoRoute(path: '/admin/master-data', builder: (ctx, st) => const MasterDataScreen()),
+        GoRoute(path: '/admin/roles/assign', builder: (ctx, st) => const RoleAssignScreen()),
+        GoRoute(path: '/admin/roles/manage', builder: (ctx, st) => const RoleManageScreen()),
+        GoRoute(path: '/admin/modules/manage', builder: (ctx, st) => const ModuleManagementScreen()),
 
         // Personal routes
         GoRoute(path: '/personal/notes', builder: (ctx, st) => const NotesSystemScreen()),
