@@ -233,14 +233,8 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       ]),
                       _buildSubSection('User Management', Icons.people, [
                         _buildNavItem(
-                          icon: Icons.person_add,
-                          title: 'Add User',
-                          route: '/admin/users/add',
-                          isSubItem: true,
-                        ),
-                        _buildNavItem(
-                          icon: Icons.edit,
-                          title: 'Edit/Remove User',
+                          icon: Icons.people,
+                          title: 'Manage Users',
                           route: '/admin/users/manage',
                           isSubItem: true,
                         ),

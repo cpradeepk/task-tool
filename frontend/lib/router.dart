@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main.dart';
-import 'auth.dart';
 import 'pin_auth.dart';
 import 'projects.dart';
 import 'profile.dart';
@@ -14,6 +12,9 @@ import 'critical_path.dart';
 import 'admin_login.dart';
 import 'admin/user_management.dart';
 import 'admin/daily_summary_report.dart';
+import 'features/pert_analysis.dart';
+import 'features/calendar_view.dart';
+import 'features/chat_system.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -61,18 +62,9 @@ class AppRouter {
         )),
 
         // New navigation routes
-        GoRoute(path: '/pert', builder: (ctx, st) => MainLayout(
-          title: 'PERT Analysis',
-          child: const Center(child: Text('PERT Analysis - Coming Soon')),
-        )),
-        GoRoute(path: '/calendar', builder: (ctx, st) => MainLayout(
-          title: 'Calendar',
-          child: const Center(child: Text('Calendar - Coming Soon')),
-        )),
-        GoRoute(path: '/chat', builder: (ctx, st) => MainLayout(
-          title: 'Chat',
-          child: const Center(child: Text('Chat - Coming Soon')),
-        )),
+        GoRoute(path: '/pert', builder: (ctx, st) => const PertAnalysisScreen()),
+        GoRoute(path: '/calendar', builder: (ctx, st) => const CalendarViewScreen()),
+        GoRoute(path: '/chat', builder: (ctx, st) => const ChatSystemScreen()),
         GoRoute(path: '/alerts', builder: (ctx, st) => MainLayout(
           title: 'Alerts',
           child: const Center(child: Text('Alerts - Coming Soon')),
@@ -115,35 +107,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _auth = AuthController();
-  bool _busy = false;
-  String? _err;
 
-  @override
-  void initState() {
-    super.initState();
-    _checkExistingAuth();
-  }
 
-  Future<void> _checkExistingAuth() async {
-    await _auth.load();
-    if (_auth.isAuthed && mounted) {
-      context.go('/');
-    }
-  }
-
-  Future<void> _doLogin() async {
-    setState(() { _busy = true; _err = null; });
-    try {
-      await _auth.signIn();
-      if (!mounted) return;
-      context.go('/');
-    } catch (e) {
-      setState(() { _err = 'Login failed'; });
-    } finally {
-      if (mounted) setState(() { _busy = false; });
-    }
-  }
 
   void _showAdminLogin(BuildContext context) {
     showDialog(
@@ -180,39 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Text('Task Tool', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
               const SizedBox(height: 32),
 
-              // Test Account Login
-              Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.bug_report, color: Colors.orange),
-                          SizedBox(width: 8),
-                          Text('Test Account', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (_err != null) ...[
-                        Text(_err!, style: const TextStyle(color: Colors.red)),
-                        const SizedBox(height: 16),
-                      ],
-                      ElevatedButton(
-                        onPressed: _busy ? null : _doLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: _busy ? const CircularProgressIndicator() : const Text('Login with Test Account'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
 
-              const SizedBox(height: 16),
 
               // PIN Authentication
               PinAuthWidget(
