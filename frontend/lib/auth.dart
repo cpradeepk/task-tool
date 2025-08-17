@@ -17,7 +17,7 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> signIn() async {
-    // Simple auth for testing - replace with Google Sign-In later
+    // Simple auth for testing - backend now accepts this test token
     email = 'test@swargfood.com';
     jwt = 'test-jwt-token';
 
