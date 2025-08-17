@@ -1,4 +1,5 @@
-import { Queue, Worker, QueueScheduler } from 'bullmq';
+import pkg from 'bullmq';
+const { Queue, Worker, QueueScheduler } = pkg;
 import 'dotenv/config';
 
 const connection = process.env.REDIS_URL || 'redis://localhost:6379';
