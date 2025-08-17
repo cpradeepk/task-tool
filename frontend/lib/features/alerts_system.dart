@@ -128,38 +128,68 @@ class _AlertsSystemScreenState extends State<AlertsSystemScreen> with TickerProv
 
   List<dynamic> _generateMockNotifications() {
     final now = DateTime.now();
+    final dateStr = now.toIso8601String().substring(0, 10).replaceAll('-', '');
+
     return [
       {
         'id': 1,
-        'title': 'Daily Summary Report Available',
-        'message': 'Your daily summary report for ${now.subtract(const Duration(days: 1)).toIso8601String().substring(0, 10)} is ready',
-        'type': 'report',
+        'title': 'Task Assignment',
+        'message': 'You have been assigned to "Complete user authentication" (JSR-$dateStr-001)',
+        'type': 'task_assignment',
         'created_at': now.subtract(const Duration(hours: 1)).toIso8601String(),
         'is_read': false,
+        'priority': 'high',
+        'task_id': 'JSR-$dateStr-001',
+        'from_user': 'Project Manager',
       },
       {
         'id': 2,
-        'title': 'Team Meeting Reminder',
-        'message': 'Sprint planning meeting starts in 30 minutes',
-        'type': 'reminder',
+        'title': 'Due Date Reminder',
+        'message': 'Task "Design dashboard layout" (JSR-$dateStr-002) is due tomorrow',
+        'type': 'due_date',
         'created_at': now.subtract(const Duration(minutes: 30)).toIso8601String(),
         'is_read': false,
+        'priority': 'medium',
+        'task_id': 'JSR-$dateStr-002',
       },
       {
         'id': 3,
-        'title': 'New Comment on Task',
-        'message': 'John added a comment to "Complete user authentication"',
-        'type': 'comment',
+        'title': 'Team Message',
+        'message': 'John Doe commented on your task: "Great progress on the authentication module!"',
+        'type': 'team_message',
         'created_at': now.subtract(const Duration(hours: 3)).toIso8601String(),
         'is_read': true,
+        'priority': 'medium',
+        'from_user': 'John Doe',
+        'task_id': 'JSR-$dateStr-001',
       },
       {
         'id': 4,
-        'title': 'System Maintenance',
-        'message': 'Scheduled maintenance will occur tonight from 2 AM to 4 AM',
-        'type': 'system',
+        'title': 'Project Update',
+        'message': 'Project "Task Tool Development" has been updated with new modules',
+        'type': 'project_update',
         'created_at': now.subtract(const Duration(hours: 6)).toIso8601String(),
         'is_read': true,
+        'priority': 'low',
+        'project_id': 1,
+      },
+      {
+        'id': 5,
+        'title': 'System Alert',
+        'message': 'Weekly backup completed successfully. All data is secure.',
+        'type': 'system',
+        'created_at': now.subtract(const Duration(days: 1)).toIso8601String(),
+        'is_read': false,
+        'priority': 'low',
+      },
+      {
+        'id': 6,
+        'title': 'Daily Summary Report',
+        'message': 'Your daily summary report for ${now.subtract(const Duration(days: 1)).toIso8601String().substring(0, 10)} is ready',
+        'type': 'report',
+        'created_at': now.subtract(const Duration(hours: 8)).toIso8601String(),
+        'is_read': false,
+        'priority': 'low',
       },
     ];
   }
@@ -355,14 +385,90 @@ class _AlertsSystemScreenState extends State<AlertsSystemScreen> with TickerProv
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _notifications.length,
-      itemBuilder: (context, index) {
-        final notification = _notifications[index];
-        return _buildNotificationCard(notification);
-      },
+    final unreadCount = _notifications.where((n) => !(n['is_read'] ?? false)).length;
+
+    return Column(
+      children: [
+        // Bulk Actions Header
+        if (unreadCount > 0)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.notifications_active, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  '$unreadCount unread notification${unreadCount == 1 ? '' : 's'}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: _markAllNotificationsAsRead,
+                  icon: const Icon(Icons.done_all, size: 16),
+                  label: const Text('Mark All Read'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Notifications List
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: _notifications.length,
+            itemBuilder: (context, index) {
+              final notification = _notifications[index];
+              return _buildNotificationCard(notification);
+            },
+          ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _markAllNotificationsAsRead() async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      await http.patch(
+        Uri.parse('$apiBase/task/api/notifications/mark-all-read'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      setState(() {
+        for (var notification in _notifications) {
+          notification['is_read'] = true;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All notifications marked as read')),
+      );
+    } catch (e) {
+      // Mock success for development
+      setState(() {
+        for (var notification in _notifications) {
+          notification['is_read'] = true;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All notifications marked as read')),
+      );
+    }
   }
 
   Widget _buildAlertCard(Map<String, dynamic> alert) {
@@ -496,15 +602,177 @@ class _AlertsSystemScreenState extends State<AlertsSystemScreen> with TickerProv
             ),
           ],
         ),
-        trailing: !isRead
-            ? IconButton(
-                onPressed: () => _markAsRead(notification['id'], false),
-                icon: const Icon(Icons.mark_email_read),
-                tooltip: 'Mark as read',
-              )
-            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Priority indicator
+            if (notification['priority'] != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _getPriorityColor(notification['priority']),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  notification['priority'].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 8,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            const SizedBox(width: 8),
+
+            // Actions menu
+            PopupMenuButton<String>(
+              onSelected: (action) => _handleNotificationAction(action, notification),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: isRead ? 'mark_unread' : 'mark_read',
+                  child: Row(
+                    children: [
+                      Icon(isRead ? Icons.mark_email_unread : Icons.mark_email_read, size: 16),
+                      const SizedBox(width: 8),
+                      Text(isRead ? 'Mark as Unread' : 'Mark as Read'),
+                    ],
+                  ),
+                ),
+                if (notification['task_id'] != null)
+                  const PopupMenuItem(
+                    value: 'view_task',
+                    child: Row(
+                      children: [
+                        Icon(Icons.task, size: 16),
+                        SizedBox(width: 8),
+                        Text('View Task'),
+                      ],
+                    ),
+                  ),
+                if (notification['project_id'] != null)
+                  const PopupMenuItem(
+                    value: 'view_project',
+                    child: Row(
+                      children: [
+                        Icon(Icons.folder, size: 16),
+                        SizedBox(width: 8),
+                        Text('View Project'),
+                      ],
+                    ),
+                  ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, size: 16, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+              child: Icon(
+                Icons.more_vert,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _handleNotificationAction(String action, Map<String, dynamic> notification) {
+    switch (action) {
+      case 'mark_read':
+        _markAsRead(notification['id'], false);
+        break;
+      case 'mark_unread':
+        _markAsUnread(notification['id']);
+        break;
+      case 'view_task':
+        _viewTask(notification['task_id']);
+        break;
+      case 'view_project':
+        _viewProject(notification['project_id']);
+        break;
+      case 'delete':
+        _deleteNotification(notification['id']);
+        break;
+    }
+  }
+
+  void _markAsUnread(int notificationId) {
+    setState(() {
+      final index = _notifications.indexWhere((n) => n['id'] == notificationId);
+      if (index != -1) {
+        _notifications[index]['is_read'] = false;
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Notification marked as unread')),
+    );
+  }
+
+  void _deleteNotification(int notificationId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Notification'),
+        content: const Text('Are you sure you want to delete this notification?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _notifications.removeWhere((n) => n['id'] == notificationId);
+              });
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Notification deleted')),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _viewTask(String? taskId) {
+    if (taskId != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Navigate to task: $taskId')),
+      );
+      // TODO: Implement navigation to task detail
+    }
+  }
+
+  void _viewProject(int? projectId) {
+    if (projectId != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Navigate to project: $projectId')),
+      );
+      // TODO: Implement navigation to project detail
+    }
   }
 
   Color _getSeverityColor(String severity) {
