@@ -1,27 +1,51 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { requireAnyRole } from '../middleware/rbac.js';
 import { knex } from '../db/index.js';
-import { createUserWithPin } from '../services/pin-auth.js';
 import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
-// All admin user management routes require admin role
+// All admin user management routes require authentication
 router.use(requireAuth);
-router.use(requireAnyRole(['Admin']));
+
+// Simple admin check - if user is admin (has isAdmin flag or admin email)
+const requireAdmin = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    // Check if user is admin by email or has admin flag
+    const isAdmin = user.email === process.env.ADMIN_EMAIL || user.isAdmin === true;
+
+    if (!isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    next();
+  } catch (err) {
+    console.error('Admin check error:', err);
+    res.status(500).json({ error: 'Authorization check failed' });
+  }
+};
+
+router.use(requireAdmin);
 
 // Get all users
 router.get('/', async (req, res) => {
   try {
+    // Check if users table exists
+    const tableExists = await knex.schema.hasTable('users');
+    if (!tableExists) {
+      return res.json([]); // Return empty array if table doesn't exist
+    }
+
     const users = await knex('users')
       .select('id', 'email', 'created_at', 'updated_at', 'pin_created_at', 'pin_last_used')
       .orderBy('created_at', 'desc');
-    
+
     res.json(users);
   } catch (err) {
     console.error('Error fetching users:', err);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    res.status(500).json({ error: 'Failed to fetch users', details: err.message });
   }
 });
 
@@ -29,15 +53,21 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { email, auth_type, pin } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
     }
-    
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Invalid email format' });
     }
-    
+
+    // Check if users table exists
+    const tableExists = await knex.schema.hasTable('users');
+    if (!tableExists) {
+      return res.status(500).json({ error: 'Database not initialized. Please restart the server.' });
+    }
+
     // Check if user already exists
     const existingUser = await knex('users').where({ email }).first();
     if (existingUser) {
@@ -50,9 +80,19 @@ router.post('/', async (req, res) => {
       if (!pin || !/^\d{4,6}$/.test(pin)) {
         return res.status(400).json({ error: 'PIN must be 4-6 digits' });
       }
-      
+
       // Create user with PIN
-      user = await createUserWithPin(email, pin);
+      const pinHash = await bcrypt.hash(pin, 10);
+      const [newUser] = await knex('users')
+        .insert({
+          email,
+          pin_hash: pinHash,
+          pin_created_at: new Date(),
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .returning('*');
+      user = newUser;
     } else if (auth_type === 'oauth') {
       // Create user for OAuth (Google)
       const [newUser] = await knex('users')

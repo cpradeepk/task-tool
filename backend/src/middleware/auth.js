@@ -17,7 +17,7 @@ export function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, secret);
     req.user = {
-      id: payload.uid,
+      id: payload.id || payload.uid,
       email: payload.email,
       role: payload.role,
       isAdmin: payload.isAdmin || false

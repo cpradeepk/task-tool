@@ -9,6 +9,8 @@ import morgan from 'morgan';
 import { initEmail } from './services/email.js';
 import authRouter from './routes/auth.js';
 import { emailQueue, startWorkers } from './queue/index.js';
+import { knex } from './db/index.js';
+import { initializeTables } from './db/init-tables.js';
 
 const app = express();
 app.use(helmet());
@@ -40,6 +42,18 @@ app.use('/task/api/admin-auth', adminAuthRouter);
 // PIN auth routes
 import pinAuthRouter from './routes/pin-auth.js';
 app.use('/task/api/pin-auth', pinAuthRouter);
+
+// Dashboard routes
+import dashboardRouter from './api/dashboard.js';
+app.use('/task/api/dashboard', dashboardRouter);
+
+// Calendar routes
+import calendarRouter from './api/calendar.js';
+app.use('/task/api/calendar', calendarRouter);
+
+// Notes routes
+import notesRouter from './api/notes.js';
+app.use('/task/api/notes', notesRouter);
 
 // Admin routes
 import adminUsersRouter from './api/admin-users.js';
@@ -133,7 +147,21 @@ app.post('/task/api/test-email', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3003;
-server.listen(PORT, () => {
-  console.log(`Task Tool backend listening on port ${PORT}`);
-});
+
+// Initialize database tables and start server
+async function startServer() {
+  try {
+    await initializeTables();
+    console.log('Database initialized successfully');
+
+    server.listen(PORT, () => {
+      console.log(`Task Tool backend listening on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
