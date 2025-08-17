@@ -17,6 +17,8 @@ import 'features/calendar_view.dart';
 import 'features/chat_system.dart';
 import 'features/alerts_system.dart';
 import 'admin/jsr_reports.dart';
+import 'admin/project_create.dart';
+import 'admin/project_settings.dart';
 import 'personal/notes_system.dart';
 import 'personal/profile_edit.dart' as personal;
 
@@ -79,6 +81,11 @@ class AppRouter {
         GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const UserManagementScreen()),
         GoRoute(path: '/admin/reporting/daily-summary', builder: (ctx, st) => const DailySummaryReportScreen()),
         GoRoute(path: '/admin/reporting/jsr', builder: (ctx, st) => const JSRReportsScreen()),
+        GoRoute(path: '/admin/projects/create', builder: (ctx, st) => const ProjectCreateScreen()),
+        GoRoute(path: '/admin/projects/settings', builder: (ctx, st) => const ProjectSettingsScreen()),
+        GoRoute(path: '/admin/projects/:id/settings', builder: (ctx, st) => ProjectSettingsScreen(projectId: st.pathParameters['id'])),
+        GoRoute(path: '/admin/reporting/jsr/planned', builder: (ctx, st) => const JSRReportsScreen()),
+        GoRoute(path: '/admin/reporting/jsr/completed', builder: (ctx, st) => const JSRReportsScreen()),
 
         // Personal routes
         GoRoute(path: '/personal/notes', builder: (ctx, st) => const NotesSystemScreen()),

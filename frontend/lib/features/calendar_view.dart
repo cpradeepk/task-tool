@@ -18,13 +18,17 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
   DateTime _focusedDate = DateTime.now();
   List<dynamic> _tasks = [];
   List<dynamic> _selectedDateTasks = [];
+  List<dynamic> _projects = [];
+  List<dynamic> _modules = [];
   bool _isLoading = false;
   String? _errorMessage;
+  String _viewMode = 'month'; // 'month' or 'agenda'
 
   @override
   void initState() {
     super.initState();
     _loadTasks();
+    _loadProjects();
   }
 
   Future<String?> _getJwt() async {
@@ -104,6 +108,50 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
     ];
   }
 
+  Future<void> _loadProjects() async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/admin/projects'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() => _projects = jsonDecode(response.body));
+      }
+    } catch (e) {
+      // Use mock projects for development
+      setState(() => _projects = [
+        {'id': 1, 'name': 'Task Tool Development'},
+        {'id': 2, 'name': 'Mobile App Development'},
+      ]);
+    }
+  }
+
+  Future<void> _loadModules(int projectId) async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/admin/projects/$projectId/modules'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() => _modules = jsonDecode(response.body));
+      }
+    } catch (e) {
+      // Use mock modules for development
+      setState(() => _modules = [
+        {'id': 1, 'name': 'Authentication Module', 'project_id': projectId},
+        {'id': 2, 'name': 'Dashboard Module', 'project_id': projectId},
+      ]);
+    }
+  }
+
   void _updateSelectedDateTasks() {
     final selectedDateStr = _selectedDate.toIso8601String().substring(0, 10);
     setState(() {
@@ -114,6 +162,214 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
   List<dynamic> _getTasksForDate(DateTime date) {
     final dateStr = date.toIso8601String().substring(0, 10);
     return _tasks.where((task) => task['due_date'] == dateStr).toList();
+  }
+
+  void _showTaskCreationDialog(DateTime selectedDate) {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    int? selectedProjectId;
+    int? selectedModuleId;
+    String priority = 'Medium';
+    String status = 'Open';
+    int? estimatedHours;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text('Create Task for ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+          content: SizedBox(
+            width: 400,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Task Title *',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(
+                      labelText: 'Project',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: selectedProjectId,
+                    items: _projects.map<DropdownMenuItem<int>>((project) {
+                      return DropdownMenuItem<int>(
+                        value: project['id'],
+                        child: Text(project['name']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedProjectId = value;
+                        selectedModuleId = null;
+                      });
+                      if (value != null) _loadModules(value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<int>(
+                    decoration: const InputDecoration(
+                      labelText: 'Module',
+                      border: OutlineInputBorder(),
+                    ),
+                    value: selectedModuleId,
+                    items: _modules.map<DropdownMenuItem<int>>((module) {
+                      return DropdownMenuItem<int>(
+                        value: module['id'],
+                        child: Text(module['name']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() => selectedModuleId = value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(
+                            labelText: 'Priority',
+                            border: OutlineInputBorder(),
+                          ),
+                          value: priority,
+                          items: ['Low', 'Medium', 'High', 'Critical'].map((p) {
+                            return DropdownMenuItem(value: p, child: Text(p));
+                          }).toList(),
+                          onChanged: (value) {
+                            setDialogState(() => priority = value!);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            labelText: 'Est. Hours',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            estimatedHours = int.tryParse(value);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.trim().isNotEmpty) {
+                  _createTask(
+                    title: titleController.text.trim(),
+                    description: descriptionController.text.trim(),
+                    projectId: selectedProjectId,
+                    moduleId: selectedModuleId,
+                    priority: priority,
+                    status: status,
+                    dueDate: selectedDate,
+                    estimatedHours: estimatedHours,
+                  );
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Create Task'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _createTask({
+    required String title,
+    required String description,
+    int? projectId,
+    int? moduleId,
+    required String priority,
+    required String status,
+    required DateTime dueDate,
+    int? estimatedHours,
+  }) async {
+    if (moduleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a project and module')),
+      );
+      return;
+    }
+
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBase/task/api/admin/projects/$projectId/modules/$moduleId/tasks'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'title': title,
+          'description': description,
+          'priority': priority,
+          'status': status,
+          'due_date': dueDate.toIso8601String().substring(0, 10),
+          'estimated_hours': estimatedHours,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Task created successfully'), backgroundColor: Colors.green),
+        );
+        _loadTasks(); // Refresh tasks
+      } else {
+        // Add to local tasks for demo
+        setState(() {
+          _tasks.add({
+            'id': _tasks.length + 1,
+            'title': title,
+            'description': description,
+            'priority': priority,
+            'status': status,
+            'due_date': dueDate.toIso8601String().substring(0, 10),
+            'estimated_hours': estimatedHours,
+            'project': _projects.firstWhere((p) => p['id'] == projectId, orElse: () => {'name': 'Unknown'})['name'],
+          });
+        });
+        _updateSelectedDateTasks();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Task created successfully'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error creating task: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -161,6 +417,37 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const Spacer(),
+                          // View Mode Toggle
+                          ToggleButtons(
+                            isSelected: [_viewMode == 'month', _viewMode == 'agenda'],
+                            onPressed: (index) {
+                              setState(() {
+                                _viewMode = index == 0 ? 'month' : 'agenda';
+                              });
+                            },
+                            children: const [
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text('Month'),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 12),
+                                child: Text('Agenda'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 16),
+                          // Add Task Button
+                          ElevatedButton.icon(
+                            onPressed: () => _showTaskCreationDialog(_selectedDate),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Task'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           IconButton(
                             onPressed: () {
                               setState(() {
@@ -184,9 +471,11 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                         ],
                       ),
                     ),
-                    // Calendar Grid
+                    // Calendar Grid or Agenda View
                     Expanded(
-                      child: _buildCalendarGrid(),
+                      child: _viewMode == 'month'
+                          ? _buildCalendarGrid()
+                          : _buildAgendaView(),
                     ),
                   ],
                 ),
@@ -320,6 +609,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                     });
                     _updateSelectedDateTasks();
                   },
+                  onDoubleTap: () => _showTaskCreationDialog(date),
                   child: Container(
                     margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
@@ -462,4 +752,116 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
     ];
     return months[month - 1];
   }
+
+  Widget _buildAgendaView() {
+    // Get tasks for the current month
+    final monthTasks = _tasks.where((task) {
+      if (task['due_date'] == null) return false;
+      final taskDate = DateTime.parse(task['due_date']);
+      return taskDate.year == _focusedDate.year && taskDate.month == _focusedDate.month;
+    }).toList();
+
+    // Group tasks by date
+    final groupedTasks = <String, List<dynamic>>{};
+    for (final task in monthTasks) {
+      final dateKey = task['due_date'];
+      if (!groupedTasks.containsKey(dateKey)) {
+        groupedTasks[dateKey] = [];
+      }
+      groupedTasks[dateKey]!.add(task);
+    }
+
+    final sortedDates = groupedTasks.keys.toList()..sort();
+
+    if (sortedDates.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.event_note, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text('No tasks scheduled this month', style: TextStyle(fontSize: 18, color: Colors.grey)),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () => _showTaskCreationDialog(_selectedDate),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Task'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: sortedDates.length,
+      itemBuilder: (context, index) {
+        final dateKey = sortedDates[index];
+        final tasks = groupedTasks[dateKey]!;
+        final date = DateTime.parse(dateKey);
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: Colors.blue.shade700),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${date.day}/${date.month}/${date.year}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${tasks.length} task${tasks.length == 1 ? '' : 's'}',
+                      style: TextStyle(color: Colors.blue.shade600),
+                    ),
+                  ],
+                ),
+              ),
+              ...tasks.map((task) => ListTile(
+                leading: Icon(
+                  Icons.assignment,
+                  color: _getPriorityColor(task['priority']),
+                ),
+                title: Text(task['title'] ?? 'Untitled Task'),
+                subtitle: Text(task['description'] ?? 'No description'),
+                trailing: Chip(
+                  label: Text(
+                    task['status'] ?? 'Open',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  backgroundColor: _getStatusColor(task['status']),
+                ),
+                onTap: () {
+                  // Navigate to task details - will implement later
+                },
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+
 }

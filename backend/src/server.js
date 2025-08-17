@@ -56,7 +56,12 @@ app.use('/task/api/notes', notesRouter);
 
 // Admin routes
 import adminUsersRouter from './api/admin-users.js';
+import adminReportsRouter from './api/admin-reports.js';
+import adminProjectsRouter from './api/admin-projects.js';
+
 app.use('/task/api/admin/users', adminUsersRouter);
+app.use('/task/api/admin/reports', adminReportsRouter);
+app.use('/task/api/admin/projects', adminProjectsRouter);
 
 // Projects CRUD
 import projectsRouter from './api/projects.js';

@@ -172,9 +172,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    _buildQuickStat('Tasks This Week', '${_thisWeekTasks.length}'),
+                    GestureDetector(
+                      onTap: () => _showThisWeekTasks(),
+                      child: _buildQuickStat('Tasks This Week', '${_thisWeekTasks.length}'),
+                    ),
                     const SizedBox(width: 24),
-                    _buildQuickStat('High Priority', '${_priorityTasks.length}'),
+                    GestureDetector(
+                      onTap: () => _showHighPriorityTasks(),
+                      child: _buildQuickStat('High Priority', '${_priorityTasks.length}'),
+                    ),
                   ],
                 ),
               ],
@@ -390,14 +396,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildTaskItem(Map<String, dynamic> task) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
+    return GestureDetector(
+      onTap: () => _navigateToTaskDetails(task),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -433,7 +441,140 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
+    ));
+  }
+
+  void _navigateToTaskDetails(Map<String, dynamic> task) {
+    // Navigate to task details - for now show a dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(task['title'] ?? 'Task Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Project: ${task['project'] ?? 'Unknown'}'),
+            const SizedBox(height: 8),
+            Text('Status: ${task['status'] ?? 'Unknown'}'),
+            const SizedBox(height: 8),
+            Text('Priority: ${task['priority'] ?? 'Unknown'}'),
+            const SizedBox(height: 8),
+            Text('Due Date: ${task['due_date'] ?? 'Not set'}'),
+            if (task['description'] != null) ...[
+              const SizedBox(height: 8),
+              Text('Description: ${task['description']}'),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // TODO: Navigate to task edit screen
+            },
+            child: const Text('Edit Task'),
+          ),
+        ],
+      ),
     );
+  }
+
+  void _showThisWeekTasks() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Tasks This Week'),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: _thisWeekTasks.isEmpty
+              ? const Center(child: Text('No tasks this week'))
+              : ListView.builder(
+                  itemCount: _thisWeekTasks.length,
+                  itemBuilder: (context, index) {
+                    final task = _thisWeekTasks[index];
+                    return ListTile(
+                      title: Text(task['title'] ?? 'Untitled Task'),
+                      subtitle: Text(task['project'] ?? 'Unknown Project'),
+                      trailing: Chip(
+                        label: Text(task['status'] ?? 'Open'),
+                        backgroundColor: _getStatusColor(task['status']),
+                      ),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _navigateToTaskDetails(task);
+                      },
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHighPriorityTasks() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('High Priority Tasks'),
+        content: SizedBox(
+          width: 400,
+          height: 300,
+          child: _priorityTasks.isEmpty
+              ? const Center(child: Text('No high priority tasks'))
+              : ListView.builder(
+                  itemCount: _priorityTasks.length,
+                  itemBuilder: (context, index) {
+                    final task = _priorityTasks[index];
+                    return ListTile(
+                      title: Text(task['title'] ?? 'Untitled Task'),
+                      subtitle: Text(task['project'] ?? 'Unknown Project'),
+                      trailing: Chip(
+                        label: Text(task['priority'] ?? 'Medium'),
+                        backgroundColor: _getPriorityColor(task['priority']),
+                      ),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _navigateToTaskDetails(task);
+                      },
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getPriorityColor(String? priority) {
+    switch (priority?.toLowerCase()) {
+      case 'critical':
+        return Colors.red.shade100;
+      case 'high':
+        return Colors.orange.shade100;
+      case 'medium':
+        return Colors.blue.shade100;
+      case 'low':
+        return Colors.green.shade100;
+      default:
+        return Colors.grey.shade100;
+    }
   }
 
   Color _getStatusColor(String? status) {
@@ -569,11 +710,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _buildQuickActionButton(Icons.text_fields, 'Text', () {}),
-                  _buildQuickActionButton(Icons.mic, 'Voice', () {}),
-                  _buildQuickActionButton(Icons.videocam, 'Video', () {}),
-                  _buildQuickActionButton(Icons.link, 'Link', () {}),
-                  _buildQuickActionButton(Icons.attach_file, 'Document', () {}),
+                  _buildQuickActionButton(Icons.text_fields, 'Text', () => _createTextNote()),
+                  _buildQuickActionButton(Icons.mic, 'Voice', () => _createVoiceNote()),
+                  _buildQuickActionButton(Icons.videocam, 'Video', () => _createVideoNote()),
+                  _buildQuickActionButton(Icons.link, 'Link', () => _createLinkNote()),
+                  _buildQuickActionButton(Icons.attach_file, 'Document', () => _createDocumentNote()),
                 ],
               ),
             ],
@@ -629,6 +770,183 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   );
                 },
               ),
+      ),
+    );
+  }
+
+  void _createTextNote() {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Text Note'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Note Title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: contentController,
+                decoration: const InputDecoration(
+                  labelText: 'Note Content',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 5,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (titleController.text.trim().isNotEmpty) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Text note created successfully')),
+                );
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _createVoiceNote() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Voice Note'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.mic, size: 64, color: Colors.blue),
+            SizedBox(height: 16),
+            Text('Voice note recording functionality will be implemented soon.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _createVideoNote() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Video Note'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.videocam, size: 64, color: Colors.blue),
+            SizedBox(height: 16),
+            Text('Video note recording functionality will be implemented soon.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _createLinkNote() {
+    final urlController = TextEditingController();
+    final titleController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Create Link Note'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Link Title',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: urlController,
+                decoration: const InputDecoration(
+                  labelText: 'URL',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.link),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (urlController.text.trim().isNotEmpty) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Link note created successfully')),
+                );
+              }
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _createDocumentNote() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Upload Document'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.attach_file, size: 64, color: Colors.blue),
+            SizedBox(height: 16),
+            Text('Document upload functionality will be implemented soon.'),
+            SizedBox(height: 8),
+            Text('Supported formats: PDF, DOC, DOCX, TXT, etc.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }
