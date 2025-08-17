@@ -12,14 +12,20 @@ router.use(requireAuth);
 const requireAdmin = async (req, res, next) => {
   try {
     const user = req.user;
+    console.log('Admin check - User:', { id: user?.id, email: user?.email, isAdmin: user?.isAdmin });
+    console.log('Admin check - Expected admin email:', process.env.ADMIN_EMAIL);
 
     // Check if user is admin by email or has admin flag
     const isAdmin = user.email === process.env.ADMIN_EMAIL || user.isAdmin === true;
 
+    console.log('Admin check - Is admin:', isAdmin);
+
     if (!isAdmin) {
+      console.log('Admin check failed - Access denied');
       return res.status(403).json({ error: 'Admin access required' });
     }
 
+    console.log('Admin check passed');
     next();
   } catch (err) {
     console.error('Admin check error:', err);

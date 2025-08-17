@@ -10,12 +10,16 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
+
+    console.log('Admin login attempt:', { username, hasPassword: !!password });
+
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
     }
 
     // Check admin credentials (username can be email)
+    console.log('Checking credentials against:', { ADMIN_EMAIL, ADMIN_PASSWORD: '***' });
+
     if ((username === ADMIN_EMAIL || username === 'admin') && password === ADMIN_PASSWORD) {
       // Create admin JWT token
       const token = jwt.sign(
@@ -29,6 +33,8 @@ router.post('/login', async (req, res) => {
         JWT_SECRET,
         { expiresIn: '8h' }
       );
+
+      console.log('Admin login successful, token generated');
 
       res.json({
         token,
