@@ -15,7 +15,15 @@ router.get('/', async (req, res) => {
 router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
   const projectId = Number(req.params.projectId);
   const { title, description, module_id, status_id, priority_id, task_type_id, planned_end_date, start_date, end_date } = req.body;
+
+  // Enforce hierarchy: Tasks must belong to a module
   if (!title) return res.status(400).json({ error: 'title required' });
+  if (!module_id) return res.status(400).json({ error: 'module_id required - tasks must be created within a module' });
+
+  // Verify module belongs to the project
+  const module = await knex('modules').where({ id: module_id, project_id: projectId }).first();
+  if (!module) return res.status(400).json({ error: 'invalid module_id for this project' });
+
   const [row] = await knex('tasks').insert({ project_id: projectId, module_id, title, description, status_id, priority_id, task_type_id, planned_end_date, start_date, end_date }).returning('*');
   try { const { emitTaskCreated } = await import('../events.js'); emitTaskCreated(row); } catch {}
   res.status(201).json(row);

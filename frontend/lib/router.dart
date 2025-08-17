@@ -7,6 +7,8 @@ import 'pin_auth.dart';
 import 'projects.dart';
 import 'profile.dart';
 import 'modules.dart';
+import 'dashboard.dart';
+import 'main_layout.dart';
 import 'tasks.dart';
 import 'critical_path.dart';
 
@@ -16,14 +18,84 @@ class AppRouter {
   AppRouter() {
     router = GoRouter(
       initialLocation: '/login',
+      redirect: (context, state) async {
+        final prefs = await SharedPreferences.getInstance();
+        final jwt = prefs.getString('jwt');
+        if (jwt == null && state.uri.path != '/login') return '/login';
+        if (jwt != null && state.uri.path == '/login') return '/dashboard';
+        if (jwt != null && state.uri.path == '/') return '/dashboard';
+        return null;
+      },
       routes: [
-        GoRoute(path: '/', builder: (ctx, st) => const HomeScreen()),
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
-        GoRoute(path: '/profile', builder: (ctx, st) => const ProfileEditScreen()),
-        GoRoute(path: '/projects', builder: (ctx, st) => const ProjectsScreen()),
-        GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => ModulesScreen(projectId: int.parse(st.pathParameters['id']!))),
-        GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => TasksScreen(projectId: int.parse(st.pathParameters['id']!))),
-        GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => CriticalPathView(projectId: int.parse(st.pathParameters['id']!))),
+
+        // Dashboard as default landing page
+        GoRoute(path: '/dashboard', builder: (ctx, st) => const DashboardScreen()),
+
+        // Legacy home route redirects to dashboard
+        GoRoute(path: '/', redirect: (ctx, st) => '/dashboard'),
+
+        // Main application routes with new layout
+        GoRoute(path: '/projects', builder: (ctx, st) => MainLayout(
+          title: 'Projects',
+          child: const ProjectsScreen(),
+        )),
+        GoRoute(path: '/profile', builder: (ctx, st) => MainLayout(
+          title: 'Profile',
+          child: const ProfileEditScreen(),
+        )),
+        GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => MainLayout(
+          title: 'Modules',
+          child: ModulesScreen(projectId: int.parse(st.pathParameters['id']!)),
+        )),
+        GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => MainLayout(
+          title: 'Tasks',
+          child: TasksScreen(projectId: int.parse(st.pathParameters['id']!)),
+        )),
+        GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => MainLayout(
+          title: 'Critical Path',
+          child: CriticalPathView(projectId: int.parse(st.pathParameters['id']!)),
+        )),
+
+        // New navigation routes
+        GoRoute(path: '/pert', builder: (ctx, st) => MainLayout(
+          title: 'PERT Analysis',
+          child: const Center(child: Text('PERT Analysis - Coming Soon')),
+        )),
+        GoRoute(path: '/calendar', builder: (ctx, st) => MainLayout(
+          title: 'Calendar',
+          child: const Center(child: Text('Calendar - Coming Soon')),
+        )),
+        GoRoute(path: '/chat', builder: (ctx, st) => MainLayout(
+          title: 'Chat',
+          child: const Center(child: Text('Chat - Coming Soon')),
+        )),
+        GoRoute(path: '/alerts', builder: (ctx, st) => MainLayout(
+          title: 'Alerts',
+          child: const Center(child: Text('Alerts - Coming Soon')),
+        )),
+        GoRoute(path: '/others-tasks', builder: (ctx, st) => MainLayout(
+          title: 'Other People\'s Tasks',
+          child: const Center(child: Text('Other People\'s Tasks - Coming Soon')),
+        )),
+
+        // Personal routes
+        GoRoute(path: '/personal/notes', builder: (ctx, st) => MainLayout(
+          title: 'My Notes',
+          child: const Center(child: Text('Notes - Coming Soon')),
+        )),
+        GoRoute(path: '/personal/customize', builder: (ctx, st) => MainLayout(
+          title: 'Customize',
+          child: const Center(child: Text('Customize - Coming Soon')),
+        )),
+        GoRoute(path: '/personal/profile', builder: (ctx, st) => MainLayout(
+          title: 'Edit Profile',
+          child: const Center(child: Text('Edit Profile - Coming Soon')),
+        )),
+        GoRoute(path: '/personal/notifications', builder: (ctx, st) => MainLayout(
+          title: 'Notifications',
+          child: const Center(child: Text('Notifications - Coming Soon')),
+        )),
       ],
     );
   }
