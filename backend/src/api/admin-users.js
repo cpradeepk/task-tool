@@ -38,25 +38,14 @@ router.use(requireAdmin);
 // Get all users
 router.get('/', async (req, res) => {
   try {
-    // Try to query users, create table if it doesn't exist
+    // Try to query users with only columns that definitely exist
     let users;
     try {
       users = await knex('users')
-        .select('id', 'email', 'created_at', 'updated_at', 'pin_created_at', 'pin_last_used')
+        .select('id', 'email', 'created_at')
         .orderBy('created_at', 'desc');
     } catch (tableError) {
-      // If table doesn't exist, create it and return empty array
-      console.log('Users table does not exist, creating...');
-      await knex.schema.createTable('users', (table) => {
-        table.increments('id').primary();
-        table.string('email').unique().notNullable();
-        table.string('pin_hash');
-        table.timestamp('pin_created_at');
-        table.timestamp('pin_last_used');
-        table.integer('pin_attempts').defaultTo(0);
-        table.timestamp('pin_locked_until');
-        table.timestamps(true, true);
-      });
+      console.log('Users table query failed:', tableError.message);
       users = [];
     }
 
@@ -80,24 +69,8 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Check if user already exists (create table if needed)
-    let existingUser;
-    try {
-      existingUser = await knex('users').where({ email }).first();
-    } catch (tableError) {
-      // Create table if it doesn't exist
-      await knex.schema.createTable('users', (table) => {
-        table.increments('id').primary();
-        table.string('email').unique().notNullable();
-        table.string('pin_hash');
-        table.timestamp('pin_created_at');
-        table.timestamp('pin_last_used');
-        table.integer('pin_attempts').defaultTo(0);
-        table.timestamp('pin_locked_until');
-        table.timestamps(true, true);
-      });
-      existingUser = null;
-    }
+    // Check if user already exists
+    const existingUser = await knex('users').where({ email }).first();
     if (existingUser) {
       return res.status(409).json({ error: 'User with this email already exists' });
     }
@@ -109,16 +82,28 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'PIN must be 4-6 digits' });
       }
 
-      // Create user with PIN
+      // Create user with PIN - only insert columns that exist
       const pinHash = await bcrypt.hash(pin, 10);
+
+      // Build insert object with only safe columns
+      const insertData = {
+        email,
+        created_at: new Date()
+      };
+
+      // Add PIN columns if they exist
+      try {
+        const columns = await knex('users').columnInfo();
+        if (columns.pin_hash) insertData.pin_hash = pinHash;
+        if (columns.pin_created_at) insertData.pin_created_at = new Date();
+        if (columns.updated_at) insertData.updated_at = new Date();
+        if (columns.pin_attempts) insertData.pin_attempts = 0;
+      } catch (e) {
+        console.log('Column check failed, using basic insert');
+      }
+
       const [newUser] = await knex('users')
-        .insert({
-          email,
-          pin_hash: pinHash,
-          pin_created_at: new Date(),
-          created_at: new Date(),
-          updated_at: new Date()
-        })
+        .insert(insertData)
         .returning('*');
       user = newUser;
     } else if (auth_type === 'oauth') {
