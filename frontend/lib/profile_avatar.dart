@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:html' as html;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,7 +37,12 @@ class _AvatarPickerState extends State<AvatarPicker> {
     final url = data['url'] as String;
     final key = data['key'] as String;
 
-    await http.put(Uri.parse(url), headers: { 'Content-Type': file.type }, body: await file.slice().arrayBuffer());
+    // Read file as bytes for upload
+    final reader = html.FileReader();
+    reader.readAsArrayBuffer(file);
+    await reader.onLoadEnd.first;
+    final bytes = (reader.result as ByteBuffer).asUint8List();
+    await http.put(Uri.parse(url), headers: { 'Content-Type': file.type }, body: bytes);
     final publicUrl = '${apiBase.replaceFirst(RegExp(r"^http"), 'https')}/task/uploads/$key';
     setState(() { _busy = false; _preview = publicUrl; });
     widget.onUploaded(publicUrl);

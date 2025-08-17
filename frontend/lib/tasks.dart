@@ -16,8 +16,6 @@ class TasksScreen extends StatefulWidget {
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
-import 'socket.dart';
-
 class _TasksScreenState extends State<TasksScreen> {
   Realtime? _rt;
   List<dynamic> _tasks = [];

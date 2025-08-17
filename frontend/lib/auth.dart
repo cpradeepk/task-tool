@@ -1,16 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
 class AuthController extends ChangeNotifier {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile', 'openid'],
-  );
-
   String? jwt;
   String? email;
 
@@ -24,33 +17,17 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> signIn() async {
-    final account = await _googleSignIn.signIn();
-    if (account == null) return; // cancelled
+    // Simple auth for testing - replace with Google Sign-In later
+    email = 'test@swargfood.com';
+    jwt = 'test-jwt-token';
 
-    final auth = await account.authentication;
-    final idToken = auth.idToken;
-    if (idToken == null) {
-      throw Exception('Google ID token missing');
-    }
-
-    final r = await http.post(Uri.parse('$apiBase/task/api/auth/session'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idToken': idToken}));
-    if (r.statusCode == 200) {
-      final body = jsonDecode(r.body);
-      jwt = body['token'];
-      email = body['user']['email'];
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('jwt', jwt!);
-      await prefs.setString('email', email!);
-      notifyListeners();
-    } else {
-      throw Exception('Auth failed: ${r.statusCode}');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('jwt', jwt!);
+    await prefs.setString('email', email!);
+    notifyListeners();
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     jwt = null;
     email = null;
     final prefs = await SharedPreferences.getInstance();
