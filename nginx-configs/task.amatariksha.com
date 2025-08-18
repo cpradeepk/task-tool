@@ -1,0 +1,134 @@
+# Nginx configuration for task.amatariksha.com
+# This configuration serves only the task tool routes (/task/*)
+
+server {
+    listen 80;
+    server_name task.amatariksha.com;
+    
+    # Redirect all HTTP traffic to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name task.amatariksha.com;
+    
+    # SSL Configuration (will be managed by Certbot)
+    ssl_certificate /etc/letsencrypt/live/task.amatariksha.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/task.amatariksha.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "no-referrer-when-downgrade" always;
+    add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied expired no-cache no-store private must-revalidate auth;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
+    
+    # Client max body size for file uploads
+    client_max_body_size 50M;
+    
+    # Root redirect - redirect root to /task/
+    location = / {
+        return 301 https://$server_name/task/;
+    }
+    
+    # Task Tool API endpoints
+    location /task/api/ {
+        proxy_pass http://127.0.0.1:3003;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+    
+    # Task Tool health check
+    location /task/health {
+        proxy_pass http://127.0.0.1:3003;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        access_log off;
+    }
+    
+    # Socket.IO for real-time features
+    location /task/socket.io/ {
+        proxy_pass http://127.0.0.1:3003;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+    
+    # File uploads
+    location /task/uploads/ {
+        alias /var/www/task/uploads/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+    
+    # Flutter web application (main task tool frontend)
+    location /task/ {
+        alias /var/www/task/frontend/web/;
+        try_files $uri $uri/ /task/index.html;
+        
+        # Cache static assets
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+            access_log off;
+        }
+        
+        # Don't cache HTML files
+        location ~* \.html$ {
+            expires -1;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+        }
+    }
+    
+    # Block access to sensitive files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    
+    location ~ ~$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+    
+    # Custom error pages
+    error_page 404 /task/index.html;
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+    
+    # Logging
+    access_log /var/log/nginx/task.amatariksha.com.access.log;
+    error_log /var/log/nginx/task.amatariksha.com.error.log;
+}

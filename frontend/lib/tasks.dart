@@ -298,7 +298,6 @@ class _TasksScreenState extends State<TasksScreen> {
                 const Expanded(flex: 2, child: Text('Task ID', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Assignee', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Due Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                const Expanded(flex: 1, child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Start Date', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Time Tracked', style: TextStyle(fontWeight: FontWeight.bold))),
                 const SizedBox(width: 40), // Space for actions
@@ -491,28 +490,6 @@ class _TasksScreenState extends State<TasksScreen> {
                     ),
                     Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
                   ],
-                ),
-              ),
-            ),
-
-            // Status
-            Expanded(
-              flex: 1,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(status['name']).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _getStatusColor(status['name']).withOpacity(0.3)),
-                ),
-                child: Text(
-                  status['name'].toString().toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: _getStatusColor(status['name']),
-                  ),
-                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -1025,29 +1002,6 @@ class _TasksScreenState extends State<TasksScreen> {
           ),
           const SizedBox(width: 8),
 
-          // Status (default to Open)
-          Expanded(
-            flex: 1,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: const Text(
-                'OPEN',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
           // Start date (auto-filled)
           Expanded(
             flex: 2,
@@ -1124,12 +1078,14 @@ class _TasksScreenState extends State<TasksScreen> {
 
   void _saveNewTask() async {
     if (_newTaskTitleController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a task title'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a task title'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
       return;
     }
 
@@ -1151,6 +1107,9 @@ class _TasksScreenState extends State<TasksScreen> {
     };
 
     try {
+      print('Creating task with data: ${jsonEncode(newTask)}'); // Debug log
+      print('API endpoint: $apiBase/task/api/projects/${widget.projectId}/tasks'); // Debug log
+
       final res = await http.post(
         Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks'),
         headers: {
@@ -1160,7 +1119,10 @@ class _TasksScreenState extends State<TasksScreen> {
         body: jsonEncode(newTask),
       );
 
-      if (res.statusCode == 201) {
+      print('Response status: ${res.statusCode}'); // Debug log
+      print('Response body: ${res.body}'); // Debug log
+
+      if (res.statusCode == 201 || res.statusCode == 200) {
         _cancelTaskCreation();
         _load(); // Reload tasks
         if (mounted) {
@@ -1171,15 +1133,22 @@ class _TasksScreenState extends State<TasksScreen> {
             ),
           );
         }
+      } else {
+        // Handle non-success status codes
+        print('Failed to create task. Status: ${res.statusCode}, Body: ${res.body}');
+        throw Exception('Failed to create task: ${res.statusCode}');
       }
     } catch (e) {
-      // Add to local list for demo
+      print('Error creating task: $e'); // Debug log
+
+      // Add to local list for demo/fallback
       setState(() {
         _tasks.add({
           ...newTask,
           'id': _tasks.length + 1,
-          'status': 'Open',
-          'priority': 'Medium',
+          'status_id': 1,
+          'priority_id': 2,
+          'task_type_id': 1,
           'timer_running': false,
           'total_time_tracked': 0,
         });
@@ -1187,7 +1156,7 @@ class _TasksScreenState extends State<TasksScreen> {
       _cancelTaskCreation();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text('Task created successfully (demo mode)'),
             backgroundColor: Colors.green,
           ),

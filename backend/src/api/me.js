@@ -6,7 +6,13 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.get('/profile', async (req, res) => {
-  const row = await knex('user_profiles').where({ user_id: req.user.id }).first();
+  const row = await knex('users')
+    .select('id', 'email', 'name', 'short_name', 'phone', 'telegram', 'whatsapp',
+            'theme', 'accent_color', 'font', 'avatar_url', 'first_name', 'last_name',
+            'department', 'job_title', 'bio', 'timezone', 'language',
+            'email_notifications', 'push_notifications', 'created_at', 'updated_at')
+    .where({ id: req.user.id })
+    .first();
   res.json(row || {});
 });
 
@@ -21,14 +27,31 @@ router.put('/profile', async (req, res) => {
     accent_color: req.body.accent_color,
     font: req.body.font,
     avatar_url: req.body.avatar_url,
+    // Also allow updating other user fields
+    first_name: req.body.first_name,
+    last_name: req.body.last_name,
+    department: req.body.department,
+    job_title: req.body.job_title,
+    bio: req.body.bio,
+    timezone: req.body.timezone,
+    language: req.body.language,
+    email_notifications: req.body.email_notifications,
+    push_notifications: req.body.push_notifications,
+    updated_at: knex.fn.now()
   };
-  const exists = await knex('user_profiles').where({ user_id: req.user.id }).first();
-  let row;
-  if (exists) {
-    [row] = await knex('user_profiles').where({ user_id: req.user.id }).update(data).returning('*');
-  } else {
-    [row] = await knex('user_profiles').insert({ user_id: req.user.id, ...data }).returning('*');
-  }
+
+  // Remove undefined values to avoid overwriting with null
+  Object.keys(data).forEach(key => {
+    if (data[key] === undefined) {
+      delete data[key];
+    }
+  });
+
+  const [row] = await knex('users')
+    .where({ id: req.user.id })
+    .update(data)
+    .returning('*');
+
   res.json(row);
 });
 
