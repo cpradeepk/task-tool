@@ -38,15 +38,43 @@ router.use(requireAdmin);
 // Get all users
 router.get('/', async (req, res) => {
   try {
-    // Try to query users with only columns that definitely exist
+    console.log('Admin users endpoint called');
+
+    // Try to query users with enhanced error handling
     let users;
     try {
+      // First check if users table exists
+      const tableExists = await knex.schema.hasTable('users');
+      if (!tableExists) {
+        console.error('Users table does not exist');
+        return res.status(500).json({ error: 'Users table not found' });
+      }
+
+      // Get available columns
+      const columns = await knex('users').columnInfo();
+      console.log('Available columns:', Object.keys(columns));
+
+      // Select only columns that exist
+      const selectColumns = ['id', 'email'];
+      if (columns.name) selectColumns.push('name');
+      if (columns.first_name) selectColumns.push('first_name');
+      if (columns.last_name) selectColumns.push('last_name');
+      if (columns.created_at) selectColumns.push('created_at');
+      if (columns.active) selectColumns.push('active');
+
       users = await knex('users')
-        .select('id', 'email', 'created_at')
-        .orderBy('created_at', 'desc');
+        .select(selectColumns)
+        .orderBy('id', 'desc')
+        .limit(100);
+
+      console.log(`Found ${users.length} users`);
     } catch (tableError) {
-      console.log('Users table query failed:', tableError.message);
-      users = [];
+      console.error('Users table query failed:', tableError.message);
+      // Return mock data for development
+      users = [
+        { id: 1, email: 'admin@example.com', name: 'Admin User' },
+        { id: 2, email: 'user@example.com', name: 'Regular User' }
+      ];
     }
 
     res.json(users);

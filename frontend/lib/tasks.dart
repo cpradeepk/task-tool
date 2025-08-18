@@ -56,16 +56,27 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _load() async {
+    if (_busy) return; // Prevent multiple simultaneous loads
+
     setState(() { _busy = true; });
     final jwt = await _jwt();
 
     try {
-      // Load modules
+      print('Loading data for project ${widget.projectId}...');
+
+      // Load modules with timeout
       final modulesRes = await http.get(
         Uri.parse('$apiBase/task/api/projects/${widget.projectId}/modules'),
         headers: { 'Authorization': 'Bearer $jwt' }
-      );
-      _modules = jsonDecode(modulesRes.body) as List<dynamic>;
+      ).timeout(const Duration(seconds: 10));
+
+      if (modulesRes.statusCode == 200) {
+        _modules = jsonDecode(modulesRes.body) as List<dynamic>;
+        print('Loaded ${_modules.length} modules');
+      } else {
+        print('Failed to load modules: ${modulesRes.statusCode}');
+        _modules = [];
+      }
 
       // Load tasks - either for specific module or all project tasks
       String tasksUrl;
@@ -75,15 +86,32 @@ class _TasksScreenState extends State<TasksScreen> {
         tasksUrl = '$apiBase/task/api/projects/${widget.projectId}/tasks';
       }
 
-      final r = await http.get(Uri.parse(tasksUrl), headers: { 'Authorization': 'Bearer $jwt' });
-      final list = jsonDecode(r.body) as List<dynamic>;
+      final r = await http.get(
+        Uri.parse(tasksUrl),
+        headers: { 'Authorization': 'Bearer $jwt' }
+      ).timeout(const Duration(seconds: 10));
+
+      List<dynamic> list = [];
+      if (r.statusCode == 200) {
+        list = jsonDecode(r.body) as List<dynamic>;
+        print('Loaded ${list.length} tasks');
+      } else {
+        print('Failed to load tasks: ${r.statusCode}');
+      }
 
       // Load users
       final usersRes = await http.get(
         Uri.parse('$apiBase/task/api/users'),
         headers: { 'Authorization': 'Bearer $jwt' }
-      );
-      final users = jsonDecode(usersRes.body) as List<dynamic>;
+      ).timeout(const Duration(seconds: 10));
+
+      List<dynamic> users = [];
+      if (usersRes.statusCode == 200) {
+        users = jsonDecode(usersRes.body) as List<dynamic>;
+        print('Loaded ${users.length} users');
+      } else {
+        print('Failed to load users: ${usersRes.statusCode}');
+      }
 
       setState(() {
         _busy = false;
@@ -91,6 +119,7 @@ class _TasksScreenState extends State<TasksScreen> {
         _users = users;
       });
     } catch (e) {
+      print('Error loading data: $e');
       // Use mock data for development
       _modules = [
         {'id': 1, 'name': 'Authentication Module'},
@@ -161,10 +190,17 @@ class _TasksScreenState extends State<TasksScreen> {
     _loadMD();
     _load();
     _loadRoles();
-    _rt = Realtime(apiBase);
-    _rt!.connect();
-    _rt!.on('task.created', (_) => _load());
-    _rt!.on('task.updated', (_) => _load());
+
+    // Initialize WebSocket with error handling
+    try {
+      _rt = Realtime(apiBase);
+      _rt!.connect();
+      _rt!.on('task.created', (_) => _load());
+      _rt!.on('task.updated', (_) => _load());
+    } catch (e) {
+      print('WebSocket initialization failed: $e');
+      // Continue without WebSocket - app should still work
+    }
   }
 
   @override
