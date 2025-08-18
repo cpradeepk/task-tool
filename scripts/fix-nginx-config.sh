@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-DOMAIN="task.amatariksha.com"
+DOMAIN="task.amtariksha.com"
 NGINX_CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
 REPO_DIR="/srv/task-tool"
 

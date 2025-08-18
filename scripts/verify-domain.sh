@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-DOMAIN="task.amatariksha.com"
+DOMAIN="task.amtariksha.com"
 API_BASE="https://$DOMAIN"
 
 # Colors for output

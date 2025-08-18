@@ -6,7 +6,7 @@
 set -e  # Exit on any error
 
 # Configuration
-DOMAIN="task.amatariksha.com"
+DOMAIN="task.amtariksha.com"
 NGINX_CONFIG_FILE="/etc/nginx/sites-available/$DOMAIN"
 NGINX_ENABLED_FILE="/etc/nginx/sites-enabled/$DOMAIN"
 REPO_DIR="/srv/task-tool"
@@ -53,19 +53,30 @@ echo "=" | tr '\n' '=' | head -c 70; echo
 # Step 1: Verify DNS configuration
 log "🔍 Checking DNS configuration for $DOMAIN..."
 if nslookup $DOMAIN > /dev/null 2>&1; then
-    DNS_IP=$(nslookup $DOMAIN | grep -A1 "Name:" | tail -1 | awk '{print $2}')
-    SERVER_IP=$(curl -s ifconfig.me)
+    DNS_IP=$(nslookup $DOMAIN | grep -A1 "Name:" | tail -1 | awk '{print $2}' 2>/dev/null || echo "unknown")
+    SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || echo "unknown")
     info "DNS resolves to: $DNS_IP"
     info "Server IP: $SERVER_IP"
-    
-    if [ "$DNS_IP" != "$SERVER_IP" ]; then
+
+    if [ "$DNS_IP" != "$SERVER_IP" ] && [ "$DNS_IP" != "unknown" ] && [ "$SERVER_IP" != "unknown" ]; then
         warn "DNS IP ($DNS_IP) doesn't match server IP ($SERVER_IP)"
         warn "Make sure DNS is properly configured before proceeding"
     else
         log "✅ DNS configuration looks correct"
     fi
 else
-    error "❌ DNS lookup failed for $DOMAIN. Please configure DNS first."
+    warn "⚠️  DNS lookup failed for $DOMAIN"
+    warn "This could be due to:"
+    warn "  1. DNS not yet configured"
+    warn "  2. DNS propagation still in progress"
+    warn "  3. Network connectivity issues"
+    info "Continuing with setup - SSL certificate installation may fail if DNS isn't ready"
+
+    read -p "Do you want to continue anyway? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        error "Setup cancelled. Please configure DNS first and try again."
+    fi
 fi
 
 # Step 2: Check if nginx is installed

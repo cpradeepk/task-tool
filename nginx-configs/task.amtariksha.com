@@ -1,9 +1,9 @@
-# Nginx configuration for task.amatariksha.com
+# Nginx configuration for task.amtariksha.com
 # This configuration serves only the task tool routes (/task/*)
 
 server {
     listen 80;
-    server_name task.amatariksha.com;
+    server_name task.amtariksha.com;
     
     # Redirect all HTTP traffic to HTTPS
     return 301 https://$server_name$request_uri;
@@ -11,11 +11,11 @@ server {
 
 server {
     listen 443 ssl http2;
-    server_name task.amatariksha.com;
+    server_name task.amtariksha.com;
     
     # SSL Configuration (will be managed by Certbot)
-    ssl_certificate /etc/letsencrypt/live/task.amatariksha.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/task.amatariksha.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/task.amtariksha.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/task.amtariksha.com/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
     
@@ -129,6 +129,6 @@ server {
     }
     
     # Logging
-    access_log /var/log/nginx/task.amatariksha.com.access.log;
-    error_log /var/log/nginx/task.amatariksha.com.error.log;
+    access_log /var/log/nginx/task.amtariksha.com.access.log;
+    error_log /var/log/nginx/task.amtariksha.com.error.log;
 }

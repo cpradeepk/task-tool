@@ -1,17 +1,17 @@
-# Domain Configuration Setup: task.amatariksha.com
+# Domain Configuration Setup: task.amtariksha.com
 
-This document provides instructions for setting up the new subdomain `task.amatariksha.com` to serve only the task management tool routes.
+This document provides instructions for setting up the new subdomain `task.amtariksha.com` to serve only the task management tool routes.
 
 ## Overview
 
 - **Current Setup**: `ai.swargfood.com` serves the task tool at `/task/*`
-- **New Setup**: `task.amatariksha.com` will serve only task tool routes
-- **DNS**: User has already configured DNS records for `task.amatariksha.com`
+- **New Setup**: `task.amtariksha.com` will serve only task tool routes
+- **DNS**: User has already configured DNS records for `task.amtariksha.com`
 - **SSL**: Automatic SSL certificate setup using Certbot
 
 ## Prerequisites
 
-1. **DNS Configuration**: Ensure `task.amatariksha.com` points to your server IP
+1. **DNS Configuration**: Ensure `task.amtariksha.com` points to your server IP
 2. **Server Access**: SSH access to the server with sudo privileges
 3. **Existing Setup**: Task tool should already be running on the server
 4. **Nginx**: Nginx should be installed and running
@@ -58,10 +58,10 @@ If you prefer to set up manually:
 
 ```bash
 # Copy the nginx configuration
-sudo cp nginx-configs/task.amatariksha.com /etc/nginx/sites-available/task.amatariksha.com
+sudo cp nginx-configs/task.amtariksha.com /etc/nginx/sites-available/task.amtariksha.com
 
 # Enable the site
-sudo ln -s /etc/nginx/sites-available/task.amatariksha.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/task.amtariksha.com /etc/nginx/sites-enabled/
 
 # Test configuration
 sudo nginx -t
@@ -78,7 +78,7 @@ sudo apt update
 sudo apt install -y certbot python3-certbot-nginx
 
 # Get SSL certificate
-sudo certbot --nginx -d task.amatariksha.com --non-interactive --agree-tos --email amtariksha@gmail.com
+sudo certbot --nginx -d task.amtariksha.com --non-interactive --agree-tos --email amtariksha@gmail.com
 ```
 
 ### 3. Update Backend CORS
@@ -90,7 +90,7 @@ Edit `/srv/task-tool/backend/ecosystem.config.cjs`:
 CORS_ORIGIN: 'https://ai.swargfood.com',
 
 // To this:
-CORS_ORIGIN: 'https://ai.swargfood.com,https://task.amatariksha.com',
+CORS_ORIGIN: 'https://ai.swargfood.com,https://task.amtariksha.com',
 ```
 
 Then restart the backend:
@@ -130,26 +130,26 @@ pm2 restart task-tool-backend
 
 ```bash
 # Test DNS resolution
-nslookup task.amatariksha.com
+nslookup task.amtariksha.com
 
 # Test HTTPS
-curl -I https://task.amatariksha.com/task/
+curl -I https://task.amtariksha.com/task/
 
 # Test API health
-curl https://task.amatariksha.com/task/health
+curl https://task.amtariksha.com/task/health
 ```
 
 ### 2. Frontend Application
 
-Visit: https://task.amatariksha.com/task/
+Visit: https://task.amtariksha.com/task/
 
 You should see the task management application loading correctly.
 
 ### 3. API Endpoints
 
 Test API endpoints:
-- https://task.amatariksha.com/task/api/master/statuses
-- https://task.amatariksha.com/task/api/projects
+- https://task.amtariksha.com/task/api/master/statuses
+- https://task.amtariksha.com/task/api/projects
 
 ## Troubleshooting
 
@@ -173,8 +173,8 @@ Test API endpoints:
 
 ### Log Files
 
-- **Nginx Access**: `/var/log/nginx/task.amatariksha.com.access.log`
-- **Nginx Error**: `/var/log/nginx/task.amatariksha.com.error.log`
+- **Nginx Access**: `/var/log/nginx/task.amtariksha.com.access.log`
+- **Nginx Error**: `/var/log/nginx/task.amtariksha.com.error.log`
 - **Backend Logs**: `pm2 logs task-tool-backend`
 - **SSL Logs**: `/var/log/letsencrypt/letsencrypt.log`
 
