@@ -17,14 +17,19 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final _searchController = TextEditingController();
+  final _linkController = TextEditingController();
   List<dynamic> _notes = [];
   List<dynamic> _filteredNotes = [];
   bool _isLoading = false;
   String? _errorMessage;
   int? _editingNoteId;
   String _selectedCategory = 'All';
+  String _selectedNoteType = 'Text';
   final List<String> _categories = ['All', 'Favorites', 'Work', 'Personal', 'Ideas', 'Meeting Notes', 'Tasks'];
+  final List<String> _noteTypes = ['Text', 'Voice', 'Photo', 'Video', 'Link', 'Document'];
   bool _showFavoritesOnly = false;
+  List<String> _attachedFiles = [];
+  bool _isRecording = false;
 
   @override
   void initState() {
@@ -70,40 +75,130 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
         'title': 'Project Planning Meeting',
         'content': 'Discussed the new task management system requirements:\n- User authentication with PIN\n- Admin dashboard with reporting\n- PERT analysis for project planning\n- Calendar integration\n\nNext steps:\n- Complete wireframes by Friday\n- Setup development environment',
         'category': 'Meeting Notes',
+        'type': 'Text',
         'created_at': now.subtract(const Duration(days: 2)).toIso8601String(),
         'updated_at': now.subtract(const Duration(days: 2)).toIso8601String(),
         'tags': ['project', 'planning', 'meeting'],
         'is_favorite': true,
+        'attachments': [],
       },
       {
         'id': 2,
         'title': 'Flutter Development Tips',
         'content': 'Key learnings from Flutter development:\n\n1. State Management:\n- Use setState for simple state\n- Consider Provider or Riverpod for complex state\n- Always dispose controllers\n\n2. Performance:\n- Use const constructors where possible\n- Avoid rebuilding widgets unnecessarily\n- Use ListView.builder for large lists\n\n3. UI Best Practices:\n- Follow Material Design guidelines\n- Ensure proper contrast ratios\n- Test on different screen sizes',
         'category': 'Work',
+        'type': 'Text',
         'created_at': now.subtract(const Duration(days: 5)).toIso8601String(),
         'updated_at': now.subtract(const Duration(days: 1)).toIso8601String(),
         'tags': ['flutter', 'development', 'tips'],
         'is_favorite': false,
+        'attachments': [],
+      },
+      {
+        'id': 5,
+        'title': 'Team Meeting Recording',
+        'content': 'Weekly team sync discussion about project milestones and upcoming deadlines.',
+        'category': 'Meeting Notes',
+        'type': 'Voice',
+        'created_at': now.subtract(const Duration(hours: 6)).toIso8601String(),
+        'updated_at': now.subtract(const Duration(hours: 6)).toIso8601String(),
+        'tags': ['meeting', 'team', 'voice'],
+        'is_favorite': false,
+        'attachments': [
+          {
+            'type': 'audio',
+            'name': 'team_meeting_${now.day}_${now.month}.mp3',
+            'size': '2.4 MB',
+            'duration': '15:32',
+          }
+        ],
+      },
+      {
+        'id': 6,
+        'title': 'Project Architecture Diagram',
+        'content': 'System architecture overview showing database relationships and API endpoints.',
+        'category': 'Work',
+        'type': 'Photo',
+        'created_at': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'updated_at': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'tags': ['architecture', 'diagram', 'system'],
+        'is_favorite': true,
+        'attachments': [
+          {
+            'type': 'image',
+            'name': 'architecture_diagram.png',
+            'size': '1.2 MB',
+            'dimensions': '1920x1080',
+          }
+        ],
+      },
+      {
+        'id': 7,
+        'title': 'Useful Development Resources',
+        'content': 'Collection of helpful links for Flutter development and project management.',
+        'category': 'Work',
+        'type': 'Link',
+        'created_at': now.subtract(const Duration(days: 1)).toIso8601String(),
+        'updated_at': now.subtract(const Duration(days: 1)).toIso8601String(),
+        'tags': ['resources', 'links', 'development'],
+        'is_favorite': false,
+        'attachments': [
+          {
+            'type': 'link',
+            'name': 'Flutter Documentation',
+            'url': 'https://flutter.dev/docs',
+            'description': 'Official Flutter documentation',
+          },
+          {
+            'type': 'link',
+            'name': 'Material Design Guidelines',
+            'url': 'https://material.io/design',
+            'description': 'Google\'s Material Design principles',
+          }
+        ],
       },
       {
         'id': 3,
         'title': 'Weekend Project Ideas',
         'content': 'Ideas for weekend coding projects:\n\n1. Personal Finance Tracker\n- Track expenses and income\n- Generate monthly reports\n- Set budget goals\n\n2. Recipe Manager\n- Store favorite recipes\n- Plan weekly meals\n- Generate shopping lists\n\n3. Habit Tracker\n- Track daily habits\n- Visualize progress\n- Set reminders',
         'category': 'Ideas',
+        'type': 'Text',
         'created_at': now.subtract(const Duration(days: 7)).toIso8601String(),
         'updated_at': now.subtract(const Duration(days: 7)).toIso8601String(),
         'tags': ['projects', 'ideas', 'coding'],
         'is_favorite': true,
+        'attachments': [],
       },
       {
         'id': 4,
         'title': 'Daily Standup Notes',
         'content': 'Today\'s standup:\n\nWhat I did yesterday:\n- Completed user authentication module\n- Fixed routing issues in admin panel\n- Updated documentation\n\nWhat I\'m doing today:\n- Implement PERT analysis feature\n- Add calendar functionality\n- Code review for team members\n\nBlockers:\n- Waiting for API documentation from backend team',
         'category': 'Work',
+        'type': 'Text',
         'created_at': now.subtract(const Duration(hours: 2)).toIso8601String(),
         'updated_at': now.subtract(const Duration(hours: 2)).toIso8601String(),
         'tags': ['standup', 'daily', 'work'],
         'is_favorite': false,
+        'attachments': [],
+      },
+      {
+        'id': 8,
+        'title': 'Project Requirements Document',
+        'content': 'Comprehensive requirements document for the task management system including user stories, acceptance criteria, and technical specifications.',
+        'category': 'Work',
+        'type': 'Document',
+        'created_at': now.subtract(const Duration(days: 4)).toIso8601String(),
+        'updated_at': now.subtract(const Duration(days: 4)).toIso8601String(),
+        'tags': ['requirements', 'document', 'project'],
+        'is_favorite': true,
+        'attachments': [
+          {
+            'type': 'document',
+            'name': 'project_requirements_v2.pdf',
+            'size': '3.8 MB',
+            'pages': 24,
+          }
+        ],
       },
     ];
   }
@@ -114,10 +209,12 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
         final matchesCategory = _selectedCategory == 'All' ||
                                (_selectedCategory == 'Favorites' && (note['is_favorite'] ?? false)) ||
                                note['category'] == _selectedCategory;
+        final matchesNoteType = _selectedNoteType == 'All' ||
+                               (note['type'] ?? 'Text') == _selectedNoteType;
         final matchesSearch = _searchController.text.isEmpty ||
             note['title'].toLowerCase().contains(_searchController.text.toLowerCase()) ||
             note['content'].toLowerCase().contains(_searchController.text.toLowerCase());
-        return matchesCategory && matchesSearch;
+        return matchesCategory && matchesNoteType && matchesSearch;
       }).toList();
       
       // Sort by updated_at descending
@@ -275,7 +372,11 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
       _editingNoteId = null;
       _titleController.clear();
       _contentController.clear();
+      _linkController.clear();
       _selectedCategory = 'Work';
+      _selectedNoteType = 'Text';
+      _attachedFiles.clear();
+      _isRecording = false;
     });
   }
 
@@ -394,6 +495,29 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
                               }).toList(),
                               onChanged: (value) {
                                 setState(() => _selectedCategory = value!);
+                                _filterNotes();
+                              },
+                            ),
+                            const SizedBox(width: 8),
+                            DropdownButton<String>(
+                              value: _selectedNoteType,
+                              items: ['All', ..._noteTypes].map((type) {
+                                return DropdownMenuItem(
+                                  value: type,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (type != 'All') ...[
+                                        Icon(_getNoteTypeIcon(type), size: 16),
+                                        const SizedBox(width: 4),
+                                      ],
+                                      Text(type),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() => _selectedNoteType = value!);
                                 _filterNotes();
                               },
                             ),
@@ -576,6 +700,40 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
               style: const TextStyle(fontSize: 12),
             ),
             const SizedBox(height: 8),
+
+            // Show attachments if any
+            if (note['attachments'] != null && (note['attachments'] as List).isNotEmpty)
+              Wrap(
+                spacing: 4,
+                children: (note['attachments'] as List).take(3).map<Widget>((attachment) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _getAttachmentIcon(attachment['type']),
+                          size: 8,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          attachment['name'] ?? 'Attachment',
+                          style: TextStyle(fontSize: 8, color: Colors.grey.shade600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            if (note['attachments'] != null && (note['attachments'] as List).isNotEmpty)
+              const SizedBox(height: 4),
             Row(
               children: [
                 Container(
@@ -587,6 +745,29 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
                   child: Text(
                     note['category'],
                     style: const TextStyle(color: Colors.white, fontSize: 10),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getNoteTypeColor(note['type'] ?? 'Text'),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getNoteTypeIcon(note['type'] ?? 'Text'),
+                        size: 10,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        note['type'] ?? 'Text',
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -643,6 +824,61 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
     }
   }
 
+  Color _getNoteTypeColor(String type) {
+    switch (type) {
+      case 'Text':
+        return Colors.grey.shade600;
+      case 'Voice':
+        return Colors.deepPurple;
+      case 'Photo':
+        return Colors.teal;
+      case 'Video':
+        return Colors.indigo;
+      case 'Link':
+        return Colors.cyan;
+      case 'Document':
+        return Colors.brown;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getNoteTypeIcon(String type) {
+    switch (type) {
+      case 'Text':
+        return Icons.text_fields;
+      case 'Voice':
+        return Icons.mic;
+      case 'Photo':
+        return Icons.photo;
+      case 'Video':
+        return Icons.videocam;
+      case 'Link':
+        return Icons.link;
+      case 'Document':
+        return Icons.description;
+      default:
+        return Icons.note;
+    }
+  }
+
+  IconData _getAttachmentIcon(String type) {
+    switch (type) {
+      case 'audio':
+        return Icons.audiotrack;
+      case 'image':
+        return Icons.image;
+      case 'video':
+        return Icons.video_file;
+      case 'link':
+        return Icons.link;
+      case 'document':
+        return Icons.insert_drive_file;
+      default:
+        return Icons.attach_file;
+    }
+  }
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
@@ -663,6 +899,7 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
     _titleController.dispose();
     _contentController.dispose();
     _searchController.dispose();
+    _linkController.dispose();
     super.dispose();
   }
 }

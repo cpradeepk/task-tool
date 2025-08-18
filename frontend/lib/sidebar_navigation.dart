@@ -25,8 +25,10 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
   List<dynamic> _projects = [];
   Map<int, List<dynamic>> _projectModules = {};
   Map<int, List<dynamic>> _moduleTasks = {};
+  Map<int, List<dynamic>> _taskSubtasks = {};
   Set<int> _expandedProjects = {};
   Set<int> _expandedModules = {};
+  Set<int> _expandedTasks = {};
   bool _isAdmin = false;
   String? _userEmail;
   bool _isProjectsExpanded = true;
@@ -333,22 +335,17 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
                       route: '/personal/notes',
                       isSubItem: true,
                     ),
+
+                    _buildNavItem(
+                      icon: Icons.schedule,
+                      title: 'Availability',
+                      route: '/availability',
+                      isSubItem: true,
+                    ),
                     _buildNavItem(
                       icon: Icons.palette,
                       title: 'Customize',
-                      route: '/personal/customize',
-                      isSubItem: true,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.edit,
-                      title: 'Edit Profile',
-                      route: '/personal/profile',
-                      isSubItem: true,
-                    ),
-                    _buildNavItem(
-                      icon: Icons.notifications_active,
-                      title: 'Configure Notifications',
-                      route: '/personal/notifications',
+                      route: '/profile',
                       isSubItem: true,
                     ),
                   ],
@@ -533,9 +530,15 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
         size: 18,
         color: Colors.blue,
       ),
-      title: Text(
-        project['name'] ?? 'Unnamed Project',
-        style: const TextStyle(fontSize: 13),
+      title: GestureDetector(
+        onTap: () {
+          // Navigate to project overview when project name is clicked
+          context.go('/projects/$projectId/tasks');
+        },
+        child: Text(
+          project['name'] ?? 'Unnamed Project',
+          style: const TextStyle(fontSize: 13, color: Colors.blue),
+        ),
       ),
       onExpansionChanged: (expanded) {
         setState(() {
@@ -560,9 +563,16 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
               size: 16,
               color: Colors.green,
             ),
-            title: Text(
-              module['name'] ?? 'Unnamed Module',
-              style: const TextStyle(fontSize: 12),
+            title: GestureDetector(
+              onTap: () {
+                // Navigate to module tasks when module name is clicked
+                final projectId = project['id'] as int;
+                context.go('/projects/$projectId/modules/$moduleId');
+              },
+              child: Text(
+                module['name'] ?? 'Unnamed Module',
+                style: const TextStyle(fontSize: 12, color: Colors.blue),
+              ),
             ),
             onExpansionChanged: (expanded) {
               setState(() {
@@ -574,31 +584,101 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
               });
             },
             children: tasks.map<Widget>((task) {
-              return Container(
-                margin: const EdgeInsets.only(left: 16),
-                child: ListTile(
-                  dense: true,
-                  leading: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: _getTaskStatusColor(task['status']),
-                      borderRadius: BorderRadius.circular(2),
+              final taskId = task['id'] as int;
+              final subtasks = _taskSubtasks[taskId] ?? [];
+              final isTaskExpanded = _expandedTasks.contains(taskId);
+
+              if (subtasks.isEmpty) {
+                // Simple task without subtasks
+                return Container(
+                  margin: const EdgeInsets.only(left: 16),
+                  child: ListTile(
+                    dense: true,
+                    leading: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: _getTaskStatusColor(task['status']),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
+                    title: Text(
+                      task['title'] ?? 'Untitled Task',
+                      style: const TextStyle(fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      task['task_id'] ?? '',
+                      style: const TextStyle(fontSize: 9, color: Colors.grey),
+                    ),
+                    onTap: () {
+                      // Navigate to task detail or show task dialog
+                      final projectId = task['project_id'] ?? 1;
+                      context.go('/projects/$projectId/modules/$moduleId/tasks/$taskId');
+                    },
                   ),
-                  title: Text(
-                    task['title'] ?? 'Untitled Task',
-                    style: const TextStyle(fontSize: 11),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                );
+              } else {
+                // Task with subtasks - make it expandable
+                return Container(
+                  margin: const EdgeInsets.only(left: 16),
+                  child: ExpansionTile(
+                    dense: true,
+                    leading: Icon(
+                      isTaskExpanded ? Icons.task_alt : Icons.task,
+                      size: 14,
+                      color: _getTaskStatusColor(task['status']),
+                    ),
+                    title: Text(
+                      task['title'] ?? 'Untitled Task',
+                      style: const TextStyle(fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${task['task_id'] ?? ''} • ${subtasks.length} subtasks',
+                      style: const TextStyle(fontSize: 9, color: Colors.grey),
+                    ),
+                    onExpansionChanged: (expanded) {
+                      setState(() {
+                        if (expanded) {
+                          _expandedTasks.add(taskId);
+                          _loadSubtasks(task['project_id'] ?? 1, taskId);
+                        } else {
+                          _expandedTasks.remove(taskId);
+                        }
+                      });
+                    },
+                    children: subtasks.map<Widget>((subtask) {
+                      return Container(
+                        margin: const EdgeInsets.only(left: 16),
+                        child: ListTile(
+                          dense: true,
+                          leading: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: _getTaskStatusColor(subtask['status']),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                          title: Text(
+                            subtask['title'] ?? 'Untitled Subtask',
+                            style: const TextStyle(fontSize: 10),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            // Show subtask detail or navigate
+                            _showSubtaskDetailDialog(subtask, task);
+                          },
+                        ),
+                      );
+                    }).toList(),
                   ),
-                  subtitle: Text(
-                    task['task_id'] ?? '',
-                    style: const TextStyle(fontSize: 9, color: Colors.grey),
-                  ),
-                  onTap: () => _showTaskDetailDialog(task),
-                ),
-              );
+                );
+              }
             }).toList(),
           ),
         );
@@ -608,6 +688,51 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
 
   Color _getTaskStatusColor(String? status) {
     return TaskStatus.getColor(status ?? TaskStatus.open);
+  }
+
+  Future<void> _loadSubtasks(int projectId, int taskId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jwt = prefs.getString('jwt');
+
+      if (jwt != null) {
+        final response = await http.get(
+          Uri.parse('$apiBase/task/api/projects/$projectId/tasks/$taskId/subtasks'),
+          headers: {'Authorization': 'Bearer $jwt'},
+        );
+
+        if (response.statusCode == 200) {
+          final subtasks = jsonDecode(response.body) as List<dynamic>;
+          setState(() {
+            _taskSubtasks[taskId] = subtasks;
+          });
+        }
+      }
+    } catch (e) {
+      // Mock subtasks for development
+      setState(() {
+        _taskSubtasks[taskId] = [
+          {
+            'id': 1,
+            'task_id': taskId,
+            'title': 'Setup environment',
+            'status': 'Completed',
+          },
+          {
+            'id': 2,
+            'task_id': taskId,
+            'title': 'Write unit tests',
+            'status': 'In Progress',
+          },
+          {
+            'id': 3,
+            'task_id': taskId,
+            'title': 'Code review',
+            'status': 'Open',
+          },
+        ];
+      });
+    }
   }
 
   void _showTaskDetailDialog(Map<String, dynamic> task) {
@@ -652,6 +777,45 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
               }
             },
             child: const Text('View Module'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSubtaskDetailDialog(Map<String, dynamic> subtask, Map<String, dynamic> parentTask) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Subtask: ${subtask['title']}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Parent Task: ${parentTask['title']}'),
+            const SizedBox(height: 8),
+            Text('Status: ${subtask['status']}'),
+            const SizedBox(height: 8),
+            Text('Subtask ID: ${subtask['id']}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              // Navigate to parent task detail
+              final projectId = parentTask['project_id'] ?? 1;
+              final moduleId = parentTask['module_id'];
+              final taskId = parentTask['id'];
+              if (moduleId != null && taskId != null) {
+                context.go('/projects/$projectId/modules/$moduleId/tasks/$taskId');
+              }
+            },
+            child: const Text('View Task'),
           ),
         ],
       ),

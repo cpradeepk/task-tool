@@ -21,6 +21,11 @@ class _MainLayoutState extends State<MainLayout> {
   bool _isSidebarCollapsed = false;
   bool _isAdmin = false;
   String? _userEmail;
+  double _zoomLevel = 1.0;
+
+  static const double _minZoom = 0.8;
+  static const double _maxZoom = 1.5;
+  static const double _zoomStep = 0.1;
 
   // Menu expansion states - default to expanded for main sections
   bool _projectsExpanded = true;
@@ -77,6 +82,24 @@ class _MainLayoutState extends State<MainLayout> {
           prefs.setBool('personal_expanded', _personalExpanded);
           break;
       }
+    });
+  }
+
+  void _zoomIn() {
+    setState(() {
+      _zoomLevel = (_zoomLevel + _zoomStep).clamp(_minZoom, _maxZoom);
+    });
+  }
+
+  void _zoomOut() {
+    setState(() {
+      _zoomLevel = (_zoomLevel - _zoomStep).clamp(_minZoom, _maxZoom);
+    });
+  }
+
+  void _resetZoom() {
+    setState(() {
+      _zoomLevel = 1.0;
     });
   }
 
@@ -147,6 +170,43 @@ class _MainLayoutState extends State<MainLayout> {
                       ),
                       
                       // Top Right Actions
+                      // Zoom Controls
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: _zoomOut,
+                            icon: const Icon(Icons.zoom_out),
+                            tooltip: 'Zoom Out',
+                            color: Colors.grey.shade600,
+                          ),
+                          GestureDetector(
+                            onTap: _resetZoom,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                '${(_zoomLevel * 100).round()}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: _zoomIn,
+                            icon: const Icon(Icons.zoom_in),
+                            tooltip: 'Zoom In',
+                            color: Colors.grey.shade600,
+                          ),
+                        ],
+                      ),
+
                       if (!_isAdmin) ...[
                         IconButton(
                           onPressed: _showAdminLogin,
@@ -254,7 +314,10 @@ class _MainLayoutState extends State<MainLayout> {
                 Expanded(
                   child: Container(
                     color: Colors.grey.shade50,
-                    child: widget.child,
+                    child: Transform.scale(
+                      scale: _zoomLevel,
+                      child: widget.child,
+                    ),
                   ),
                 ),
               ],

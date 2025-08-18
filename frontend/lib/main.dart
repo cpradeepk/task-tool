@@ -1,25 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth.dart';
 import 'router.dart';
 import 'nav.dart';
+import 'theme/theme_provider.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final appRouter = AppRouter();
+    final themeNotifier = ref.watch(themeProvider.notifier);
+    final themeState = ref.watch(themeProvider);
+
     return MaterialApp.router(
       title: 'Task Tool',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlue)),
+      theme: themeNotifier.lightTheme,
+      darkTheme: themeNotifier.darkTheme,
+      themeMode: themeState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       routerConfig: appRouter.router,
     );
   }

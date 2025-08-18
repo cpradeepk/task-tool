@@ -8,6 +8,7 @@ import 'modules.dart';
 import 'dashboard.dart';
 import 'main_layout.dart';
 import 'tasks.dart';
+import 'task_detail.dart';
 import 'critical_path.dart';
 import 'admin_login.dart';
 import 'admin/user_management.dart';
@@ -29,6 +30,7 @@ import 'admin/role_manage.dart';
 import 'admin/module_management.dart';
 import 'personal/notes_system.dart';
 import 'personal/profile_edit.dart' as personal;
+import 'personal/availability_management.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -77,6 +79,13 @@ class AppRouter {
             moduleId: int.parse(st.pathParameters['moduleId']!),
           ),
         )),
+        GoRoute(path: '/projects/:projectId/modules/:moduleId/tasks/:taskId', builder: (ctx, st) => MainLayout(
+          title: 'Task Details',
+          child: TaskDetailScreen(
+            projectId: int.parse(st.pathParameters['projectId']!),
+            taskId: int.parse(st.pathParameters['taskId']!),
+          ),
+        )),
         GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => MainLayout(
           title: 'Critical Path',
           child: CriticalPathView(projectId: int.parse(st.pathParameters['id']!)),
@@ -108,6 +117,7 @@ class AppRouter {
 
         // Personal routes
         GoRoute(path: '/personal/notes', builder: (ctx, st) => const NotesSystemScreen()),
+        GoRoute(path: '/availability', builder: (ctx, st) => const AvailabilityManagementScreen()),
         GoRoute(path: '/personal/customize', builder: (ctx, st) => const personal.ProfileEditScreen()),
         GoRoute(path: '/personal/profile', builder: (ctx, st) => const personal.ProfileEditScreen()),
         GoRoute(path: '/personal/notifications', builder: (ctx, st) => const AlertsSystemScreen()),

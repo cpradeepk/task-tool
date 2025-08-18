@@ -2,18 +2,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../main_layout.dart';
+import '../theme/theme_provider.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
-class ProfileEditScreen extends StatefulWidget {
+class ProfileEditScreen extends ConsumerStatefulWidget {
   const ProfileEditScreen({super.key});
 
   @override
-  State<ProfileEditScreen> createState() => _ProfileEditScreenState();
+  ConsumerState<ProfileEditScreen> createState() => _ProfileEditScreenState();
 }
 
-class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProviderStateMixin {
+class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -25,13 +27,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProvid
   bool _isLoading = false;
   bool _emailNotifications = true;
   bool _pushNotifications = false;
-  String _timezone = 'UTC';
+  String _timezone = 'Asia/Kolkata'; // Default to IST
   String _language = 'English';
   String _selectedTheme = 'Blue';
   String _selectedFont = 'Default';
   String? _avatarPath;
 
   final List<String> _timezones = [
+    'Asia/Kolkata', // Indian Standard Time (IST) - Default
     'UTC',
     'America/New_York',
     'America/Los_Angeles',
@@ -69,25 +72,66 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProvid
 
     try {
       final jwt = await _getJwt();
-      if (jwt == null) return;
+      final prefs = await SharedPreferences.getInstance();
 
+      if (jwt == null) {
+        // Load from SharedPreferences if available
+        final email = prefs.getString('email');
+        final name = prefs.getString('name');
+        if (email != null) {
+          _populateForm({
+            'name': name ?? '',
+            'email': email,
+            'timezone': 'Asia/Kolkata',
+            'theme': 'Blue',
+            'font': 'Default',
+          });
+        }
+        return;
+      }
+
+      // Try to get user profile from API
       final response = await http.get(
-        Uri.parse('$apiBase/task/api/profile'),
+        Uri.parse('$apiBase/task/api/user/profile'),
         headers: {'Authorization': 'Bearer $jwt'},
       );
 
       if (response.statusCode == 200) {
         final profile = jsonDecode(response.body);
         _populateForm(profile);
+
+        // Update SharedPreferences with latest data
+        if (profile['email'] != null) {
+          await prefs.setString('email', profile['email']);
+        }
+        if (profile['name'] != null) {
+          await prefs.setString('name', profile['name']);
+        }
+      } else {
+        // Fallback to SharedPreferences data
+        final email = prefs.getString('email');
+        final name = prefs.getString('name');
+        _populateForm({
+          'name': name ?? 'User',
+          'email': email ?? 'user@example.com',
+          'timezone': 'Asia/Kolkata',
+          'theme': 'Blue',
+          'font': 'Default',
+        });
       }
     } catch (e) {
-      // Use mock data for development
+      // Use SharedPreferences data or mock data for development
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('email');
+      final name = prefs.getString('name');
+
       _populateForm({
-        'name': 'John Doe',
-        'email': 'john@example.com',
-        'telegram': '+1234567890',
-        'whatsapp': '+1234567890',
+        'name': name ?? 'John Doe',
+        'email': email ?? 'john@example.com',
+        'telegram': '',
+        'whatsapp': '',
         'bio': 'Software Developer',
+        'timezone': 'Asia/Kolkata',
         'theme': 'Blue',
         'font': 'Default',
       });
@@ -105,7 +149,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProvid
       _bioController.text = profile['bio'] ?? '';
       _emailNotifications = profile['email_notifications'] ?? true;
       _pushNotifications = profile['push_notifications'] ?? false;
-      _timezone = profile['timezone'] ?? 'UTC';
+      _timezone = profile['timezone'] ?? 'Asia/Kolkata';
       _language = profile['language'] ?? 'English';
       _selectedTheme = profile['theme'] ?? 'Blue';
       _selectedFont = profile['font'] ?? 'Default';
@@ -120,7 +164,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProvid
 
     try {
       final jwt = await _getJwt();
-      if (jwt == null) return;
+      final prefs = await SharedPreferences.getInstance();
 
       final profileData = {
         'name': _nameController.text.trim(),
@@ -137,22 +181,48 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProvid
         'avatar': _avatarPath,
       };
 
-      final response = await http.put(
-        Uri.parse('$apiBase/task/api/profile'),
-        headers: {
-          'Authorization': 'Bearer $jwt',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(profileData),
-      );
+      if (jwt != null) {
+        // Try to update via API
+        final response = await http.put(
+          Uri.parse('$apiBase/task/api/user/profile'),
+          headers: {
+            'Authorization': 'Bearer $jwt',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(profileData),
+        );
 
-      if (response.statusCode == 200) {
-        _showSuccessMessage('Profile updated successfully');
-      } else {
-        _showErrorMessage('Failed to update profile');
+        if (response.statusCode == 200) {
+          // Update SharedPreferences with new data
+          await prefs.setString('name', profileData['name'] as String);
+          await prefs.setString('email', profileData['email'] as String);
+          _showSuccessMessage('Profile updated successfully');
+          return;
+        } else {
+          final errorBody = response.body;
+          print('Profile update failed: ${response.statusCode} - $errorBody');
+          _showErrorMessage('Failed to update profile: ${response.statusCode}');
+          return;
+        }
       }
-    } catch (e) {
+
+      // Fallback: Update SharedPreferences directly (demo mode)
+      await prefs.setString('name', profileData['name'] as String);
+      await prefs.setString('email', profileData['email'] as String);
       _showSuccessMessage('Profile updated successfully (Demo Mode)');
+
+    } catch (e) {
+      print('Profile update error: $e');
+
+      // Still try to save to SharedPreferences as fallback
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('name', _nameController.text.trim());
+        await prefs.setString('email', _emailController.text.trim());
+        _showSuccessMessage('Profile updated locally (Offline Mode)');
+      } catch (prefError) {
+        _showErrorMessage('Failed to update profile: $e');
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -437,18 +507,47 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProvid
             const SizedBox(height: 12),
             Wrap(
               spacing: 12,
-              children: ['Blue', 'Green', 'Purple', 'Orange', 'Red'].map((theme) {
+              children: ['Blue', 'Green', 'Purple', 'Orange', 'Red', 'Teal', 'Indigo', 'Pink'].map((theme) {
+                final themeNotifier = ref.read(themeProvider.notifier);
+                final currentTheme = ref.watch(themeProvider);
                 return ChoiceChip(
                   label: Text(theme),
-                  selected: _selectedTheme == theme,
+                  selected: currentTheme.selectedTheme == theme,
                   onSelected: (selected) {
                     if (selected) {
                       setState(() => _selectedTheme = theme);
+                      themeNotifier.setTheme(theme);
                     }
                   },
                   selectedColor: _getThemeColor(theme),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 24),
+
+            // Dark Mode Toggle
+            Row(
+              children: [
+                const Icon(Icons.dark_mode, color: Colors.grey),
+                const SizedBox(width: 12),
+                const Text(
+                  'Dark Mode',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const Spacer(),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final themeNotifier = ref.read(themeProvider.notifier);
+                    final currentTheme = ref.watch(themeProvider);
+                    return Switch(
+                      value: currentTheme.isDarkMode,
+                      onChanged: (value) {
+                        themeNotifier.setDarkMode(value);
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 
@@ -607,6 +706,12 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> with TickerProvid
         return Colors.orange;
       case 'Red':
         return Colors.red;
+      case 'Teal':
+        return Colors.teal;
+      case 'Indigo':
+        return Colors.indigo;
+      case 'Pink':
+        return Colors.pink;
       default:
         return Colors.blue;
     }

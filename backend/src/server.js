@@ -95,6 +95,10 @@ app.use('/task/api/exports', exportsRouter);
 import depsPertRouter from './api/deps_pert.js';
 app.use('/task/api/projects/:projectId/tasks', depsPertRouter);
 
+// Subtasks
+import subtasksRouter from './api/subtasks.js';
+app.use('/task/api/projects/:projectId/tasks/:taskId/subtasks', subtasksRouter);
+
 // Chat
 import chatRouter from './api/chat.js';
 app.use('/task/api/chat', chatRouter);
