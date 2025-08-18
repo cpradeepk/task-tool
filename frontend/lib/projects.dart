@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'task_form.dart';
 import 'project_expandable_card.dart';
 
-const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class ProjectsScreen extends StatefulWidget {
   const ProjectsScreen({super.key});

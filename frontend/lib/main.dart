@@ -7,7 +7,7 @@ import 'router.dart';
 import 'nav.dart';
 import 'theme/theme_provider.dart';
 
-const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 void main() {
   runApp(const ProviderScope(child: MyApp()));

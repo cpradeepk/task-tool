@@ -54,8 +54,8 @@ EMAIL_FROM=Task Tool <your-email@gmail.com>
 # Server Configuration
 PORT=3003
 NODE_ENV=production
-BASE_URL=https://ai.swargfood.com
-CORS_ORIGIN=https://ai.swargfood.com
+BASE_URL=https://task.amtariksha.com
+CORS_ORIGIN=https://task.amtariksha.com
 
 # File Uploads
 UPLOAD_DIR=/var/www/task/uploads
@@ -75,7 +75,7 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 3003,
-      BASE_URL: 'https://ai.swargfood.com',
+      BASE_URL: 'https://task.amtariksha.com',
       
       // Database
       PG_HOST: 'your-database-host',
@@ -96,7 +96,7 @@ module.exports = {
       ADMIN_PASSWORD: 'your-secure-admin-password',
       
       // CORS
-      CORS_ORIGIN: 'https://ai.swargfood.com',
+      CORS_ORIGIN: 'https://task.amtariksha.com',
       
       // SMTP
       SMTP_HOST: 'smtp.gmail.com',

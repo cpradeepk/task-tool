@@ -9,7 +9,7 @@ import 'task_detail.dart';
 import 'rbac.dart';
 import 'socket.dart';
 
-const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class TasksScreen extends StatefulWidget {
   final int projectId;

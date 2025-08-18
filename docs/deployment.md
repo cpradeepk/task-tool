@@ -15,7 +15,7 @@ This guide deploys the Node.js backend behind Nginx with Gmail SMTP for email.
 ```env
 PORT=3003
 NODE_ENV=production
-CORS_ORIGIN=https://ai.swargfood.com
+CORS_ORIGIN=https://task.amtariksha.com
 
 # Database
 PG_HOST=ls-f772dda62fea5a74f7a3e8f9139a79078b65a32f.crq8gq4ka0rw.ap-south-1.rds.amazonaws.com
@@ -42,7 +42,7 @@ EMAIL_DAILY_SUMMARY_HOUR=08
    - `/task/` (Flutter web assets alias) and uploads alias
 3. From your local machine, copy backend to server and run `backend/scripts/deploy_backend.sh`
 4. Edit `/var/www/task/backend/.env` with real DB and SMTP credentials
-5. `pm2 save` then verify: `curl -fsS https://ai.swargfood.com/task/health`
+5. `pm2 save` then verify: `curl -fsS https://task.amtariksha.com/task/health`
 
 ## Nginx server block
 Use the block you provided; ensure proxy to `http://localhost:3003` for API and socket paths.

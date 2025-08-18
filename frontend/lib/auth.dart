@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class AuthController extends ChangeNotifier {
   String? jwt;

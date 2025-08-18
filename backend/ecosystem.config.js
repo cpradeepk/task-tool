@@ -7,7 +7,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3003,
-        CORS_ORIGIN: 'https://ai.swargfood.com',
+        CORS_ORIGIN: 'https://task.amtariksha.com',
         SMTP_HOST: 'smtp.gmail.com',
         SMTP_PORT: 465,
         SMTP_SECURE: true,

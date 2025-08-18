@@ -9,7 +9,7 @@ import 'dart:typed_data';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 
-const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class _OverlayImageViewer extends StatelessWidget {
   const _OverlayImageViewer({required this.url});

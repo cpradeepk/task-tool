@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'main_layout.dart';
 import 'constants/task_constants.dart';
 
-const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

@@ -12,7 +12,7 @@ REPO_DIR="/srv/task-tool"
 WEB_DIR="/var/www/task/frontend/web"
 BACKEND_DIR="$REPO_DIR/backend"
 FRONTEND_DIR="$REPO_DIR/frontend"
-API_BASE="https://ai.swargfood.com"
+API_BASE="https://task.amtariksha.com"
 
 # Colors for output
 RED='\033[0;31m'

@@ -8,7 +8,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3003,
-        BASE_URL: 'https://ai.swargfood.com',
+        BASE_URL: 'https://task.amtariksha.com',
 
         // Postgres
         PG_HOST: 'ls-f772dda62fea5a74f7a3e8f9139a79078b65a32f.crq8gq4ka0rw.ap-south-1.rds.amazonaws.com',
@@ -24,7 +24,7 @@ module.exports = {
         JWT_SECRET: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30',
 
         // CORS
-        CORS_ORIGIN: 'https://ai.swargfood.com',
+        CORS_ORIGIN: 'https://task.amtariksha.com',
 
         // SMTP (Gmail with app password)
         SMTP_HOST: 'smtp.gmail.com',
