@@ -128,6 +128,102 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     _rt!.on('chat.message', (_) => _load());
   }
 
+  Color _getStatusColor(String statusName) {
+    switch (statusName.toLowerCase()) {
+      case 'open':
+        return Colors.grey.shade400;
+      case 'in progress':
+        return Colors.orange;
+      case 'completed':
+        return Colors.green;
+      case 'cancelled':
+        return Colors.grey;
+      case 'hold':
+        return Colors.brown;
+      case 'delayed':
+        return Colors.red;
+      default:
+        return Colors.grey.shade400;
+    }
+  }
+
+  Color _getPriorityColor(String priorityName) {
+    switch (priorityName.toLowerCase()) {
+      case 'high':
+      case 'urgent':
+        return Colors.red;
+      case 'medium':
+      case 'normal':
+        return Colors.orange;
+      case 'low':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusName(int? statusId, List<dynamic> statuses) {
+    if (statusId == null) return 'Open';
+    final status = statuses.firstWhere((s) => s['id'] == statusId, orElse: () => {'name': 'Open'});
+    return status['name'] as String;
+  }
+
+  String _getPriorityName(int? priorityId, List<dynamic> priorities) {
+    if (priorityId == null) return 'Medium';
+    final priority = priorities.firstWhere((p) => p['id'] == priorityId, orElse: () => {'name': 'Medium'});
+    return priority['name'] as String;
+  }
+
+  void _addSubtask() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Subtask'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Subtask Title',
+                  border: OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Subtask functionality will be implemented'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+            child: const Text('Create Subtask'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final statuses = _md?['statuses'] as List<dynamic>? ?? [];
@@ -144,18 +240,78 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           const SizedBox(height: 8),
           Row(children:[
             const Text('Status:'), const SizedBox(width: 8),
-            DropdownButton<int>(value: t['status_id'] as int?, items: [for (final s in statuses) DropdownMenuItem(value: s['id'] as int, child: Text(s['name']))], onChanged: (v) async {
-              final jwt = await _jwt();
-              final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'status_id': v}));
-              if (res.statusCode==200) _load();
-            }),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getStatusColor(_getStatusName(t['status_id'], statuses)).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _getStatusColor(_getStatusName(t['status_id'], statuses)).withOpacity(0.3)),
+              ),
+              child: DropdownButton<int>(
+                value: t['status_id'] as int?,
+                underline: const SizedBox.shrink(),
+                items: [for (final s in statuses) DropdownMenuItem(
+                  value: s['id'] as int,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _getStatusColor(s['name']),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(s['name']),
+                    ],
+                  ),
+                )],
+                onChanged: (v) async {
+                  final jwt = await _jwt();
+                  final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'status_id': v}));
+                  if (res.statusCode==200) _load();
+                }
+              ),
+            ),
             const SizedBox(width: 16),
             const Text('Priority:'), const SizedBox(width: 8),
-            DropdownButton<int>(value: t['priority_id'] as int?, items: [for (final p in priorities) DropdownMenuItem(value: p['id'] as int, child: Text(p['name']))], onChanged: (v) async {
-              final jwt = await _jwt();
-              final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'priority_id': v}));
-              if (res.statusCode==200) _load();
-            }),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getPriorityColor(_getPriorityName(t['priority_id'], priorities)).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _getPriorityColor(_getPriorityName(t['priority_id'], priorities)).withOpacity(0.3)),
+              ),
+              child: DropdownButton<int>(
+                value: t['priority_id'] as int?,
+                underline: const SizedBox.shrink(),
+                items: [for (final p in priorities) DropdownMenuItem(
+                  value: p['id'] as int,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _getPriorityColor(p['name']),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(p['name']),
+                    ],
+                  ),
+                )],
+                onChanged: (v) async {
+                  final jwt = await _jwt();
+                  final res = await http.put(Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${t['id']}'), headers: { 'Authorization': 'Bearer $jwt', 'Content-Type': 'application/json' }, body: jsonEncode({'priority_id': v}));
+                  if (res.statusCode==200) _load();
+                }
+              ),
+            ),
             const SizedBox(width: 16),
             const Text('Type:'), const SizedBox(width: 8),
             DropdownButton<int>(value: t['task_type_id'] as int?, items: [for (final ty in taskTypes) DropdownMenuItem(value: ty['id'] as int, child: Text(ty['name']))], onChanged: (v) async {
@@ -188,6 +344,37 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           Wrap(children: _users.map((u) => Padding(padding: const EdgeInsets.all(4), child: OutlinedButton(onPressed: ()=>_assign(u['id'] as int), child: Text(u['email'])))).toList()),
           const SizedBox(height: 8),
           Row(children:[TextButton(onPressed: (){ if(_users.isNotEmpty) _assign(_users.first['id'] as int, owner: true); }, child: const Text('Set first result as owner'))]),
+          const Divider(height: 24),
+          // Subtasks section
+          Row(
+            children: [
+              Text('Subtasks', style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _addSubtask,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Add Subtask'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Subtasks list (placeholder for now)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: const Text(
+              'Subtask functionality will be implemented here.\nThis will show a list of subtasks with the ability to add, edit, and manage them.',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
           const Divider(height: 24),
           // Time entries list
           Text('Time entries', style: Theme.of(context).textTheme.titleMedium),

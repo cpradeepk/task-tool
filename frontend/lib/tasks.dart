@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -28,6 +29,19 @@ class _TasksScreenState extends State<TasksScreen> {
   bool _busy = false;
   List<String> _roles = const [];
   final TextEditingController _searchController = TextEditingController();
+
+  // Inline task creation
+  bool _isCreatingTask = false;
+  final TextEditingController _newTaskTitleController = TextEditingController();
+  final TextEditingController _newTaskDescriptionController = TextEditingController();
+  int? _newTaskModuleId;
+  int? _newTaskAssigneeId;
+  DateTime? _newTaskDueDate;
+
+  // Timer functionality
+  Map<String, dynamic>? _activeTimerTask;
+  int _timerSeconds = 0;
+  Timer? _timer;
 
   Future<String?> _jwt() async => (await SharedPreferences.getInstance()).getString('jwt');
 
@@ -215,10 +229,20 @@ class _TasksScreenState extends State<TasksScreen> {
           Expanded(child: _buildTaskTable())
         ]),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addNewTask,
-        child: const Icon(Icons.add),
-        tooltip: 'Add Task',
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Floating timer (if active)
+          if (_activeTimerTask != null) _buildFloatingTimer(),
+          const SizedBox(height: 16),
+
+          // Add task button
+          FloatingActionButton(
+            onPressed: _addNewTask,
+            tooltip: 'Add Task',
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
@@ -271,12 +295,12 @@ class _TasksScreenState extends State<TasksScreen> {
               children: [
                 const SizedBox(width: 40), // Space for status indicator
                 const Expanded(flex: 3, child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                const Expanded(flex: 2, child: Text('Feature ID', style: TextStyle(fontWeight: FontWeight.bold))),
+                const Expanded(flex: 2, child: Text('Task ID', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Assignee', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Due Date', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 1, child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                const Expanded(flex: 1, child: Text('Task ID', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Start Date', style: TextStyle(fontWeight: FontWeight.bold))),
+                const Expanded(flex: 2, child: Text('Time Tracked', style: TextStyle(fontWeight: FontWeight.bold))),
                 const SizedBox(width: 40), // Space for actions
               ],
             ),
@@ -327,6 +351,14 @@ class _TasksScreenState extends State<TasksScreen> {
 
               // Tasks in this module
               ...entry.value.map((task) => _buildTaskRow(task, statuses, priorities, taskTypes)),
+
+              // Inline task creation row for this module
+              if (_isCreatingTask && _newTaskModuleId == _getModuleIdFromName(entry.key))
+                _buildInlineTaskCreationRow(),
+
+              // Add task row at the end of each module
+              if (!_isCreatingTask || _newTaskModuleId != _getModuleIdFromName(entry.key))
+                _buildAddTaskRow(entry.key),
             ],
           )),
         ],
@@ -350,7 +382,7 @@ class _TasksScreenState extends State<TasksScreen> {
           children: [
             // Status indicator
             GestureDetector(
-              onTap: () => _showStatusMenu(task, statuses),
+              onTapDown: (details) => _showStatusMenu(task, statuses, details.globalPosition),
               child: Container(
                 width: 24,
                 height: 24,
@@ -392,11 +424,11 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
             ),
 
-            // Feature ID
+            // Task ID
             Expanded(
               flex: 2,
               child: Text(
-                _generateTaskId(task),
+                task['task_id'] ?? _generateTaskId(task),
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,
@@ -408,43 +440,57 @@ class _TasksScreenState extends State<TasksScreen> {
             // Assignee
             Expanded(
               flex: 2,
-              child: Row(
-                children: [
-                  if (assignedUser['name'] != 'Unassigned') ...[
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        assignedUser['name'].toString().substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.blue.shade800,
-                          fontWeight: FontWeight.bold,
+              child: GestureDetector(
+                onTap: () => _showAssigneeDropdown(task),
+                child: Row(
+                  children: [
+                    if (assignedUser['name'] != 'Unassigned') ...[
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Colors.blue.shade100,
+                        child: Text(
+                          assignedUser['name'].toString().substring(0, 1).toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.blue.shade800,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        assignedUser['name'],
+                        style: const TextStyle(fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(width: 8),
+                    Icon(Icons.arrow_drop_down, size: 16, color: Colors.grey.shade600),
                   ],
-                  Expanded(
-                    child: Text(
-                      assignedUser['name'],
-                      style: const TextStyle(fontSize: 13),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
 
             // Due date
             Expanded(
               flex: 2,
-              child: Text(
-                task['planned_end_date'] ?? '-',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _isOverdue(task['planned_end_date']) ? Colors.red : Colors.grey.shade700,
+              child: GestureDetector(
+                onTap: () => _showDatePicker(task),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _formatDate(task['planned_end_date']) ?? '-',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _isOverdue(task['planned_end_date']) ? Colors.red : Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                  ],
                 ),
               ),
             ),
@@ -471,24 +517,11 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
             ),
 
-            // Task ID
-            Expanded(
-              flex: 1,
-              child: Text(
-                '#${task['id']}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ),
-
             // Start date
             Expanded(
               flex: 2,
               child: Text(
-                task['start_date'] ?? '-',
+                _formatDate(task['start_date']) ?? '-',
                 style: TextStyle(
                   fontSize: 13,
                   color: Colors.grey.shade700,
@@ -496,22 +529,41 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
             ),
 
-            // Timer button
-            const SizedBox(width: 16),
-            GestureDetector(
-              onTap: () => _toggleTimer(task),
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.green.shade100,
-                  border: Border.all(color: Colors.green.shade300),
-                ),
-                child: Icon(
-                  Icons.play_arrow,
-                  color: Colors.green.shade700,
-                  size: 16,
+            // Time Tracked
+            Expanded(
+              flex: 2,
+              child: GestureDetector(
+                onTap: () => _toggleTimer(task),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isTimerRunning(task) ? Colors.red.shade100 : Colors.green.shade100,
+                        border: Border.all(
+                          color: _isTimerRunning(task) ? Colors.red.shade300 : Colors.green.shade300,
+                        ),
+                      ),
+                      child: Icon(
+                        _isTimerRunning(task) ? Icons.pause : Icons.play_arrow,
+                        color: _isTimerRunning(task) ? Colors.red.shade700 : Colors.green.shade700,
+                        size: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _getTimeTracked(task),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -569,11 +621,16 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  void _showStatusMenu(Map<String, dynamic> task, List<dynamic> statuses) {
-    // Show status selection menu
+  void _showStatusMenu(Map<String, dynamic> task, List<dynamic> statuses, Offset position) {
+    // Show status selection menu positioned next to the status indicator
     showMenu(
       context: context,
-      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        MediaQuery.of(context).size.width - position.dx - 200,
+        MediaQuery.of(context).size.height - position.dy - 200,
+      ),
       items: statuses.map<PopupMenuEntry>((status) {
         return PopupMenuItem(
           value: status['id'],
@@ -586,6 +643,9 @@ class _TasksScreenState extends State<TasksScreen> {
                   shape: BoxShape.circle,
                   color: _getStatusColor(status['name']),
                 ),
+                child: status['name'] == 'Completed'
+                  ? const Icon(Icons.check, color: Colors.white, size: 12)
+                  : null,
               ),
               const SizedBox(width: 8),
               Text(status['name']),
@@ -615,93 +675,637 @@ class _TasksScreenState extends State<TasksScreen> {
     }
   }
 
-  void _toggleTimer(Map<String, dynamic> task) async {
-    final jwt = await _jwt();
-    final taskId = task['id'] as int;
+  bool _isTimerRunning(Map<String, dynamic> task) {
+    // Check if task has an active timer
+    return task['timer_running'] == true;
+  }
 
+  String _getTimeTracked(Map<String, dynamic> task) {
+    final totalSeconds = task['total_time_tracked'] as int? ?? 0;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String? _formatDate(String? dateStr) {
+    if (dateStr == null) return null;
     try {
-      // Check if there's an active timer for this task
-      final activeTimerRes = await http.get(
-        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/$taskId/active-timer'),
-        headers: {'Authorization': 'Bearer $jwt'},
-      );
-
-      if (activeTimerRes.statusCode == 200) {
-        final activeTimer = jsonDecode(activeTimerRes.body);
-        if (activeTimer != null) {
-          // Stop the active timer
-          await http.put(
-            Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/$taskId/time-entries/stop'),
-            headers: {
-              'Authorization': 'Bearer $jwt',
-              'Content-Type': 'application/json',
-            },
-          );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Timer stopped for: ${task['title']}'),
-                backgroundColor: Colors.red.shade600,
-              ),
-            );
-          }
-        } else {
-          // Start a new timer
-          await http.post(
-            Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/$taskId/time-entries'),
-            headers: {
-              'Authorization': 'Bearer $jwt',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({'start': DateTime.now().toIso8601String()}),
-          );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Timer started for: ${task['title']}'),
-                backgroundColor: Colors.green.shade600,
-              ),
-            );
-          }
-        }
-      }
-
-      // Reload tasks to update timer states
-      _load();
+      final date = DateTime.parse(dateStr);
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Timer functionality not available in demo mode'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      return dateStr;
     }
   }
 
-  void _addNewTask() {
-    // Navigate to add new task screen or show dialog
+  void _showAssigneeDropdown(Map<String, dynamic> task) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add New Task'),
-        content: const Text('Task creation functionality will be implemented here.'),
+        title: const Text('Assign Task'),
+        content: SizedBox(
+          width: 300,
+          child: DropdownButtonFormField<int?>(
+            value: task['assigned_to'] as int?,
+            decoration: const InputDecoration(
+              labelText: 'Assignee',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Unassigned')),
+              ..._users.map((user) => DropdownMenuItem(
+                value: user['id'] as int,
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.blue.shade100,
+                      child: Text(
+                        user['name'].toString().substring(0, 1).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.blue.shade800,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(user['name']),
+                  ],
+                ),
+              )),
+            ],
+            onChanged: (value) {
+              Navigator.of(context).pop();
+              _updateTaskAssignee(task, value);
+            },
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: const Text('Cancel'),
           ),
         ],
       ),
     );
   }
 
+  void _showDatePicker(Map<String, dynamic> task) async {
+    final currentDate = task['planned_end_date'] != null
+      ? DateTime.tryParse(task['planned_end_date']) ?? DateTime.now()
+      : DateTime.now();
+
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: currentDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+
+    if (selectedDate != null) {
+      _updateTaskDueDate(task, selectedDate);
+    }
+  }
+
+  Future<void> _updateTaskAssignee(Map<String, dynamic> task, int? assigneeId) async {
+    final jwt = await _jwt();
+    try {
+      final res = await http.put(
+        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${task['id']}'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'assigned_to': assigneeId}),
+      );
+      if (res.statusCode == 200) {
+        setState(() {
+          task['assigned_to'] = assigneeId;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update assignee'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateTaskDueDate(Map<String, dynamic> task, DateTime dueDate) async {
+    final jwt = await _jwt();
+    final formattedDate = '${dueDate.year}-${dueDate.month.toString().padLeft(2, '0')}-${dueDate.day.toString().padLeft(2, '0')}';
+
+    try {
+      final res = await http.put(
+        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${task['id']}'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'planned_end_date': formattedDate}),
+      );
+      if (res.statusCode == 200) {
+        setState(() {
+          task['planned_end_date'] = formattedDate;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update due date'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _toggleTimer(Map<String, dynamic> task) {
+    if (_isTimerRunning(task)) {
+      _stopTimer(task);
+    } else {
+      _startTimer(task);
+    }
+  }
+
+  void _startTimer(Map<String, dynamic> task) {
+    // Stop any existing timer
+    if (_activeTimerTask != null) {
+      _stopTimer(_activeTimerTask!);
+    }
+
+    setState(() {
+      _activeTimerTask = task;
+      task['timer_running'] = true;
+      _timerSeconds = task['total_time_tracked'] as int? ?? 0;
+    });
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        _timerSeconds++;
+        task['total_time_tracked'] = _timerSeconds;
+      });
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Timer started for: ${task['title']}'),
+          backgroundColor: Colors.green.shade600,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _stopTimer(Map<String, dynamic> task) {
+    _timer?.cancel();
+    _timer = null;
+
+    setState(() {
+      task['timer_running'] = false;
+      if (_activeTimerTask?['id'] == task['id']) {
+        _activeTimerTask = null;
+      }
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Timer stopped for: ${task['title']}'),
+          backgroundColor: Colors.red.shade600,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  int? _getModuleIdFromName(String moduleName) {
+    if (moduleName == 'Unassigned') return null;
+    final module = _modules.firstWhere(
+      (m) => m['name'] == moduleName,
+      orElse: () => <String, dynamic>{},
+    );
+    return module['id'] as int?;
+  }
+
+  Widget _buildAddTaskRow(String moduleName) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: Colors.grey.shade50,
+      ),
+      child: InkWell(
+        onTap: () => _startInlineTaskCreation(moduleName),
+        child: Row(
+          children: [
+            const SizedBox(width: 40),
+            Icon(Icons.add, color: Colors.grey.shade600, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              'Add Task',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInlineTaskCreationRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: Colors.blue.shade50,
+      ),
+      child: Row(
+        children: [
+          // Status indicator (default to Open)
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.grey.shade400,
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Task name input
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: _newTaskTitleController,
+              decoration: const InputDecoration(
+                hintText: 'Task title...',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                isDense: true,
+              ),
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Task ID (auto-generated)
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Auto-generated',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Assignee dropdown
+          Expanded(
+            flex: 2,
+            child: DropdownButtonFormField<int?>(
+              value: _newTaskAssigneeId,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                isDense: true,
+              ),
+              hint: const Text('Assignee', style: TextStyle(fontSize: 12)),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Unassigned')),
+                ..._users.map((user) => DropdownMenuItem(
+                  value: user['id'] as int,
+                  child: Text(user['name'], style: const TextStyle(fontSize: 12)),
+                )),
+              ],
+              onChanged: (value) => setState(() => _newTaskAssigneeId = value),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Due date picker
+          Expanded(
+            flex: 2,
+            child: InkWell(
+              onTap: _selectNewTaskDueDate,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _newTaskDueDate != null
+                          ? _formatDate(_newTaskDueDate!.toIso8601String()) ?? 'Select date'
+                          : 'Select date',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Status (default to Open)
+          Expanded(
+            flex: 1,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: const Text(
+                'OPEN',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Start date (auto-filled)
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Today',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+
+          // Time tracked (starts at 00:00:00)
+          Expanded(
+            flex: 2,
+            child: Text(
+              '00:00:00',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+
+          // Action buttons
+          const SizedBox(width: 16),
+          Row(
+            children: [
+              IconButton(
+                onPressed: _saveNewTask,
+                icon: const Icon(Icons.check, color: Colors.green),
+                iconSize: 20,
+                tooltip: 'Save Task',
+              ),
+              IconButton(
+                onPressed: _cancelTaskCreation,
+                icon: const Icon(Icons.close, color: Colors.red),
+                iconSize: 20,
+                tooltip: 'Cancel',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _startInlineTaskCreation(String moduleName) {
+    setState(() {
+      _isCreatingTask = true;
+      _newTaskModuleId = _getModuleIdFromName(moduleName);
+      _newTaskTitleController.clear();
+      _newTaskDescriptionController.clear();
+      _newTaskAssigneeId = null;
+      _newTaskDueDate = null;
+    });
+  }
+
+  void _selectNewTaskDueDate() async {
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+    );
+
+    if (selectedDate != null) {
+      setState(() {
+        _newTaskDueDate = selectedDate;
+      });
+    }
+  }
+
+  void _saveNewTask() async {
+    if (_newTaskTitleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a task title'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final jwt = await _jwt();
+    final now = DateTime.now();
+    final taskId = 'JSR-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${(_tasks.length + 1).toString().padLeft(3, '0')}';
+
+    final newTask = {
+      'title': _newTaskTitleController.text.trim(),
+      'description': _newTaskDescriptionController.text.trim(),
+      'task_id': taskId,
+      'module_id': _newTaskModuleId,
+      'assigned_to': _newTaskAssigneeId,
+      'planned_end_date': _newTaskDueDate?.toIso8601String().substring(0, 10),
+      'start_date': now.toIso8601String().substring(0, 10),
+      'status_id': 1, // Open status
+      'priority_id': 2, // Medium priority
+      'task_type_id': 1, // Default task type
+    };
+
+    try {
+      final res = await http.post(
+        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(newTask),
+      );
+
+      if (res.statusCode == 201) {
+        _cancelTaskCreation();
+        _load(); // Reload tasks
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Task created successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Add to local list for demo
+      setState(() {
+        _tasks.add({
+          ...newTask,
+          'id': _tasks.length + 1,
+          'status': 'Open',
+          'priority': 'Medium',
+          'timer_running': false,
+          'total_time_tracked': 0,
+        });
+      });
+      _cancelTaskCreation();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task created successfully (demo mode)'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    }
+  }
+
+  void _cancelTaskCreation() {
+    setState(() {
+      _isCreatingTask = false;
+      _newTaskModuleId = null;
+      _newTaskTitleController.clear();
+      _newTaskDescriptionController.clear();
+      _newTaskAssigneeId = null;
+      _newTaskDueDate = null;
+    });
+  }
+
+  Widget _buildFloatingTimer() {
+    if (_activeTimerTask == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Time tracked',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _getTimeTracked(_activeTimerTask!),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.red.shade700,
+              fontFamily: 'monospace',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _activeTimerTask!['title'] ?? 'Unknown Task',
+            style: const TextStyle(
+              fontSize: 11,
+              color: Colors.black87,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                onPressed: () => _stopTimer(_activeTimerTask!),
+                icon: const Icon(Icons.pause, color: Colors.red),
+                iconSize: 20,
+                tooltip: 'Stop Timer',
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _openTaskDetail(_activeTimerTask!),
+                icon: const Icon(Icons.open_in_new, color: Colors.blue),
+                iconSize: 20,
+                tooltip: 'Open Task',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addNewTask() {
+    // Start inline task creation for the first module or unassigned
+    final firstModuleName = _modules.isNotEmpty ? _modules.first['name'] : 'Unassigned';
+    _startInlineTaskCreation(firstModuleName);
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _newTaskTitleController.dispose();
+    _newTaskDescriptionController.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 }
