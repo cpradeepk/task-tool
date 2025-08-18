@@ -31,6 +31,7 @@ import 'admin/module_management.dart';
 import 'personal/notes_system.dart';
 import 'personal/profile_edit.dart' as personal;
 import 'personal/availability_management.dart';
+import 'kanban_board.dart';
 
 class AppRouter {
   late final GoRouter router;
@@ -72,9 +73,20 @@ class AppRouter {
           title: 'Tasks',
           child: TasksScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
+        GoRoute(path: '/projects/:id/kanban', builder: (ctx, st) => MainLayout(
+          title: 'Kanban Board',
+          child: KanbanBoardScreen(projectId: int.parse(st.pathParameters['id']!)),
+        )),
         GoRoute(path: '/projects/:projectId/modules/:moduleId', builder: (ctx, st) => MainLayout(
           title: 'Module Tasks',
           child: TasksScreen(
+            projectId: int.parse(st.pathParameters['projectId']!),
+            moduleId: int.parse(st.pathParameters['moduleId']!),
+          ),
+        )),
+        GoRoute(path: '/projects/:projectId/modules/:moduleId/kanban', builder: (ctx, st) => MainLayout(
+          title: 'Module Kanban Board',
+          child: KanbanBoardScreen(
             projectId: int.parse(st.pathParameters['projectId']!),
             moduleId: int.parse(st.pathParameters['moduleId']!),
           ),

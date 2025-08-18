@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import 'sidebar_navigation.dart';
 import 'admin_login.dart';
 
@@ -103,6 +104,148 @@ class _MainLayoutState extends State<MainLayout> {
     });
   }
 
+  bool _shouldShowBreadcrumbs() {
+    final currentRoute = GoRouterState.of(context).uri.path;
+    return currentRoute.contains('/projects/') ||
+           currentRoute.contains('/modules/') ||
+           currentRoute.contains('/tasks/');
+  }
+
+  Widget _buildBreadcrumbs() {
+    final currentRoute = GoRouterState.of(context).uri.path;
+    final pathSegments = currentRoute.split('/').where((s) => s.isNotEmpty).toList();
+
+    List<Widget> breadcrumbs = [];
+
+    // Add Home
+    breadcrumbs.add(
+      GestureDetector(
+        onTap: () => context.go('/dashboard'),
+        child: Text(
+          'Dashboard',
+          style: TextStyle(
+            color: Colors.blue.shade600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+
+    // Parse path and build breadcrumbs
+    for (int i = 0; i < pathSegments.length; i++) {
+      final segment = pathSegments[i];
+
+      if (segment == 'projects' && i + 1 < pathSegments.length) {
+        breadcrumbs.add(const Text(' / ', style: TextStyle(color: Colors.grey)));
+        final projectId = pathSegments[i + 1];
+        breadcrumbs.add(
+          GestureDetector(
+            onTap: () => context.go('/projects/$projectId/tasks'),
+            child: Text(
+              'Project $projectId',
+              style: TextStyle(
+                color: Colors.blue.shade600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        );
+        i++; // Skip the project ID
+      } else if (segment == 'modules' && i + 1 < pathSegments.length) {
+        breadcrumbs.add(const Text(' / ', style: TextStyle(color: Colors.grey)));
+        final moduleId = pathSegments[i + 1];
+        breadcrumbs.add(
+          Text(
+            'Module $moduleId',
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+        i++; // Skip the module ID
+      } else if (segment == 'tasks') {
+        breadcrumbs.add(const Text(' / ', style: TextStyle(color: Colors.grey)));
+        breadcrumbs.add(
+          const Text(
+            'Tasks',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      } else if (segment == 'kanban') {
+        breadcrumbs.add(const Text(' / ', style: TextStyle(color: Colors.grey)));
+        breadcrumbs.add(
+          const Text(
+            'Kanban Board',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.home, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          ...breadcrumbs,
+          const Spacer(),
+          // Export options
+          PopupMenuButton<String>(
+            icon: Icon(Icons.download, color: Colors.grey.shade600),
+            tooltip: 'Export Options',
+            onSelected: (value) => _handleExport(value),
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'csv',
+                child: Row(
+                  children: [
+                    Icon(Icons.table_chart, size: 18),
+                    SizedBox(width: 8),
+                    Text('Export as CSV'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'pdf',
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf, size: 18),
+                    SizedBox(width: 8),
+                    Text('Export as PDF'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleExport(String format) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Export as ${format.toUpperCase()} functionality will be implemented'),
+        backgroundColor: Colors.blue.shade600,
+      ),
+    );
+  }
+
   void _showAdminLogin() {
     showDialog(
       context: context,
@@ -121,7 +264,7 @@ class _MainLayoutState extends State<MainLayout> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/login');
+      context.go('/login');
     }
   }
 
@@ -233,10 +376,10 @@ class _MainLayoutState extends State<MainLayout> {
                         onSelected: (value) {
                           switch (value) {
                             case 'profile':
-                              Navigator.of(context).pushNamed('/personal/profile');
+                              context.go('/profile');
                               break;
                             case 'settings':
-                              Navigator.of(context).pushNamed('/personal/customize');
+                              context.go('/profile');
                               break;
                             case 'logout':
                               _signOut();
@@ -314,9 +457,19 @@ class _MainLayoutState extends State<MainLayout> {
                 Expanded(
                   child: Container(
                     color: Colors.grey.shade50,
-                    child: Transform.scale(
-                      scale: _zoomLevel,
-                      child: widget.child,
+                    child: Column(
+                      children: [
+                        // Breadcrumbs
+                        if (_shouldShowBreadcrumbs()) _buildBreadcrumbs(),
+
+                        // Main content with zoom
+                        Expanded(
+                          child: Transform.scale(
+                            scale: _zoomLevel,
+                            child: widget.child,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
