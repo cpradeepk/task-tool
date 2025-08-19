@@ -109,9 +109,13 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
         for (final module in modules) {
           _loadTasksForModule(module['id']);
         }
+      } else {
+        print('Failed to load modules for project $projectId: ${response.statusCode} - ${response.body}');
+        setState(() => _projectModules[projectId] = []);
       }
     } catch (e) {
-      // Handle error silently
+      print('Error loading modules for project $projectId: $e');
+      setState(() => _projectModules[projectId] = []);
     }
   }
 
@@ -544,6 +548,10 @@ class _SidebarNavigationState extends State<SidebarNavigation> {
         setState(() {
           if (expanded) {
             _expandedProjects.add(projectId);
+            // Load modules when project is expanded
+            if (modules.isEmpty) {
+              _loadProjectModules(projectId);
+            }
           } else {
             _expandedProjects.remove(projectId);
           }

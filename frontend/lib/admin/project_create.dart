@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../main_layout.dart';
@@ -55,9 +56,21 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
 
       if (response.statusCode == 201) {
         _showSuccessMessage('Project created successfully');
-        Navigator.of(context).pop();
+
+        // Navigate back to project settings with success
+        if (mounted) {
+          // Use context.go for proper navigation
+          context.go('/admin/project-settings');
+        }
       } else {
-        _showErrorMessage('Failed to create project');
+        String errorMessage = 'Failed to create project';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to create project: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to create project: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
       }
     } catch (e) {
       _showErrorMessage('Error creating project: $e');

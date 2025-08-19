@@ -83,42 +83,8 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         setState(() => _modules = jsonDecode(response.body));
       }
     } catch (e) {
-      // Use mock modules for development
-      setState(() => _modules = [
-        {
-          'id': 1,
-          'name': 'Authentication Module',
-          'description': 'User authentication and authorization system',
-          'category': 'Development',
-          'status': 'Active',
-          'taskCount': 12,
-          'completedTasks': 8,
-          'createdAt': '2025-01-10',
-          'project_id': _selectedProjectId,
-        },
-        {
-          'id': 2,
-          'name': 'Dashboard Module',
-          'description': 'Main dashboard with analytics and reporting',
-          'category': 'Development',
-          'status': 'Active',
-          'taskCount': 18,
-          'completedTasks': 15,
-          'createdAt': '2025-01-12',
-          'project_id': _selectedProjectId,
-        },
-        {
-          'id': 3,
-          'name': 'UI Design System',
-          'description': 'Comprehensive design system and component library',
-          'category': 'Design',
-          'status': 'Active',
-          'taskCount': 25,
-          'completedTasks': 20,
-          'createdAt': '2025-01-08',
-          'project_id': _selectedProjectId,
-        },
-      ]);
+      print('Error loading modules: $e');
+      setState(() => _modules = []);
     }
   }
 
@@ -146,7 +112,14 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         _showSuccessMessage('Module created successfully');
         _loadModules();
       } else {
-        _showErrorMessage('Failed to create module');
+        String errorMessage = 'Failed to create module';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to create module: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to create module: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
       }
     } catch (e) {
       _showErrorMessage('Error creating module: $e');
@@ -179,11 +152,33 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
   Future<void> _loadProjectTeam() async {
     if (_selectedProjectId == null) return;
 
-    // Mock project team data
-    setState(() => _projectTeam = [
-      {'userId': 1, 'role': 'Project Manager', 'assignedAt': '2025-01-10'},
-      {'userId': 2, 'role': 'Developer', 'assignedAt': '2025-01-12'},
-    ]);
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/admin/projects/$_selectedProjectId/team'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        final teamMembers = jsonDecode(response.body) as List;
+        setState(() {
+          _projectTeam = teamMembers.map((member) => {
+            'userId': member['user_id'],
+            'role': member['role'],
+            'assignedAt': member['assigned_at']?.toString().substring(0, 10) ?? '',
+            'user': member['user'] ?? {},
+          }).toList();
+        });
+      } else {
+        print('Failed to load project team: ${response.statusCode} - ${response.body}');
+        setState(() => _projectTeam = []);
+      }
+    } catch (e) {
+      print('Error loading project team: $e');
+      setState(() => _projectTeam = []);
+    }
   }
 
   void _showAddModuleDialog() {
@@ -234,82 +229,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     );
   }
 
-  void _showAttachModuleDialog() {
-    // Mock available modules for development
-    final availableModules = [
-      {'id': 10, 'name': 'Payment Integration', 'description': 'Payment gateway integration'},
-      {'id': 11, 'name': 'Email System', 'description': 'Email notification system'},
-      {'id': 12, 'name': 'File Upload', 'description': 'File upload and management'},
-      {'id': 13, 'name': 'Search Engine', 'description': 'Advanced search functionality'},
-    ];
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Attach Existing Module'),
-        content: SizedBox(
-          width: 400,
-          height: 300,
-          child: Column(
-            children: [
-              const Text('Select a module to attach to this project:'),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: availableModules.length,
-                  itemBuilder: (context, index) {
-                    final module = availableModules[index];
-                    return Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.view_module, color: Colors.green),
-                        title: Text(module['name'] as String),
-                        subtitle: Text(module['description'] as String),
-                        trailing: ElevatedButton(
-                          onPressed: () {
-                            _attachModule(module);
-                            Navigator.of(context).pop();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
-                          child: const Text('Attach'),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _attachModule(Map<String, dynamic> module) {
-    setState(() {
-      _modules.add({
-        'id': module['id'],
-        'name': module['name'],
-        'description': module['description'],
-        'category': 'Development',
-        'status': 'Active',
-        'taskCount': 0,
-        'completedTasks': 0,
-        'createdAt': DateTime.now().toIso8601String().substring(0, 10),
-        'project_id': _selectedProjectId,
-      });
-    });
-
-    _showSuccessMessage('Module "${module['name']}" attached to project');
-  }
 
   void _showSuccessMessage(String message) {
     if (mounted) {
@@ -781,16 +701,6 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                   foregroundColor: Colors.white,
                 ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: _showAttachModuleDialog,
-                icon: const Icon(Icons.link),
-                label: const Text('Attach Existing'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -878,16 +788,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                                           ],
                                         ),
                                       ),
-                                      const PopupMenuItem(
-                                        value: 'detach',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.link_off, size: 16, color: Colors.orange),
-                                            SizedBox(width: 8),
-                                            Text('Detach from Project'),
-                                          ],
-                                        ),
-                                      ),
+
                                       const PopupMenuItem(
                                         value: 'delete',
                                         child: Row(
@@ -972,9 +873,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
       case 'edit':
         _editModule(module);
         break;
-      case 'detach':
-        _detachModule(module);
-        break;
+
       case 'delete':
         _deleteModule(module);
         break;
@@ -1053,32 +952,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     _showSuccessMessage('Module updated successfully');
   }
 
-  void _detachModule(Map<String, dynamic> module) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Detach Module'),
-        content: Text('Are you sure you want to detach "${module['name']}" from this project?\n\nThe module will remain available for other projects.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _modules.removeWhere((m) => m['id'] == module['id']);
-              });
-              Navigator.of(context).pop();
-              _showSuccessMessage('Module detached from project');
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Detach'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _deleteModule(Map<String, dynamic> module) {
     showDialog(
@@ -1262,19 +1136,41 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     );
   }
 
-  void _addTeamMember(int userId, String role) {
-    setState(() {
-      _projectTeam.add({
-        'userId': userId,
-        'role': role,
-        'assignedAt': DateTime.now().toIso8601String().substring(0, 10),
-      });
-    });
+  Future<void> _addTeamMember(int userId, String role) async {
+    if (_selectedProjectId == null) return;
 
-    final user = _users.firstWhere((u) => u['id'] == userId);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${user['name']} added to project team')),
-    );
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBase/task/api/admin/projects/$_selectedProjectId/team'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': userId,
+          'role': role,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        _showSuccessMessage('Team member added successfully');
+        _loadProjectTeam(); // Reload team to get updated data
+      } else {
+        String errorMessage = 'Failed to add team member';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to add team member: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to add team member: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error adding team member: $e');
+    }
   }
 
   void _removeTeamMember(int userId) {
@@ -1291,14 +1187,9 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _projectTeam.removeWhere((tm) => tm['userId'] == userId);
-              });
+            onPressed: () async {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${user['name']} removed from project team')),
-              );
+              await _removeTeamMemberFromProject(userId);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Remove'),
@@ -1306,6 +1197,36 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         ],
       ),
     );
+  }
+
+  Future<void> _removeTeamMemberFromProject(int userId) async {
+    if (_selectedProjectId == null) return;
+
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.delete(
+        Uri.parse('$apiBase/task/api/admin/projects/$_selectedProjectId/team/$userId'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        _showSuccessMessage('Team member removed successfully');
+        _loadProjectTeam(); // Reload team to get updated data
+      } else {
+        String errorMessage = 'Failed to remove team member';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to remove team member: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to remove team member: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error removing team member: $e');
+    }
   }
 
   Widget _buildInfoCard(String title, String value, IconData icon) {
