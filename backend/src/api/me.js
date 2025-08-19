@@ -6,14 +6,36 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.get('/profile', async (req, res) => {
-  const row = await knex('users')
-    .select('id', 'email', 'name', 'short_name', 'phone', 'telegram', 'whatsapp',
-            'theme', 'accent_color', 'font', 'avatar_url', 'first_name', 'last_name',
-            'department', 'job_title', 'bio', 'timezone', 'language',
-            'email_notifications', 'push_notifications', 'created_at', 'updated_at')
-    .where({ id: req.user.id })
-    .first();
-  res.json(row || {});
+  try {
+    // Get available columns to avoid selecting non-existent columns
+    const columns = await knex('users').columnInfo();
+    console.log('Available columns in users table for profile:', Object.keys(columns));
+
+    // Build select array with only existing columns
+    const selectColumns = ['id', 'email']; // These should always exist
+
+    // Add optional columns if they exist
+    const optionalColumns = ['name', 'short_name', 'phone', 'telegram', 'whatsapp',
+                            'theme', 'accent_color', 'font', 'avatar_url', 'first_name', 'last_name',
+                            'department', 'job_title', 'bio', 'timezone', 'language',
+                            'email_notifications', 'push_notifications', 'created_at', 'updated_at'];
+
+    optionalColumns.forEach(col => {
+      if (columns[col]) {
+        selectColumns.push(col);
+      }
+    });
+
+    const row = await knex('users')
+      .select(selectColumns)
+      .where({ id: req.user.id })
+      .first();
+
+    res.json(row || {});
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile', details: error.message });
+  }
 });
 
 router.put('/profile', async (req, res) => {

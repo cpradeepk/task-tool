@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main_layout.dart';
@@ -490,7 +491,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Navigate to task edit screen
+              _navigateToTaskEdit(task);
             },
             child: const Text('Edit Task'),
           ),
@@ -583,6 +584,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Color _getStatusColor(String? status) {
     return TaskStatus.getBackgroundColor(status ?? TaskStatus.open);
+  }
+
+  void _navigateToTaskEdit(Map<String, dynamic> task) {
+    try {
+      final taskId = task['id'] as int?;
+      final projectId = task['project_id'] as int?;
+
+      if (taskId != null && projectId != null) {
+        // Navigate to task edit screen
+        // For now, navigate to the tasks screen where editing is available
+        context.go('/projects/$projectId');
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to edit task - missing task information'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error navigating to task edit: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error opening task for editing'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // Mock data methods

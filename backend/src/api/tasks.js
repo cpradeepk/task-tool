@@ -62,15 +62,49 @@ router.post('/', requireAnyRole(['Admin','Project Manager','Team Member']), asyn
 router.put('/:taskId', requireAnyRole(['Admin','Project Manager','Team Member']), async (req, res) => {
   try {
     const taskId = Number(req.params.taskId);
-    console.log('Updating task:', taskId, 'with data:', req.body);
+    console.log('Basic task update:', taskId, 'with data:', req.body);
     console.log('User:', req.user);
 
     // Remove undefined values
     const updateData = { ...req.body };
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
+    // Check if statuses table exists for status_id handling
+    const statusesExists = await knex.schema.hasTable('statuses');
+    const prioritiesExists = await knex.schema.hasTable('priorities');
+
+    // Handle legacy status field if status_id is provided but statuses table doesn't exist
+    if (updateData.status_id && !statusesExists) {
+      // Map status_id to legacy status string
+      const statusMap = {
+        1: 'Open',
+        2: 'In Progress',
+        3: 'Completed',
+        4: 'Cancelled',
+        5: 'Hold',
+        6: 'Delayed'
+      };
+      updateData.status = statusMap[updateData.status_id] || 'Open';
+      delete updateData.status_id; // Remove status_id if table doesn't exist
+      console.log('Mapped status_id to legacy status:', updateData.status);
+    }
+
+    // Handle legacy priority field if priority_id is provided but priorities table doesn't exist
+    if (updateData.priority_id && !prioritiesExists) {
+      // Map priority_id to legacy priority string
+      const priorityMap = {
+        1: 'High',        // Important & Urgent
+        2: 'Medium',      // Important & Not Urgent
+        3: 'Low',         // Not Important & Urgent
+        4: 'Low'          // Not Important & Not Urgent
+      };
+      updateData.priority = priorityMap[updateData.priority_id] || 'Medium';
+      delete updateData.priority_id; // Remove priority_id if table doesn't exist
+      console.log('Mapped priority_id to legacy priority:', updateData.priority);
+    }
+
     const [row] = await knex('tasks').where({ id: taskId }).update(updateData).returning('*');
-    console.log('Task updated successfully:', row);
+    console.log('Basic task updated successfully:', row);
     res.json(row);
   } catch (error) {
     console.error('Error updating task:', error);

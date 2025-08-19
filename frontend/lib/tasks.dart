@@ -707,6 +707,25 @@ class _TasksScreenState extends State<TasksScreen> {
     );
     if (res.statusCode == 200) {
       _load();
+    } else {
+      print('Failed to update task status: ${res.statusCode} - ${res.body}');
+    }
+  }
+
+  Future<void> _updateTaskPriority(Map<String, dynamic> task, int priorityId) async {
+    final jwt = await _jwt();
+    final res = await http.put(
+      Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${task['id']}'),
+      headers: {
+        'Authorization': 'Bearer $jwt',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'priority_id': priorityId}),
+    );
+    if (res.statusCode == 200) {
+      _load();
+    } else {
+      print('Failed to update task priority: ${res.statusCode} - ${res.body}');
     }
   }
 

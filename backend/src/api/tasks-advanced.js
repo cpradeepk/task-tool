@@ -16,36 +16,83 @@ async function userHasRole(userId, roles) {
   return rows.length > 0;
 }
 
-router.put('/:taskId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
-  const taskId = Number(req.params.taskId);
-  const patch = { ...req.body };
+router.put('/:taskId', requireAnyRole(['Admin','Project Manager','Team Member']), async (req, res) => {
+  try {
+    const taskId = Number(req.params.taskId);
+    const patch = { ...req.body };
 
-  // Auto set dates based on status changes
-  if (patch.status_id) {
-    const status = await knex('statuses').where({ id: patch.status_id }).first();
-    if (status?.name === 'In Progress') {
-      patch.start_date = patch.start_date || new Date();
-    }
-    if (status?.name === 'Completed') {
-      patch.end_date = patch.end_date || new Date();
-    }
-  }
+    console.log('Advanced task update:', taskId, 'with data:', patch);
+    console.log('User:', req.user);
 
-  const [row] = await knex('tasks').where({ id: taskId }).update(patch).returning('*');
-  try { const { emitTaskUpdated } = await import('../events.js'); emitTaskUpdated(row); } catch {}
+    // Check if statuses table exists for status_id handling
+    const statusesExists = await knex.schema.hasTable('statuses');
+    const prioritiesExists = await knex.schema.hasTable('priorities');
 
-  // Email notify assignees on status change
-  if (patch.status_id) {
-    try {
-      const emails = await knex('task_assignments').join('users','users.id','task_assignments.user_id').where('task_assignments.task_id', taskId).select('users.email');
-      const { emailQueue } = await import('../queue/index.js');
-      for (const e of emails) {
-        await emailQueue.add('send', { to: e.email, subject: 'Task status updated', html: `<p>Task #${taskId} status changed.</p>` }, { removeOnComplete: true });
+    // Auto set dates based on status changes
+    if (patch.status_id && statusesExists) {
+      const status = await knex('statuses').where({ id: patch.status_id }).first();
+      if (status?.name === 'In Progress') {
+        patch.start_date = patch.start_date || new Date();
       }
-    } catch {}
-  }
+      if (status?.name === 'Completed') {
+        patch.end_date = patch.end_date || new Date();
+      }
+    }
 
-  res.json(row);
+    // Handle legacy status field if status_id is not available
+    if (patch.status_id && !statusesExists) {
+      // Map status_id to legacy status string
+      const statusMap = {
+        1: 'Open',
+        2: 'In Progress',
+        3: 'Completed',
+        4: 'Cancelled',
+        5: 'Hold',
+        6: 'Delayed'
+      };
+      patch.status = statusMap[patch.status_id] || 'Open';
+      delete patch.status_id; // Remove status_id if table doesn't exist
+    }
+
+    // Handle legacy priority field if priority_id is not available
+    if (patch.priority_id && !prioritiesExists) {
+      // Map priority_id to legacy priority string
+      const priorityMap = {
+        1: 'High',        // Important & Urgent
+        2: 'Medium',      // Important & Not Urgent
+        3: 'Low',         // Not Important & Urgent
+        4: 'Low'          // Not Important & Not Urgent
+      };
+      patch.priority = priorityMap[patch.priority_id] || 'Medium';
+      delete patch.priority_id; // Remove priority_id if table doesn't exist
+    }
+
+    const [row] = await knex('tasks').where({ id: taskId }).update(patch).returning('*');
+    console.log('Advanced task updated successfully:', row);
+
+    try { const { emitTaskUpdated } = await import('../events.js'); emitTaskUpdated(row); } catch {}
+
+    // Email notify assignees on status change
+    if (patch.status_id || patch.status) {
+      try {
+        const taskAssignmentsExists = await knex.schema.hasTable('task_assignments');
+        if (taskAssignmentsExists) {
+          const emails = await knex('task_assignments').join('users','users.id','task_assignments.user_id').where('task_assignments.task_id', taskId).select('users.email');
+          const { emailQueue } = await import('../queue/index.js');
+          for (const e of emails) {
+            await emailQueue.add('send', { to: e.email, subject: 'Task status updated', html: `<p>Task #${taskId} status changed.</p>` }, { removeOnComplete: true });
+          }
+        }
+      } catch (emailError) {
+        console.log('Email notification failed:', emailError);
+      }
+    }
+
+    res.json(row);
+  } catch (error) {
+    console.error('Error in advanced task update:', error);
+    res.status(500).json({ error: 'Failed to update task', details: error.message });
+  }
 });
 
 // Assignments
