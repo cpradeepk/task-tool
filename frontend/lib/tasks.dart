@@ -332,6 +332,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 const SizedBox(width: 40), // Space for status indicator
                 const Expanded(flex: 3, child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Task ID', style: TextStyle(fontWeight: FontWeight.bold))),
+                const Expanded(flex: 2, child: Text('Priority', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Assignee', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Due Date', style: TextStyle(fontWeight: FontWeight.bold))),
                 const Expanded(flex: 2, child: Text('Start Date', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -472,6 +473,37 @@ class _TasksScreenState extends State<TasksScreen> {
               ),
             ),
 
+            // Priority
+            Expanded(
+              flex: 2,
+              child: GestureDetector(
+                onTapDown: (details) => _showPriorityMenu(task, priorities, details.globalPosition),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: _getPriorityColor(task, priorities),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _getPriorityName(task, priorities),
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(Icons.arrow_drop_down, size: 16, color: Colors.grey.shade600),
+                  ],
+                ),
+              ),
+            ),
+
             // Assignee
             Expanded(
               flex: 2,
@@ -605,6 +637,35 @@ class _TasksScreenState extends State<TasksScreen> {
     }
   }
 
+  Color _getPriorityColor(Map<String, dynamic> task, List<dynamic> priorities) {
+    final priorityId = task['priority_id'] as int?;
+    if (priorityId == null) return Colors.grey.shade400;
+
+    final priority = priorities.firstWhere((p) => p['id'] == priorityId, orElse: () => {'name': 'Medium'});
+    final priorityName = priority['name'] as String;
+
+    switch (priorityName.toLowerCase()) {
+      case 'important & urgent':
+        return Colors.red;
+      case 'important & not urgent':
+        return Colors.orange;
+      case 'not important & urgent':
+        return Colors.yellow.shade700;
+      case 'not important & not urgent':
+        return Colors.grey.shade400;
+      default:
+        return Colors.grey.shade400;
+    }
+  }
+
+  String _getPriorityName(Map<String, dynamic> task, List<dynamic> priorities) {
+    final priorityId = task['priority_id'] as int?;
+    if (priorityId == null) return 'Medium';
+
+    final priority = priorities.firstWhere((p) => p['id'] == priorityId, orElse: () => {'name': 'Medium'});
+    return priority['name'] as String;
+  }
+
   String _generateTaskId(Map<String, dynamic> task) {
     final now = DateTime.now();
     final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
@@ -691,6 +752,50 @@ class _TasksScreenState extends State<TasksScreen> {
     ).then((selectedStatusId) {
       if (selectedStatusId != null) {
         _updateTaskStatus(task, selectedStatusId);
+      }
+    });
+  }
+
+  void _showPriorityMenu(Map<String, dynamic> task, List<dynamic> priorities, Offset position) {
+    // Show priority selection menu positioned next to the priority indicator
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        MediaQuery.of(context).size.width - position.dx - 250,
+        MediaQuery.of(context).size.height - position.dy - 200,
+      ),
+      items: priorities.map<PopupMenuEntry>((priority) {
+        return PopupMenuItem(
+          value: priority['id'],
+          child: Row(
+            children: [
+              Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: _getPriorityColor({'priority_id': priority['id']}, priorities),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  priority['name'],
+                  style: const TextStyle(fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    ).then((selectedPriorityId) {
+      if (selectedPriorityId != null) {
+        _updateTaskPriority(task, selectedPriorityId);
       }
     });
   }
