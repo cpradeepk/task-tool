@@ -83,6 +83,12 @@ app.use('/task/api/me', meRouter);
 import masterRouter from './api/master.js';
 app.use('/task/api/master', masterRouter);
 
+// Roles and user roles
+import rolesRouter from './api/roles.js';
+import userRolesRouter from './api/user-roles.js';
+app.use('/task/api/roles', rolesRouter);
+app.use('/task/api/user-roles', userRolesRouter);
+
 // Uploads (presigned URLs)
 import uploadsRouter from './api/uploads.js';
 app.use('/task/api/uploads', uploadsRouter);

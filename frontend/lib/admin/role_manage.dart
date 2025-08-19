@@ -31,65 +31,50 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
   Future<void> _loadRoles() async {
     setState(() => _isLoading = true);
 
-    // Load mock roles data
-    _roles = [
-      {
-        'id': '1',
-        'name': 'Admin',
-        'description': 'Full system access with all permissions',
-        'permissions': ['*'],
-        'userCount': 2,
-        'createdAt': '2025-01-10',
-        'isSystem': true,
-      },
-      {
-        'id': '2',
-        'name': 'Project Manager',
-        'description': 'Project management and team coordination',
-        'permissions': ['projects.*', 'tasks.*', 'reports.read', 'users.read'],
-        'userCount': 3,
-        'createdAt': '2025-01-10',
-        'isSystem': true,
-      },
-      {
-        'id': '3',
-        'name': 'Team Lead',
-        'description': 'Team leadership and task assignment',
-        'permissions': ['tasks.*', 'projects.read', 'users.read'],
-        'userCount': 5,
-        'createdAt': '2025-01-10',
-        'isSystem': false,
-      },
-      {
-        'id': '4',
-        'name': 'Developer',
-        'description': 'Development tasks and code management',
-        'permissions': ['tasks.read', 'tasks.update', 'projects.read'],
-        'userCount': 8,
-        'createdAt': '2025-01-10',
-        'isSystem': false,
-      },
-      {
-        'id': '5',
-        'name': 'Designer',
-        'description': 'Design tasks and creative work',
-        'permissions': ['tasks.read', 'tasks.update', 'projects.read'],
-        'userCount': 3,
-        'createdAt': '2025-01-10',
-        'isSystem': false,
-      },
-      {
-        'id': '6',
-        'name': 'Viewer',
-        'description': 'Read-only access to projects and tasks',
-        'permissions': ['tasks.read', 'projects.read'],
-        'userCount': 12,
-        'createdAt': '2025-01-10',
-        'isSystem': false,
-      },
-    ];
+    final jwt = await _getJwt();
+    if (jwt == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/roles'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        final rolesData = jsonDecode(response.body) as List;
+        setState(() {
+          _roles = rolesData.map((role) => {
+            'id': role['id'].toString(),
+            'name': role['name'],
+            'description': role['description'] ?? '',
+            'permissions': role['permissions'] ?? [],
+            'userCount': role['userCount'] ?? 0,
+            'createdAt': role['created_at']?.toString().substring(0, 10) ?? '',
+            'isSystem': role['isSystem'] ?? false,
+          }).toList();
+        });
+      } else {
+        print('Failed to load roles: ${response.statusCode} - ${response.body}');
+        _showErrorMessage('Failed to load roles');
+      }
+    } catch (e) {
+      print('Error loading roles: $e');
+      _showErrorMessage('Error loading roles: $e');
+    }
 
     setState(() => _isLoading = false);
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   void _showCreateRoleDialog() {
@@ -192,22 +177,44 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
     );
   }
 
-  void _createRole(String name, String description, List<String> permissions) {
-    setState(() {
-      _roles.add({
-        'id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'name': name,
-        'description': description,
-        'permissions': permissions,
-        'userCount': 0,
-        'createdAt': DateTime.now().toIso8601String().substring(0, 10),
-        'isSystem': false,
-      });
-    });
+  Future<void> _createRole(String name, String description, List<String> permissions) async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Role created successfully'), backgroundColor: Colors.green),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBase/task/api/roles'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+          'permissions': permissions,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Role created successfully'), backgroundColor: Colors.green),
+          );
+        }
+        _loadRoles(); // Reload roles to get updated data
+      } else {
+        String errorMessage = 'Failed to create role';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to create role: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to create role: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error creating role: $e');
+    }
   }
 
   void _editRole(Map<String, dynamic> role) {
@@ -252,14 +259,9 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _roles.removeWhere((r) => r['id'] == roleId);
-              });
+            onPressed: () async {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Role deleted successfully'), backgroundColor: Colors.orange),
-              );
+              await _performDeleteRole(roleId);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),
@@ -267,6 +269,38 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _performDeleteRole(String roleId) async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.delete(
+        Uri.parse('$apiBase/task/api/roles/$roleId'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Role deleted successfully'), backgroundColor: Colors.orange),
+          );
+        }
+        _loadRoles(); // Reload roles to get updated data
+      } else {
+        String errorMessage = 'Failed to delete role';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to delete role: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to delete role: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error deleting role: $e');
+    }
   }
 
   @override

@@ -35,31 +35,70 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
-    // Load mock data for now
-    _users = [
-      {'id': '1', 'email': 'john@example.com', 'name': 'John Doe'},
-      {'id': '2', 'email': 'jane@example.com', 'name': 'Jane Smith'},
-      {'id': '3', 'email': 'mike@example.com', 'name': 'Mike Johnson'},
-      {'id': '4', 'email': 'sarah@example.com', 'name': 'Sarah Wilson'},
-    ];
+    final jwt = await _getJwt();
+    if (jwt == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
 
-    _roles = [
-      {'id': '1', 'name': 'Admin', 'description': 'Full system access'},
-      {'id': '2', 'name': 'Project Manager', 'description': 'Project management access'},
-      {'id': '3', 'name': 'Team Lead', 'description': 'Team leadership access'},
-      {'id': '4', 'name': 'Developer', 'description': 'Development access'},
-      {'id': '5', 'name': 'Designer', 'description': 'Design access'},
-      {'id': '6', 'name': 'Viewer', 'description': 'Read-only access'},
-    ];
+    try {
+      // Load users, roles, and user role assignments in parallel
+      final futures = await Future.wait([
+        http.get(Uri.parse('$apiBase/task/api/users'), headers: {'Authorization': 'Bearer $jwt'}),
+        http.get(Uri.parse('$apiBase/task/api/roles'), headers: {'Authorization': 'Bearer $jwt'}),
+        http.get(Uri.parse('$apiBase/task/api/user-roles'), headers: {'Authorization': 'Bearer $jwt'}),
+      ]);
 
-    _userRoles = [
-      {'userId': '1', 'roleId': '1', 'assignedAt': '2025-01-15', 'assignedBy': 'admin'},
-      {'userId': '2', 'roleId': '2', 'assignedAt': '2025-01-15', 'assignedBy': 'admin'},
-      {'userId': '3', 'roleId': '4', 'assignedAt': '2025-01-15', 'assignedBy': 'admin'},
-      {'userId': '4', 'roleId': '5', 'assignedAt': '2025-01-15', 'assignedBy': 'admin'},
-    ];
+      final usersResponse = futures[0];
+      final rolesResponse = futures[1];
+      final userRolesResponse = futures[2];
+
+      if (usersResponse.statusCode == 200) {
+        final usersData = jsonDecode(usersResponse.body) as List;
+        _users = usersData.map((user) => {
+          'id': user['id'].toString(),
+          'email': user['email'],
+          'name': user['name'] ?? user['display_name'] ?? user['email'],
+        }).toList();
+      }
+
+      if (rolesResponse.statusCode == 200) {
+        final rolesData = jsonDecode(rolesResponse.body) as List;
+        _roles = rolesData.map((role) => {
+          'id': role['id'].toString(),
+          'name': role['name'],
+          'description': role['description'] ?? '',
+        }).toList();
+      }
+
+      if (userRolesResponse.statusCode == 200) {
+        final userRolesData = jsonDecode(userRolesResponse.body) as List;
+        _userRoles = userRolesData.map((userRole) => {
+          'userId': userRole['user_id'].toString(),
+          'roleId': userRole['role_id'].toString(),
+          'assignedAt': userRole['assigned_at']?.toString().substring(0, 10) ?? '',
+          'assignedBy': 'admin', // TODO: Get actual assigner
+          'userEmail': userRole['user_email'],
+          'userName': userRole['user_name'],
+          'roleName': userRole['role_name'],
+        }).toList();
+      }
+
+    } catch (e) {
+      print('Error loading data: $e');
+      _showErrorMessage('Error loading data: $e');
+    }
 
     setState(() => _isLoading = false);
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Future<void> _assignRole() async {
@@ -83,41 +122,83 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
       return;
     }
 
-    // Add new role assignment
-    setState(() {
-      _userRoles.add({
-        'userId': _selectedUserId,
-        'roleId': _selectedRoleId,
-        'assignedAt': DateTime.now().toIso8601String().substring(0, 10),
-        'assignedBy': 'admin',
-      });
-    });
+    final jwt = await _getJwt();
+    if (jwt == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Role assigned successfully'), backgroundColor: Colors.green),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBase/task/api/user-roles'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'user_id': int.parse(_selectedUserId!),
+          'role_id': int.parse(_selectedRoleId!),
+        }),
+      );
 
-    // Reset selections
-    setState(() {
-      _selectedUserId = null;
-      _selectedRoleId = null;
-    });
+      if (response.statusCode == 201) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Role assigned successfully'), backgroundColor: Colors.green),
+          );
+        }
+
+        // Reset selections and reload data
+        setState(() {
+          _selectedUserId = null;
+          _selectedRoleId = null;
+        });
+        _loadData();
+      } else {
+        String errorMessage = 'Failed to assign role';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to assign role: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to assign role: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error assigning role: $e');
+    }
   }
 
   Future<void> _removeRole(String userId, String roleId) async {
-    setState(() {
-      _userRoles.removeWhere((ur) => ur['userId'] == userId && ur['roleId'] == roleId);
-    });
+    final jwt = await _getJwt();
+    if (jwt == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Role removed successfully'), backgroundColor: Colors.orange),
-    );
+    try {
+      final response = await http.delete(
+        Uri.parse('$apiBase/task/api/user-roles/$userId/$roleId'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Role removed successfully'), backgroundColor: Colors.orange),
+          );
+        }
+        _loadData(); // Reload data to get updated assignments
+      } else {
+        String errorMessage = 'Failed to remove role';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to remove role: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to remove role: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error removing role: $e');
+    }
   }
 
-  String _getUserName(String userId) {
-    final user = _users.firstWhere((u) => u['id'] == userId, orElse: () => {'name': 'Unknown User'});
-    return user['name'];
-  }
+
 
   String _getRoleName(String roleId) {
     final role = _roles.firstWhere((r) => r['id'] == roleId, orElse: () => {'name': 'Unknown Role'});
