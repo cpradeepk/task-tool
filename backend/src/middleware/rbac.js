@@ -1,9 +1,21 @@
 import { knex } from '../db/index.js';
 
 export async function getUserRoles(userId) {
+  // Handle special admin user case
+  if (userId === 'admin-user' || userId === 'test-user') {
+    return ['Admin']; // Admin users have all permissions
+  }
+
+  // Convert to number for database query
+  const numericUserId = Number(userId);
+  if (isNaN(numericUserId)) {
+    console.warn('Invalid user ID for role lookup:', userId);
+    return [];
+  }
+
   const rows = await knex('user_roles')
     .join('roles', 'user_roles.role_id', 'roles.id')
-    .where('user_roles.user_id', userId)
+    .where('user_roles.user_id', numericUserId)
     .select('roles.name');
   return rows.map(r => r.name);
 }

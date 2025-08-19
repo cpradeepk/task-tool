@@ -278,7 +278,12 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
+                                onPressed: () {
+                                  // Navigate back to project settings instead of popping
+                                  if (mounted) {
+                                    context.go('/admin/project-settings');
+                                  }
+                                },
                                 child: const Text('Cancel'),
                               ),
                               const SizedBox(width: 16),

@@ -75,14 +75,22 @@ router.post('/', async (req, res) => {
 
     const projectData = {
       name: name.trim(),
-      description: description?.trim() || '',
-      start_date: start_date || null,
-      end_date: end_date || null,
-      status: status || 'Active',
     };
 
     // Add optional columns if they exist
-    if (columns.created_by) projectData.created_by = req.user.id === 'test-user' ? 1 : req.user.id;
+    if (columns.description) projectData.description = description?.trim() || '';
+    if (columns.start_date) projectData.start_date = start_date || null;
+    if (columns.end_date) projectData.end_date = end_date || null;
+    if (columns.status) projectData.status = status || 'Active';
+    if (columns.created_by) {
+      // Handle special user IDs
+      if (req.user.id === 'test-user' || req.user.id === 'admin-user') {
+        projectData.created_by = 1; // Default admin user ID
+      } else {
+        const numericUserId = Number(req.user.id);
+        projectData.created_by = isNaN(numericUserId) ? 1 : numericUserId;
+      }
+    }
     if (columns.created_at) projectData.created_at = new Date();
     if (columns.updated_at) projectData.updated_at = new Date();
 
@@ -110,14 +118,20 @@ router.put('/:projectId', async (req, res) => {
       return res.status(400).json({ error: 'Project name is required' });
     }
     
+    // Get table columns to ensure compatibility
+    const columns = await knex('projects').columnInfo();
+    console.log('Available columns in projects table:', Object.keys(columns));
+
     const updateData = {
       name: name.trim(),
-      description: description?.trim() || '',
-      start_date: start_date || null,
-      end_date: end_date || null,
-      status: status || 'Active',
-      updated_at: new Date(),
     };
+
+    // Add optional columns if they exist
+    if (columns.description) updateData.description = description?.trim() || '';
+    if (columns.start_date) updateData.start_date = start_date || null;
+    if (columns.end_date) updateData.end_date = end_date || null;
+    if (columns.status) updateData.status = status || 'Active';
+    if (columns.updated_at) updateData.updated_at = new Date();
     
     console.log('Updating project:', projectId, 'with data:', updateData);
 
@@ -142,24 +156,49 @@ router.put('/:projectId', async (req, res) => {
 router.delete('/:projectId', async (req, res) => {
   try {
     const projectId = Number(req.params.projectId);
-    
+
+    console.log('Deleting project:', projectId);
+
+    // Check if project exists first
+    const existingProject = await knex('projects').where({ id: projectId }).first();
+    if (!existingProject) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Delete related data first (cascade delete)
     try {
-      const deleted = await knex('projects')
-        .where({ id: projectId })
-        .del();
-      
+      // Delete project team members
+      await knex('project_team').where({ project_id: projectId }).del();
+      console.log('Deleted project team members for project:', projectId);
+
+      // Delete tasks in modules of this project
+      const modules = await knex('modules').where({ project_id: projectId }).select('id');
+      if (modules.length > 0) {
+        const moduleIds = modules.map(m => m.id);
+        await knex('tasks').whereIn('module_id', moduleIds).del();
+        console.log('Deleted tasks for project modules:', moduleIds);
+      }
+
+      // Delete modules
+      await knex('modules').where({ project_id: projectId }).del();
+      console.log('Deleted modules for project:', projectId);
+
+      // Finally delete the project
+      const deleted = await knex('projects').where({ id: projectId }).del();
+
       if (deleted === 0) {
         return res.status(404).json({ error: 'Project not found' });
       }
-      
+
+      console.log('Project deleted successfully:', projectId);
       res.json({ message: 'Project deleted successfully' });
     } catch (dbError) {
-      console.log('Database delete failed, returning success for development');
-      res.json({ message: 'Project deleted successfully' });
+      console.error('Database error during project deletion:', dbError);
+      res.status(500).json({ error: 'Failed to delete project', details: dbError.message });
     }
   } catch (err) {
     console.error('Error deleting project:', err);
-    res.status(500).json({ error: 'Failed to delete project' });
+    res.status(500).json({ error: 'Failed to delete project', details: err.message });
   }
 });
 

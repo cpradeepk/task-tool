@@ -45,7 +45,24 @@ router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) =
       return res.status(500).json({ error: 'Modules table not found. Please run database migrations.' });
     }
 
-    const [row] = await knex('modules').insert({ project_id: projectId, name }).returning('*');
+    // Get table columns to ensure compatibility
+    const columns = await knex('modules').columnInfo();
+    console.log('Available columns in modules table:', Object.keys(columns));
+
+    const moduleData = {
+      project_id: projectId,
+      name: name.trim(),
+    };
+
+    // Add optional columns if they exist
+    if (columns.description) moduleData.description = req.body.description?.trim() || '';
+    if (columns.order_index) moduleData.order_index = req.body.order_index || 0;
+    if (columns.created_at) moduleData.created_at = new Date();
+    if (columns.updated_at) moduleData.updated_at = new Date();
+
+    console.log('Inserting module data:', moduleData);
+
+    const [row] = await knex('modules').insert(moduleData).returning('*');
 
     console.log('Module created successfully:', row);
     res.status(201).json(row);
@@ -56,10 +73,40 @@ router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) =
 });
 
 router.put('/:moduleId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
-  const moduleId = Number(req.params.moduleId);
-  const { name } = req.body;
-  const [row] = await knex('modules').where({ id: moduleId }).update({ name }).returning('*');
-  res.json(row);
+  try {
+    const moduleId = Number(req.params.moduleId);
+    const { name, description } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Module name is required' });
+    }
+
+    // Get table columns to ensure compatibility
+    const columns = await knex('modules').columnInfo();
+    console.log('Available columns in modules table:', Object.keys(columns));
+
+    const updateData = {
+      name: name.trim(),
+    };
+
+    // Add optional columns if they exist
+    if (columns.description) updateData.description = description?.trim() || '';
+    if (columns.updated_at) updateData.updated_at = new Date();
+
+    console.log('Updating module:', moduleId, 'with data:', updateData);
+
+    const [row] = await knex('modules').where({ id: moduleId }).update(updateData).returning('*');
+
+    if (!row) {
+      return res.status(404).json({ error: 'Module not found' });
+    }
+
+    console.log('Module updated successfully:', row);
+    res.json(row);
+  } catch (err) {
+    console.error('Error updating module:', err);
+    res.status(500).json({ error: 'Failed to update module', details: err.message });
+  }
 });
 
 router.delete('/:moduleId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {

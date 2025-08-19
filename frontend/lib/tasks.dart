@@ -858,56 +858,66 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _showAssigneeDropdown(Map<String, dynamic> task) {
-    showDialog(
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    showMenu<int?>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Assign Task'),
-        content: SizedBox(
-          width: 300,
-          child: DropdownButtonFormField<int?>(
-            value: task['assigned_to'] as int?,
-            decoration: const InputDecoration(
-              labelText: 'Assignee',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              const DropdownMenuItem(value: null, child: Text('Unassigned')),
-              ..._users.map((user) => DropdownMenuItem(
-                value: user['id'] as int,
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        user['name'].toString().substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.blue.shade800,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(user['name']),
-                  ],
-                ),
-              )),
+      position: position,
+      items: [
+        const PopupMenuItem<int?>(
+          value: null,
+          child: Row(
+            children: [
+              Icon(Icons.person_off, size: 16, color: Colors.grey),
+              SizedBox(width: 8),
+              Text('Unassigned'),
             ],
-            onChanged: (value) {
-              Navigator.of(context).pop();
-              _updateTaskAssignee(task, value);
-            },
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
+        ..._users.map<PopupMenuEntry<int?>>((user) {
+          return PopupMenuItem<int?>(
+            value: user['id'] as int,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: Colors.blue.shade100,
+                  child: Text(
+                    user['name'].toString().substring(0, 1).toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.blue.shade800,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    user['name'],
+                    style: const TextStyle(fontSize: 13),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    ).then((selectedAssigneeId) {
+      if (selectedAssigneeId != task['assigned_to']) {
+        _updateTaskAssignee(task, selectedAssigneeId);
+      }
+    });
   }
 
   void _showDatePicker(Map<String, dynamic> task) async {
