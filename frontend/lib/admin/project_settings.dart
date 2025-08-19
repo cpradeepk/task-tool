@@ -157,7 +157,12 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     final jwt = await _getJwt();
     if (jwt == null) return;
 
+    // Clear team members immediately to prevent showing wrong data
+    setState(() => _projectTeam = []);
+
     try {
+      print('Loading team members for project: $_selectedProjectId'); // Debug log
+
       final response = await http.get(
         Uri.parse('$apiBase/task/api/admin/projects/$_selectedProjectId/team'),
         headers: {'Authorization': 'Bearer $jwt'},
@@ -165,14 +170,20 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
 
       if (response.statusCode == 200) {
         final teamMembers = jsonDecode(response.body) as List;
-        setState(() {
-          _projectTeam = teamMembers.map((member) => {
-            'userId': member['user_id'],
-            'role': member['role'],
-            'assignedAt': member['assigned_at']?.toString().substring(0, 10) ?? '',
-            'user': member['user'] ?? {},
-          }).toList();
-        });
+        print('Loaded ${teamMembers.length} team members for project $_selectedProjectId'); // Debug log
+
+        // Only update if we're still on the same project (prevent race conditions)
+        if (_selectedProjectId != null) {
+          setState(() {
+            _projectTeam = teamMembers.map((member) => {
+              'userId': member['user_id'],
+              'role': member['role'],
+              'assignedAt': member['assigned_at']?.toString().substring(0, 10) ?? '',
+              'user': member['user'] ?? {},
+              'projectId': _selectedProjectId, // Add project ID for verification
+            }).toList();
+          });
+        }
       } else {
         print('Failed to load project team: ${response.statusCode} - ${response.body}');
         setState(() => _projectTeam = []);
@@ -283,8 +294,16 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                       );
                     }).toList(),
                     onChanged: (value) {
-                      setState(() => _selectedProjectId = value);
-                      if (value != null) _loadModules();
+                      setState(() {
+                        _selectedProjectId = value;
+                        // Clear previous project data when switching projects
+                        _modules.clear();
+                        _projectTeam.clear();
+                      });
+                      if (value != null) {
+                        _loadModules();
+                        _loadProjectTeam();
+                      }
                     },
                   ),
                 ),
@@ -1091,6 +1110,12 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                     itemCount: _projectTeam.length,
                     itemBuilder: (context, index) {
                       final teamMember = _projectTeam[index];
+
+                      // Additional safety check: only show team members for current project
+                      if (teamMember['projectId'] != null && teamMember['projectId'] != _selectedProjectId) {
+                        return const SizedBox.shrink(); // Hide if not for current project
+                      }
+
                       final user = _users.firstWhere(
                         (u) => u['id'] == teamMember['userId'],
                         orElse: () => {'name': 'Unknown User', 'email': 'unknown@example.com'},
