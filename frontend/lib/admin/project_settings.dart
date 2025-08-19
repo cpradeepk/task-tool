@@ -51,7 +51,9 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
       );
 
       if (response.statusCode == 200) {
-        setState(() => _projects = jsonDecode(response.body));
+        final projectsData = jsonDecode(response.body);
+        print('Loaded projects data: $projectsData'); // Debug log
+        setState(() => _projects = projectsData);
         if (_selectedProjectId != null) {
           _loadModules();
           _loadProjectTeam();
@@ -439,7 +441,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
               const SizedBox(height: 24),
               Row(
                 children: [
-                  _buildInfoCard('Status', project['status'] ?? 'Unknown', Icons.flag),
+                  _buildInfoCard('Status', project['status'] ?? 'Active', Icons.flag),
                   const SizedBox(width: 16),
                   _buildInfoCard('Start Date', project['start_date'] ?? 'Not set', Icons.calendar_today),
                   const SizedBox(width: 16),
@@ -590,25 +592,53 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     );
   }
 
-  void _updateProject(int projectId, String name, String description, String status, DateTime? startDate, DateTime? endDate) {
-    setState(() {
-      final projectIndex = _projects.indexWhere((p) => p['id'] == projectId);
-      if (projectIndex != -1) {
-        _projects[projectIndex] = {
-          ..._projects[projectIndex],
+  Future<void> _updateProject(int projectId, String name, String description, String status, DateTime? startDate, DateTime? endDate) async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.put(
+        Uri.parse('$apiBase/task/api/admin/projects/$projectId'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
           'name': name,
           'description': description,
           'status': status,
           'start_date': startDate?.toIso8601String().substring(0, 10),
           'end_date': endDate?.toIso8601String().substring(0, 10),
-          'updated_at': DateTime.now().toIso8601String(),
-        };
-      }
-    });
+        }),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Project updated successfully'), backgroundColor: Colors.green),
-    );
+      if (response.statusCode == 200) {
+        // Update local state with the response from server
+        final updatedProject = jsonDecode(response.body);
+        setState(() {
+          final projectIndex = _projects.indexWhere((p) => p['id'] == projectId);
+          if (projectIndex != -1) {
+            _projects[projectIndex] = updatedProject;
+          }
+        });
+
+        _showSuccessMessage('Project updated successfully');
+
+        // Reload projects to ensure consistency
+        _loadProjects();
+      } else {
+        String errorMessage = 'Failed to update project';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to update project: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to update project: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error updating project: $e');
+    }
   }
 
   void _showDeleteProjectDialog(Map<String, dynamic> project) {
@@ -940,16 +970,52 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     );
   }
 
-  void _updateModule(int moduleId, String name, String description) {
-    setState(() {
-      final index = _modules.indexWhere((m) => m['id'] == moduleId);
-      if (index != -1) {
-        _modules[index]['name'] = name;
-        _modules[index]['description'] = description;
-      }
-    });
+  Future<void> _updateModule(int moduleId, String name, String description) async {
+    if (_selectedProjectId == null) return;
 
-    _showSuccessMessage('Module updated successfully');
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.put(
+        Uri.parse('$apiBase/task/api/projects/$_selectedProjectId/modules/$moduleId'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Update local state with the response from server
+        final updatedModule = jsonDecode(response.body);
+        setState(() {
+          final index = _modules.indexWhere((m) => m['id'] == moduleId);
+          if (index != -1) {
+            _modules[index] = updatedModule;
+          }
+        });
+
+        _showSuccessMessage('Module updated successfully');
+
+        // Reload modules to ensure consistency
+        _loadModules();
+      } else {
+        String errorMessage = 'Failed to update module';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to update module: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to update module: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error updating module: $e');
+    }
   }
 
 
