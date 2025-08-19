@@ -1,32 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'sidebar_navigation.dart';
 import 'admin_login.dart';
+import 'theme/theme_provider.dart';
 
-class MainLayout extends StatefulWidget {
+class MainLayout extends ConsumerStatefulWidget {
   final Widget child;
   final String title;
-  
+
   const MainLayout({
-    super.key, 
+    super.key,
     required this.child,
     this.title = 'Task Tool',
   });
 
   @override
-  State<MainLayout> createState() => _MainLayoutState();
+  ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> {
+class _MainLayoutState extends ConsumerState<MainLayout> {
   bool _isSidebarCollapsed = false;
   bool _isAdmin = false;
   String? _userEmail;
-  double _zoomLevel = 1.0;
-
-  static const double _minZoom = 0.8;
-  static const double _maxZoom = 1.5;
-  static const double _zoomStep = 0.1;
 
   // Menu expansion states - default to expanded for main sections
   bool _projectsExpanded = true;
@@ -87,21 +84,15 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _zoomIn() {
-    setState(() {
-      _zoomLevel = (_zoomLevel + _zoomStep).clamp(_minZoom, _maxZoom);
-    });
+    ref.read(themeProvider.notifier).zoomIn();
   }
 
   void _zoomOut() {
-    setState(() {
-      _zoomLevel = (_zoomLevel - _zoomStep).clamp(_minZoom, _maxZoom);
-    });
+    ref.read(themeProvider.notifier).zoomOut();
   }
 
   void _resetZoom() {
-    setState(() {
-      _zoomLevel = 1.0;
-    });
+    ref.read(themeProvider.notifier).resetZoom();
   }
 
   bool _shouldShowBreadcrumbs() {
@@ -270,19 +261,24 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          // Sidebar Navigation
-          SidebarNavigation(
-            isCollapsed: _isSidebarCollapsed,
-            onToggle: _toggleSidebar,
-          ),
-          
-          // Main Content Area
-          Expanded(
-            child: Column(
-              children: [
+    final themeState = ref.watch(themeProvider);
+    final zoomLevel = themeState.zoomLevel;
+
+    return Transform.scale(
+      scale: zoomLevel,
+      child: Scaffold(
+        body: Row(
+          children: [
+            // Sidebar Navigation
+            SidebarNavigation(
+              isCollapsed: _isSidebarCollapsed,
+              onToggle: _toggleSidebar,
+            ),
+
+            // Main Content Area
+            Expanded(
+              child: Column(
+                children: [
                 // Top App Bar
                 Container(
                   height: 60,
@@ -332,7 +328,7 @@ class _MainLayoutState extends State<MainLayout> {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                '${(_zoomLevel * 100).round()}%',
+                                '${(zoomLevel * 100).round()}%',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey.shade700,
@@ -462,12 +458,9 @@ class _MainLayoutState extends State<MainLayout> {
                         // Breadcrumbs
                         if (_shouldShowBreadcrumbs()) _buildBreadcrumbs(),
 
-                        // Main content with zoom
+                        // Main content
                         Expanded(
-                          child: Transform.scale(
-                            scale: _zoomLevel,
-                            child: widget.child,
-                          ),
+                          child: widget.child,
                         ),
                       ],
                     ),
@@ -477,6 +470,7 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

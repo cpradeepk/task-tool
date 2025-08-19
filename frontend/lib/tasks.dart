@@ -120,67 +120,27 @@ class _TasksScreenState extends State<TasksScreen> {
       });
     } catch (e) {
       print('Error loading data: $e');
-      // Use mock data for development
-      _modules = [
-        {'id': 1, 'name': 'Authentication Module'},
-        {'id': 2, 'name': 'Dashboard Module'},
-        {'id': 3, 'name': 'UI Design System'},
-      ];
+      // Show error message instead of mock data
+      setState(() {
+        _busy = false;
+        _tasks = [];
+        _modules = [];
+        _users = [];
+      });
 
-      final mockTasks = [
-        {
-          'id': 1,
-          'task_id': 'JSR-20250117-001',
-          'title': 'Implement user authentication',
-          'description': 'Create login and registration functionality',
-          'status': 'In Progress',
-          'priority': 'Important & Urgent',
-          'due_date': '2025-01-20',
-          'assigned_to': 'John Doe',
-          'module_id': widget.moduleId ?? 1,
-          'estimated_hours': 8,
-        },
-        {
-          'id': 2,
-          'task_id': 'JSR-20250117-002',
-          'title': 'Design dashboard layout',
-          'description': 'Create responsive dashboard interface',
-          'status': 'Open',
-          'priority': 'Important & Not Urgent',
-          'due_date': '2025-01-22',
-          'assigned_to': 'Jane Smith',
-          'module_id': widget.moduleId ?? 2,
-          'estimated_hours': 6,
-        },
-        {
-          'id': 3,
-          'task_id': 'JSR-20250117-003',
-          'title': 'Setup database schema',
-          'description': 'Create and configure database tables',
-          'status': 'Completed',
-          'priority': 'Important & Urgent',
-          'due_date': '2025-01-18',
-          'assigned_to': 'Mike Johnson',
-          'module_id': widget.moduleId ?? 1,
-          'estimated_hours': 4,
-        },
-      ];
-
-      // Filter tasks by module if moduleId is specified
-      if (widget.moduleId != null) {
-        _tasks = mockTasks.where((task) => task['module_id'] == widget.moduleId).toList();
-      } else {
-        _tasks = mockTasks;
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load tasks: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: _load,
+            ),
+          ),
+        );
       }
-
-      _users = [
-        {'id': 1, 'name': 'John Doe'},
-        {'id': 2, 'name': 'Jane Smith'},
-        {'id': 3, 'name': 'Mike Johnson'},
-        {'id': 4, 'name': 'Sarah Wilson'},
-      ];
-
-      setState(() { _busy = false; });
     }
   }
 

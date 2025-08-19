@@ -6,19 +6,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ThemeState {
   final String selectedTheme;
   final bool isDarkMode;
+  final double zoomLevel;
 
   const ThemeState({
     this.selectedTheme = 'Blue',
     this.isDarkMode = false,
+    this.zoomLevel = 1.0,
   });
 
   ThemeState copyWith({
     String? selectedTheme,
     bool? isDarkMode,
+    double? zoomLevel,
   }) {
     return ThemeState(
       selectedTheme: selectedTheme ?? this.selectedTheme,
       isDarkMode: isDarkMode ?? this.isDarkMode,
+      zoomLevel: zoomLevel ?? this.zoomLevel,
     );
   }
 }
@@ -26,6 +30,11 @@ class ThemeState {
 class ThemeNotifier extends StateNotifier<ThemeState> {
   static const String _themeKey = 'selected_theme';
   static const String _darkModeKey = 'dark_mode';
+  static const String _zoomKey = 'zoom_level';
+
+  static const double _minZoom = 0.8;
+  static const double _maxZoom = 1.5;
+  static const double _zoomStep = 0.1;
 
   ThemeNotifier() : super(const ThemeState()) {
     _loadTheme();
@@ -121,9 +130,11 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     final prefs = await SharedPreferences.getInstance();
     final selectedTheme = prefs.getString(_themeKey) ?? 'Blue';
     final isDarkMode = prefs.getBool(_darkModeKey) ?? false;
+    final zoomLevel = prefs.getDouble(_zoomKey) ?? 1.0;
     state = state.copyWith(
       selectedTheme: selectedTheme,
       isDarkMode: isDarkMode,
+      zoomLevel: zoomLevel,
     );
   }
 
@@ -144,9 +155,31 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   Future<void> toggleDarkMode() async {
     await setDarkMode(!state.isDarkMode);
   }
-  
+
+  // Zoom functionality
+  Future<void> zoomIn() async {
+    final newZoom = (state.zoomLevel + _zoomStep).clamp(_minZoom, _maxZoom);
+    await setZoomLevel(newZoom);
+  }
+
+  Future<void> zoomOut() async {
+    final newZoom = (state.zoomLevel - _zoomStep).clamp(_minZoom, _maxZoom);
+    await setZoomLevel(newZoom);
+  }
+
+  Future<void> resetZoom() async {
+    await setZoomLevel(1.0);
+  }
+
+  Future<void> setZoomLevel(double zoom) async {
+    final clampedZoom = zoom.clamp(_minZoom, _maxZoom);
+    state = state.copyWith(zoomLevel: clampedZoom);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_zoomKey, clampedZoom);
+  }
+
   List<String> get availableThemes => _themeColors.keys.toList();
-  
+
   Color getThemeColor(String theme) {
     return _themeColors[theme] ?? Colors.blue;
   }

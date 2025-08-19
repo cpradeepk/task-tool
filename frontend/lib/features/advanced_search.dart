@@ -32,7 +32,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> with Ticker
   final List<String> _categories = ['All', 'Tasks', 'Projects', 'Modules', 'Notes', 'Users'];
   final List<String> _statuses = ['All', 'Open', 'In Progress', 'Completed', 'Hold', 'Cancelled'];
   final List<String> _priorities = ['All', 'High', 'Medium', 'Low'];
-  final List<String> _assignees = ['All', 'Me', 'John Doe', 'Jane Smith', 'Mike Johnson'];
+  List<String> _assignees = ['All', 'Me']; // Will be populated from API
   final List<String> _availableTags = ['urgent', 'frontend', 'backend', 'bug-fix', 'enhancement'];
 
   @override
@@ -79,86 +79,16 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> with Ticker
         }
       }
     } catch (e) {
-      // Use mock search results for development
-      setState(() => _searchResults = _generateMockSearchResults());
+      // Show error message instead of mock data
+      print('Search error: $e');
+      setState(() => _searchResults = []);
     } finally {
       setState(() => _isLoading = false);
       _saveRecentSearch();
     }
   }
 
-  List<dynamic> _generateMockSearchResults() {
-    final query = _searchController.text.toLowerCase();
-    final mockData = [
-      {
-        'id': 1,
-        'type': 'Task',
-        'title': 'Frontend Development',
-        'description': 'Develop the user interface for the dashboard',
-        'project': 'Web Application',
-        'status': 'In Progress',
-        'priority': 'High',
-        'assignee': 'John Doe',
-        'due_date': '2025-01-20',
-        'tags': ['frontend', 'urgent'],
-        'url': '/tasks/1',
-      },
-      {
-        'id': 2,
-        'type': 'Project',
-        'title': 'Mobile App Development',
-        'description': 'Complete mobile application for iOS and Android',
-        'status': 'Open',
-        'priority': 'Medium',
-        'assignee': 'Jane Smith',
-        'due_date': '2025-02-15',
-        'tags': ['mobile', 'development'],
-        'url': '/projects/2',
-      },
-      {
-        'id': 3,
-        'type': 'Note',
-        'title': 'Meeting Notes - Sprint Planning',
-        'description': 'Notes from the sprint planning meeting discussing upcoming features',
-        'project': 'Web Application',
-        'created_date': '2025-01-15',
-        'tags': ['meeting', 'planning'],
-        'url': '/notes/3',
-      },
-      {
-        'id': 4,
-        'type': 'Module',
-        'title': 'Authentication Module',
-        'description': 'User authentication and authorization system',
-        'project': 'Web Application',
-        'status': 'Completed',
-        'assignee': 'Mike Johnson',
-        'tags': ['backend', 'security'],
-        'url': '/modules/4',
-      },
-    ];
 
-    // Filter based on search query and filters
-    return mockData.where((item) {
-      final title = item['title'] as String? ?? '';
-      final description = item['description'] as String? ?? '';
-      final type = item['type'] as String? ?? '';
-      final status = item['status'] as String? ?? '';
-      final priority = item['priority'] as String? ?? '';
-
-      final matchesQuery = query.isEmpty ||
-          title.toLowerCase().contains(query) ||
-          description.toLowerCase().contains(query);
-
-      final matchesCategory = _selectedCategory == 'All' ||
-          type.toLowerCase() == _selectedCategory.toLowerCase().replaceAll('s', '');
-
-      final matchesStatus = _selectedStatus == 'All' || status == _selectedStatus;
-      final matchesPriority = _selectedPriority == 'All' || priority == _selectedPriority;
-
-      return matchesQuery && matchesCategory && matchesStatus && matchesPriority;
-    }).toList();
-  }
 
   void _saveRecentSearch() {
     final searchQuery = {

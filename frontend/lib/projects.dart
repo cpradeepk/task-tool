@@ -40,22 +40,14 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           print('Loaded ${_projects.length} projects');
         } else {
           print('Failed to load projects: ${r.statusCode}');
-          // Use mock data for development
-          _projects = [
-            {'id': 1, 'name': 'Task Tool Development', 'description': 'Main project'},
-            {'id': 2, 'name': 'Mobile App', 'description': 'Mobile version'},
-          ];
+          _projects = [];
         }
       });
     } catch (e) {
       print('Error loading projects: $e');
       setState(() {
         _busy = false;
-        // Use mock data for development
-        _projects = [
-          {'id': 1, 'name': 'Task Tool Development', 'description': 'Main project'},
-          {'id': 2, 'name': 'Mobile App', 'description': 'Mobile version'},
-        ];
+        _projects = [];
       });
 
       // Show error message to user
