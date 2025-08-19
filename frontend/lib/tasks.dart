@@ -68,7 +68,7 @@ class _TasksScreenState extends State<TasksScreen> {
       final modulesRes = await http.get(
         Uri.parse('$apiBase/task/api/projects/${widget.projectId}/modules'),
         headers: { 'Authorization': 'Bearer $jwt' }
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
 
       if (modulesRes.statusCode == 200) {
         _modules = jsonDecode(modulesRes.body) as List<dynamic>;
@@ -89,7 +89,7 @@ class _TasksScreenState extends State<TasksScreen> {
       final r = await http.get(
         Uri.parse(tasksUrl),
         headers: { 'Authorization': 'Bearer $jwt' }
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
 
       List<dynamic> list = [];
       if (r.statusCode == 200) {
@@ -103,7 +103,7 @@ class _TasksScreenState extends State<TasksScreen> {
       final usersRes = await http.get(
         Uri.parse('$apiBase/task/api/users'),
         headers: { 'Authorization': 'Bearer $jwt' }
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 30));
 
       List<dynamic> users = [];
       if (usersRes.statusCode == 200) {
@@ -623,15 +623,37 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _openTaskDetail(Map<String, dynamic> task) {
-    // Navigate to task detail screen
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => TaskDetailScreen(
-          projectId: widget.projectId,
-          taskId: task['id'] as int,
-        ),
-      ),
-    );
+    // Navigate to task detail screen using proper routing
+    try {
+      final taskId = task['id'] as int;
+      final moduleId = task['module_id'] as int?;
+
+      if (moduleId != null) {
+        // Navigate to module-specific task detail
+        context.go('/projects/${widget.projectId}/modules/$moduleId/tasks/$taskId');
+      } else {
+        // Fallback: use Navigator.push for tasks without modules
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TaskDetailScreen(
+              projectId: widget.projectId,
+              taskId: taskId,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error navigating to task detail: $e');
+      // Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to open task details'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showStatusMenu(Map<String, dynamic> task, List<dynamic> statuses, Offset position) {

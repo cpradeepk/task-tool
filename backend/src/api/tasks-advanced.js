@@ -56,7 +56,7 @@ router.get('/:taskId/assignments', async (req, res) => {
 });
 
 // Assign/unassign users to task
-router.post('/:taskId/assignments', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
+router.post('/:taskId/assignments', requireAnyRole(['Admin','Project Manager','Team Member']), async (req, res) => {
   const taskId = Number(req.params.taskId);
   const { user_id, is_owner, role } = req.body;
   // Only one owner at a time: if setting is_owner true, clear others
@@ -78,7 +78,7 @@ router.post('/:taskId/assignments', requireAnyRole(['Admin','Project Manager']),
   res.status(201).json(row);
 });
 
-router.delete('/:taskId/assignments/:userId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
+router.delete('/:taskId/assignments/:userId', requireAnyRole(['Admin','Project Manager','Team Member']), async (req, res) => {
   const taskId = Number(req.params.taskId);
   const userId = Number(req.params.userId);
   await knex('task_assignments').where({ task_id: taskId, user_id: userId }).del();
