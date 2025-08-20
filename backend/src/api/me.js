@@ -39,42 +39,59 @@ router.get('/profile', async (req, res) => {
 });
 
 router.put('/profile', async (req, res) => {
-  const data = {
-    name: req.body.name,
-    short_name: req.body.short_name,
-    phone: req.body.phone,
-    telegram: req.body.telegram,
-    whatsapp: req.body.whatsapp,
-    theme: req.body.theme,
-    accent_color: req.body.accent_color,
-    font: req.body.font,
-    avatar_url: req.body.avatar_url,
-    // Also allow updating other user fields
-    first_name: req.body.first_name,
-    last_name: req.body.last_name,
-    department: req.body.department,
-    job_title: req.body.job_title,
-    bio: req.body.bio,
-    timezone: req.body.timezone,
-    language: req.body.language,
-    email_notifications: req.body.email_notifications,
-    push_notifications: req.body.push_notifications,
-    updated_at: knex.fn.now()
-  };
+  try {
+    // Get available columns to avoid updating non-existent columns
+    const columns = await knex('users').columnInfo();
+    console.log('Available columns in users table for profile update:', Object.keys(columns));
 
-  // Remove undefined values to avoid overwriting with null
-  Object.keys(data).forEach(key => {
-    if (data[key] === undefined) {
-      delete data[key];
+    const data = {};
+
+    // Add fields only if the corresponding columns exist
+    const fieldMappings = {
+      name: req.body.name,
+      short_name: req.body.short_name,
+      phone: req.body.phone,
+      telegram: req.body.telegram,
+      whatsapp: req.body.whatsapp,
+      theme: req.body.theme,
+      accent_color: req.body.accent_color,
+      font: req.body.font,
+      avatar_url: req.body.avatar_url,
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      department: req.body.department,
+      job_title: req.body.job_title,
+      bio: req.body.bio,
+      timezone: req.body.timezone,
+      language: req.body.language,
+      email_notifications: req.body.email_notifications,
+      push_notifications: req.body.push_notifications,
+    };
+
+    // Only add fields that have corresponding columns and are not undefined
+    Object.keys(fieldMappings).forEach(field => {
+      if (columns[field] && fieldMappings[field] !== undefined) {
+        data[field] = fieldMappings[field];
+      }
+    });
+
+    // Add updated_at if column exists
+    if (columns.updated_at) {
+      data.updated_at = knex.fn.now();
     }
-  });
 
-  const [row] = await knex('users')
-    .where({ id: req.user.id })
-    .update(data)
-    .returning('*');
+    console.log('Updating profile with data:', data);
 
-  res.json(row);
+    const [row] = await knex('users')
+      .where({ id: req.user.id })
+      .update(data)
+      .returning('*');
+
+    res.json(row);
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Failed to update profile', details: error.message });
+  }
 });
 
 router.get('/roles', async (req, res) => {

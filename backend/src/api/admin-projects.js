@@ -254,11 +254,11 @@ router.post('/:projectId/modules', async (req, res) => {
     const moduleData = {
       project_id: projectId,
       name: name.trim(),
-      description: description?.trim() || '',
-      order_index: order_index || 0,
     };
 
     // Add optional columns if they exist
+    if (columns.description) moduleData.description = description?.trim() || '';
+    if (columns.order_index) moduleData.order_index = order_index || 0;
     if (columns.created_at) moduleData.created_at = new Date();
     if (columns.updated_at) moduleData.updated_at = new Date();
 

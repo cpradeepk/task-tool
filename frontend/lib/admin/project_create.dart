@@ -60,7 +60,7 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
         // Navigate back to project settings with success
         if (mounted) {
           // Use context.go for proper navigation
-          context.go('/admin/project-settings');
+          context.go('/admin/projects/settings');
         }
       } else {
         String errorMessage = 'Failed to create project';
@@ -281,7 +281,7 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
                                 onPressed: () {
                                   // Navigate back to project settings instead of popping
                                   if (mounted) {
-                                    context.go('/admin/project-settings');
+                                    context.go('/admin/projects/settings');
                                   }
                                 },
                                 child: const Text('Cancel'),

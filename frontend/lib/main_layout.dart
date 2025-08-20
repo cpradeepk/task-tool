@@ -264,21 +264,33 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     final themeState = ref.watch(themeProvider);
     final zoomLevel = themeState.zoomLevel;
 
-    return Transform.scale(
-      scale: zoomLevel,
-      child: Scaffold(
-        body: Row(
-          children: [
-            // Sidebar Navigation
-            SidebarNavigation(
-              isCollapsed: _isSidebarCollapsed,
-              onToggle: _toggleSidebar,
-            ),
-
-            // Main Content Area
-            Expanded(
-              child: Column(
+    return Scaffold(
+      body: InteractiveViewer( // Use InteractiveViewer for better zoom control
+        constrained: false,
+        boundaryMargin: const EdgeInsets.all(20),
+        minScale: 0.8,
+        maxScale: 1.5,
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width / zoomLevel, // Adjust container size based on zoom
+          height: MediaQuery.of(context).size.height / zoomLevel,
+          child: Transform.scale(
+            scale: zoomLevel,
+            alignment: Alignment.topLeft, // Scale from top-left to maintain position
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: Row(
                 children: [
+                  // Sidebar Navigation
+                  SidebarNavigation(
+                    isCollapsed: _isSidebarCollapsed,
+                    onToggle: _toggleSidebar,
+                  ),
+
+                  // Main Content Area
+                  Expanded(
+                    child: Column(
+                      children: [
                 // Top App Bar
                 Container(
                   height: 60,
@@ -471,6 +483,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
           ),
         ],
       ),
+            ),
+          ),
+        ),
       ),
     );
   }

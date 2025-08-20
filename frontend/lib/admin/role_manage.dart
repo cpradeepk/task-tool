@@ -225,10 +225,111 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
       return;
     }
 
-    // TODO: Implement edit role dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Edit Role: ${role['name']} - Coming Soon')),
+    _showEditRoleDialog(role);
+  }
+
+  void _showEditRoleDialog(Map<String, dynamic> role) {
+    final nameController = TextEditingController(text: role['name']);
+    final descriptionController = TextEditingController(text: role['description']);
+    final permissions = List<String>.from(role['permissions'] ?? []);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Role'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Role Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              const Text('Permissions (Coming Soon)', style: TextStyle(fontSize: 14, color: Colors.grey)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Role name is required')),
+                );
+                return;
+              }
+
+              Navigator.of(context).pop();
+              await _updateRole(
+                role['id'],
+                nameController.text.trim(),
+                descriptionController.text.trim(),
+                permissions,
+              );
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _updateRole(String roleId, String name, String description, List<String> permissions) async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.put(
+        Uri.parse('$apiBase/task/api/roles/$roleId'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+          'permissions': permissions,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Role updated successfully'), backgroundColor: Colors.green),
+          );
+        }
+        _loadRoles(); // Reload roles to get updated data
+      } else {
+        String errorMessage = 'Failed to update role';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to update role: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to update role: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error updating role: $e');
+    }
   }
 
   void _deleteRole(String roleId) {

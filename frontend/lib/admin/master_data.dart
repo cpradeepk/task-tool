@@ -42,56 +42,73 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
   Future<void> _loadMasterData() async {
     setState(() => _isLoading = true);
     
-    // Load default master data
-    _priorities = [
-      {
-        'id': 1,
-        'name': 'Important & Urgent',
-        'description': 'Priority 1 - Eisenhower Matrix',
-        'color': 'Orange',
-        'order': 1,
-      },
-      {
-        'id': 2,
-        'name': 'Important & Not Urgent',
-        'description': 'Priority 2 - Eisenhower Matrix',
-        'color': 'Yellow',
-        'order': 2,
-      },
-      {
-        'id': 3,
-        'name': 'Not Important & Urgent',
-        'description': 'Priority 3 - Eisenhower Matrix',
-        'color': 'White',
-        'order': 3,
-      },
-      {
-        'id': 4,
-        'name': 'Not Important & Not Urgent',
-        'description': 'Priority 4 - Eisenhower Matrix',
-        'color': 'White',
-        'order': 4,
-      },
-    ];
+    // Load master data from API
+    final jwt = await _getJwt();
+    if (jwt == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
 
-    _statuses = [
-      {'id': 1, 'name': 'Open', 'color': 'White', 'description': 'Task is open and ready to start'},
-      {'id': 2, 'name': 'In Progress', 'color': 'Yellow', 'description': 'Task is currently being worked on'},
-      {'id': 3, 'name': 'Completed', 'color': 'Green', 'description': 'Task has been completed'},
-      {'id': 4, 'name': 'Cancelled', 'color': 'Grey', 'description': 'Task has been cancelled'},
-      {'id': 5, 'name': 'Hold', 'color': 'Brown', 'description': 'Task is on hold'},
-      {'id': 6, 'name': 'Delayed', 'color': 'Red', 'description': 'Task is delayed'},
-    ];
+    try {
+      // Load priorities, statuses, and task types from API
+      final futures = await Future.wait([
+        http.get(Uri.parse('$apiBase/task/api/master/priorities'), headers: {'Authorization': 'Bearer $jwt'}),
+        http.get(Uri.parse('$apiBase/task/api/master/statuses'), headers: {'Authorization': 'Bearer $jwt'}),
+        http.get(Uri.parse('$apiBase/task/api/master/task_types'), headers: {'Authorization': 'Bearer $jwt'}),
+      ]);
 
-    _categories = [
-      {'id': 1, 'name': 'Development', 'description': 'Software development projects'},
-      {'id': 2, 'name': 'Design', 'description': 'UI/UX and graphic design projects'},
-      {'id': 3, 'name': 'Marketing', 'description': 'Marketing and promotional projects'},
-      {'id': 4, 'name': 'Research', 'description': 'Research and analysis projects'},
-      {'id': 5, 'name': 'Operations', 'description': 'Operational and administrative projects'},
-    ];
+      final prioritiesResponse = futures[0];
+      final statusesResponse = futures[1];
+      final taskTypesResponse = futures[2];
+
+      if (prioritiesResponse.statusCode == 200) {
+        final prioritiesData = jsonDecode(prioritiesResponse.body) as List;
+        _priorities = prioritiesData.map((priority) => {
+          'id': priority['id'],
+          'name': priority['name'],
+          'description': priority['description'] ?? 'Eisenhower Matrix Priority',
+          'color': priority['color'] ?? 'Blue',
+          'order': priority['order'] ?? priority['id'],
+          'matrix_quadrant': priority['matrix_quadrant'] ?? '',
+        }).toList();
+      }
+
+      if (statusesResponse.statusCode == 200) {
+        final statusesData = jsonDecode(statusesResponse.body) as List;
+        _statuses = statusesData.map((status) => {
+          'id': status['id'],
+          'name': status['name'],
+          'description': status['description'] ?? 'Task status',
+          'color': status['color'] ?? 'Blue',
+          'is_active': status['is_active'] ?? true,
+        }).toList();
+      }
+
+      if (taskTypesResponse.statusCode == 200) {
+        final taskTypesData = jsonDecode(taskTypesResponse.body) as List;
+        _categories = taskTypesData.map((taskType) => {
+          'id': taskType['id'],
+          'name': taskType['name'],
+          'description': taskType['description'] ?? 'Task type category',
+          'color': taskType['color'] ?? 'Blue',
+        }).toList();
+      }
+
+    } catch (e) {
+      print('Error loading master data: $e');
+      _showErrorMessage('Error loading master data: $e');
+    }
 
     setState(() => _isLoading = false);
+  }
+
+  void _showErrorMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -412,9 +429,75 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
   }
 
   void _showAddPriorityDialog() {
-    // TODO: Implement add priority dialog
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Priority'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Priority Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Priority name is required')),
+                );
+                return;
+              }
+
+              Navigator.of(context).pop();
+              _addPriority(nameController.text.trim(), descriptionController.text.trim());
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addPriority(String name, String description) {
+    // For now, add to local list (API implementation would go here)
+    setState(() {
+      _priorities.add({
+        'id': _priorities.length + 1,
+        'name': name,
+        'description': description,
+        'color': 'Blue',
+        'order': _priorities.length + 1,
+      });
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add Priority functionality - Coming Soon')),
+      const SnackBar(content: Text('Priority added successfully'), backgroundColor: Colors.green),
     );
   }
 

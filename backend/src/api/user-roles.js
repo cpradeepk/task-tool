@@ -73,13 +73,24 @@ router.post('/', requireAnyRole(['Admin']), async (req, res) => {
     if (existingAssignment) {
       return res.status(409).json({ error: 'User already has this role' });
     }
-    
+
+    // Get table columns to ensure compatibility
+    const columns = await knex('user_roles').columnInfo();
+    console.log('Available columns in user_roles table:', Object.keys(columns));
+
+    const assignmentData = {
+      user_id,
+      role_id,
+    };
+
+    // Add optional columns if they exist
+    if (columns.assigned_at) assignmentData.assigned_at = new Date();
+    if (columns.created_at) assignmentData.created_at = new Date();
+
+    console.log('Inserting user role assignment:', assignmentData);
+
     const [newAssignment] = await knex('user_roles')
-      .insert({
-        user_id,
-        role_id,
-        assigned_at: new Date(),
-      })
+      .insert(assignmentData)
       .returning('*');
     
     // Get the full assignment details for response
