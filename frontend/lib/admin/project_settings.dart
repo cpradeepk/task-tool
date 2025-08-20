@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../sidebar_navigation.dart';
 import '../main_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
@@ -82,7 +83,12 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
       );
 
       if (response.statusCode == 200) {
-        setState(() => _modules = jsonDecode(response.body));
+        final modulesData = jsonDecode(response.body) as List;
+        print('Loaded ${modulesData.length} modules for project $_selectedProjectId: $modulesData');
+        setState(() => _modules = modulesData);
+      } else {
+        print('Failed to load modules: ${response.statusCode} - ${response.body}');
+        setState(() => _modules = []);
       }
     } catch (e) {
       print('Error loading modules: $e');
@@ -746,6 +752,9 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
             const SnackBar(content: Text('Project deleted successfully'), backgroundColor: Colors.green),
           );
         }
+
+        // Refresh sidebar to remove deleted project
+        refreshSidebar();
       } else {
         String errorMessage = 'Failed to delete project';
         try {

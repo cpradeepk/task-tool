@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { knex } from '../db/index.js';
+import { initEmail } from '../services/email.js';
 
 const router = express.Router();
 
@@ -369,7 +370,39 @@ router.post('/:projectId/modules/:moduleId/tasks', async (req, res) => {
       const [newTask] = await knex('tasks')
         .insert(taskData)
         .returning('*');
-      
+
+      // Send email notification if task is assigned
+      if (assigned_to) {
+        try {
+          const assignee = await knex('users').where({ id: assigned_to }).first();
+          const project = await knex('projects').where({ id: req.params.projectId }).first();
+          const module = await knex('modules').where({ id: moduleId }).first();
+          const emailService = initEmail();
+
+          if (emailService && assignee && assignee.email && project) {
+            const assignedByUser = await knex('users').where({ id: req.user.id === 'admin-user' ? 1 : req.user.id }).first();
+            const assignedByName = assignedByUser ? (assignedByUser.name || assignedByUser.email) : 'System Administrator';
+
+            await emailService.sendTaskAssignmentNotification({
+              userEmail: assignee.email,
+              userName: assignee.name || assignee.email,
+              taskTitle: title,
+              taskId: taskId,
+              projectName: project.name,
+              moduleName: module ? module.name : 'Unassigned',
+              priority: priority,
+              dueDate: due_date,
+              assignedBy: assignedByName
+            });
+
+            console.log(`Task assignment email sent to ${assignee.email} for task ${taskId}`);
+          }
+        } catch (emailError) {
+          console.log('Task assignment email notification failed:', emailError);
+          // Don't fail the request if email fails
+        }
+      }
+
       res.status(201).json(newTask);
     } catch (dbError) {
       console.log('Database insert failed, returning mock response');
@@ -476,12 +509,28 @@ router.post('/:projectId/team', async (req, res) => {
 
     console.log('Team member added successfully:', newTeamMember);
 
-    // TODO: Send email notification to user
+    // Send email notification to user
     try {
       const project = await knex('projects').where({ id: projectId }).first();
-      console.log(`TODO: Send email to ${user.email} about being added to project ${project.name}`);
+      const emailService = initEmail();
+
+      if (emailService && user.email && project) {
+        const assignedByUser = await knex('users').where({ id: req.user.id === 'admin-user' ? 1 : req.user.id }).first();
+        const assignedByName = assignedByUser ? (assignedByUser.name || assignedByUser.email) : 'System Administrator';
+
+        await emailService.sendProjectAssignmentNotification({
+          userEmail: user.email,
+          userName: user.name || user.email,
+          projectName: project.name,
+          role: role,
+          assignedBy: assignedByName
+        });
+
+        console.log(`Email notification sent to ${user.email} about being added to project ${project.name}`);
+      }
     } catch (emailError) {
       console.log('Email notification failed:', emailError);
+      // Don't fail the request if email fails
     }
 
     // Build user object based on available columns

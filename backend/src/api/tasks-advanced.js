@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { requireAnyRole } from '../middleware/rbac.js';
 import { knex } from '../db/index.js';
+import { initEmail } from '../services/email.js';
 
 const router = express.Router({ mergeParams: true });
 router.use(requireAuth);
@@ -118,9 +119,32 @@ router.post('/:taskId/assignments', requireAnyRole(['Admin','Project Manager','T
   // Email notify assigned user
   try {
     const assignee = await knex('users').where({ id: user_id }).first();
-    const { emailQueue } = await import('../queue/index.js');
-    await emailQueue.add('send', { to: assignee.email, subject: 'You were assigned to a task', html: `<p>You were assigned to Task #${taskId}.</p>` }, { removeOnComplete: true });
-  } catch {}
+    const task = await knex('tasks').where({ id: taskId }).first();
+    const project = await knex('projects').where({ id: task.project_id }).first();
+    const module = task.module_id ? await knex('modules').where({ id: task.module_id }).first() : null;
+    const emailService = initEmail();
+
+    if (emailService && assignee && assignee.email && task && project) {
+      const assignedByUser = await knex('users').where({ id: req.user.id === 'admin-user' ? 1 : req.user.id }).first();
+      const assignedByName = assignedByUser ? (assignedByUser.name || assignedByUser.email) : 'System Administrator';
+
+      await emailService.sendTaskAssignmentNotification({
+        userEmail: assignee.email,
+        userName: assignee.name || assignee.email,
+        taskTitle: task.title,
+        taskId: task.task_id || `#${taskId}`,
+        projectName: project.name,
+        moduleName: module ? module.name : 'Unassigned',
+        priority: task.priority,
+        dueDate: task.due_date || task.planned_end_date,
+        assignedBy: assignedByName
+      });
+
+      console.log(`Task assignment email sent to ${assignee.email} for task ${taskId}`);
+    }
+  } catch (emailError) {
+    console.log('Task assignment email notification failed:', emailError);
+  }
 
   res.status(201).json(row);
 });
