@@ -48,13 +48,8 @@ class _OtherPeopleTasksScreenState extends State<OtherPeopleTasksScreen> {
         setState(() => _users = jsonDecode(response.body));
       }
     } catch (e) {
-      // Use mock users for development
-      setState(() => _users = [
-        {'id': '1', 'name': 'John Doe', 'email': 'john@example.com'},
-        {'id': '2', 'name': 'Jane Smith', 'email': 'jane@example.com'},
-        {'id': '3', 'name': 'Mike Johnson', 'email': 'mike@example.com'},
-        {'id': '4', 'name': 'Sarah Wilson', 'email': 'sarah@example.com'},
-      ]);
+      print('Error loading users: $e');
+      setState(() => _users = []);
     }
   }
 
@@ -79,87 +74,8 @@ class _OtherPeopleTasksScreenState extends State<OtherPeopleTasksScreen> {
         setState(() => _tasks = jsonDecode(response.body));
       }
     } catch (e) {
-      // Use mock tasks for development
-      final mockTasks = [
-        {
-          'id': 1,
-          'task_id': 'JSR-20250117-001',
-          'title': 'Complete user authentication',
-          'description': 'Implement login and registration functionality',
-          'status': TaskStatus.inProgress,
-          'priority': TaskPriority.importantUrgent,
-          'due_date': '2025-01-20',
-          'assigned_to': 'John Doe',
-          'assigned_to_id': '1',
-          'project': 'Task Tool Development',
-          'module': 'Authentication Module',
-          'estimated_hours': 8,
-          'completed_hours': 4,
-        },
-        {
-          'id': 2,
-          'task_id': 'JSR-20250117-002',
-          'title': 'Design dashboard layout',
-          'description': 'Create responsive dashboard interface',
-          'status': TaskStatus.open,
-          'priority': TaskPriority.importantNotUrgent,
-          'due_date': '2025-01-22',
-          'assigned_to': 'Jane Smith',
-          'assigned_to_id': '2',
-          'project': 'UI/UX Project',
-          'module': 'Dashboard Module',
-          'estimated_hours': 6,
-          'completed_hours': 0,
-        },
-        {
-          'id': 3,
-          'task_id': 'JSR-20250117-003',
-          'title': 'Database optimization',
-          'description': 'Optimize database queries and indexing',
-          'status': TaskStatus.completed,
-          'priority': TaskPriority.importantUrgent,
-          'due_date': '2025-01-18',
-          'assigned_to': 'Mike Johnson',
-          'assigned_to_id': '3',
-          'project': 'Backend Development',
-          'module': 'Database Module',
-          'estimated_hours': 4,
-          'completed_hours': 4,
-        },
-        {
-          'id': 4,
-          'task_id': 'JSR-20250117-004',
-          'title': 'API documentation',
-          'description': 'Create comprehensive API documentation',
-          'status': TaskStatus.hold,
-          'priority': TaskPriority.notImportantNotUrgent,
-          'due_date': '2025-01-25',
-          'assigned_to': 'Sarah Wilson',
-          'assigned_to_id': '4',
-          'project': 'Documentation',
-          'module': 'API Module',
-          'estimated_hours': 12,
-          'completed_hours': 2,
-        },
-      ];
-
-      // Filter tasks based on selected user
-      List<dynamic> filteredTasks = mockTasks;
-      if (_selectedUserId != null) {
-        filteredTasks = mockTasks.where((task) => task['assigned_to_id'] == _selectedUserId).toList();
-      }
-
-      // Filter by status
-      if (_selectedStatus != 'All') {
-        filteredTasks = filteredTasks.where((task) => task['status'] == _selectedStatus).toList();
-      }
-
-      // Filter by priority
-      if (_selectedPriority != 'All') {
-        filteredTasks = filteredTasks.where((task) => task['priority'] == _selectedPriority).toList();
-      }
-
-      setState(() => _tasks = filteredTasks);
+      print('Error loading tasks: $e');
+      setState(() => _tasks = []);
     } finally {
       setState(() => _isLoading = false);
     }

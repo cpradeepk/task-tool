@@ -73,30 +73,9 @@ class _AvailabilityManagementScreenState extends State<AvailabilityManagementScr
         }
       }
     } catch (e) {
-      // Mock data for development
+      print('Error loading availability: $e');
       setState(() {
-        _availabilitySlots = [
-          {
-            'id': 1,
-            'title': 'Available for work',
-            'description': 'Regular working hours',
-            'type': 'Available',
-            'location': 'Office',
-            'start_date': DateTime.now().toIso8601String(),
-            'end_date': DateTime.now().add(const Duration(hours: 8)).toIso8601String(),
-            'created_at': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-          },
-          {
-            'id': 2,
-            'title': 'Client meeting',
-            'description': 'Meeting with ABC Corp',
-            'type': 'Busy',
-            'location': 'Client Site',
-            'start_date': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
-            'end_date': DateTime.now().add(const Duration(days: 1, hours: 2)).toIso8601String(),
-            'created_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-          },
-        ];
+        _availabilitySlots = [];
       });
     } finally {
       setState(() => _isLoading = false);
@@ -140,17 +119,7 @@ class _AvailabilityManagementScreenState extends State<AvailabilityManagementScr
           _showErrorMessage('Failed to add availability');
         }
       } else {
-        // Demo mode - add to local list
-        final newSlot = {
-          'id': _availabilitySlots.length + 1,
-          'created_at': DateTime.now().toIso8601String(),
-          ...availabilityData,
-        };
-        setState(() {
-          _availabilitySlots.insert(0, newSlot);
-        });
-        _showSuccessMessage('Availability added successfully (Demo Mode)');
-        _clearForm();
+        _showErrorMessage('Authentication required');
       }
     } catch (e) {
       _showErrorMessage('Error: $e');

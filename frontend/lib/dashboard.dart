@@ -63,8 +63,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _thisWeekTasks = jsonDecode(response.body));
       }
     } catch (e) {
-      // For now, use mock data
-      setState(() => _thisWeekTasks = _getMockThisWeekTasks());
+      print('Error loading this week tasks: $e');
+      setState(() => _thisWeekTasks = []);
     }
   }
 
@@ -82,23 +82,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _priorityTasks = jsonDecode(response.body));
       }
     } catch (e) {
-      setState(() => _priorityTasks = _getMockPriorityTasks());
+      print('Error loading priority tasks: $e');
+      setState(() => _priorityTasks = []);
     }
   }
 
   Future<void> _loadRecentNotes() async {
-    // Mock data for now
-    setState(() => _recentNotes = _getMockRecentNotes());
+    // Load from API when available
+    setState(() => _recentNotes = []);
   }
 
   Future<void> _loadFavoriteNotes() async {
-    // Mock data for now
-    setState(() => _favoriteNotes = _getMockFavoriteNotes());
+    // Load from API when available
+    setState(() => _favoriteNotes = []);
   }
 
   Future<void> _loadTaggedItems() async {
-    // Mock data for now
-    setState(() => _taggedItems = _getMockTaggedItems());
+    // Load from API when available
+    setState(() => _taggedItems = []);
   }
 
   @override
@@ -615,78 +616,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Mock data methods
-  List<Map<String, dynamic>> _getMockThisWeekTasks() {
-    final now = DateTime.now();
-    final dateStr = now.toIso8601String().substring(0, 10).replaceAll('-', '');
-
-    return [
-      {
-        'task_id': 'JSR-$dateStr-001',
-        'title': 'Complete user authentication',
-        'project': 'Task Tool',
-        'status': TaskStatus.inProgress,
-        'priority': TaskPriority.importantUrgent,
-        'due_date': '2025-01-20',
-        'estimated_hours': 8,
-      },
-      {
-        'task_id': 'JSR-$dateStr-002',
-        'title': 'Design dashboard wireframes',
-        'project': 'UI/UX Project',
-        'status': TaskStatus.open,
-        'priority': TaskPriority.importantNotUrgent,
-        'due_date': '2025-01-22',
-        'estimated_hours': 6,
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> _getMockPriorityTasks() {
-    final now = DateTime.now();
-    final dateStr = now.toIso8601String().substring(0, 10).replaceAll('-', '');
-
-    return [
-      {
-        'task_id': 'JSR-$dateStr-003',
-        'title': 'Fix critical security vulnerability',
-        'project': 'Security Audit',
-        'status': TaskStatus.open,
-        'priority': TaskPriority.importantUrgent,
-        'due_date': '2025-01-18',
-        'estimated_hours': 12,
-      },
-      {
-        'task_id': 'JSR-$dateStr-004',
-        'title': 'Complete API documentation',
-        'project': 'Backend Development',
-        'status': TaskStatus.inProgress,
-        'priority': TaskPriority.importantUrgent,
-        'due_date': '2025-01-19',
-        'estimated_hours': 6,
-      },
-    ];
-  }
-
-  List<Map<String, dynamic>> _getMockRecentNotes() {
-    return [
-      {'title': 'Meeting notes - Sprint planning', 'date': '2025-01-17'},
-      {'title': 'Ideas for dashboard improvement', 'date': '2025-01-16'},
-    ];
-  }
-
-  List<Map<String, dynamic>> _getMockFavoriteNotes() {
-    return [
-      {'title': 'Project architecture decisions', 'date': '2025-01-15'},
-    ];
-  }
-
-  List<Map<String, dynamic>> _getMockTaggedItems() {
-    return [
-      {'title': 'Review @john\'s code changes', 'type': 'task'},
-      {'title': '@team meeting tomorrow', 'type': 'note'},
-    ];
-  }
+  // Removed all mock data methods - using real API data only
 
   Widget _buildRecentNotesWidget() {
     return SizedBox(

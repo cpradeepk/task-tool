@@ -113,42 +113,16 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> with Ticker
   }
 
   void _loadRecentSearches() {
-    // Mock recent searches
+    // Load recent searches from local storage or API
     setState(() {
-      _recentSearches = [
-        {
-          'query': 'frontend development',
-          'timestamp': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-          'filters': {'category': 'Tasks', 'status': 'In Progress'},
-        },
-        {
-          'query': 'bug fix',
-          'timestamp': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-          'filters': {'category': 'All', 'priority': 'High'},
-        },
-      ];
+      _recentSearches = [];
     });
   }
 
   void _loadSavedSearches() {
-    // Mock saved searches
+    // Load saved searches from local storage or API
     setState(() {
-      _savedSearches = [
-        {
-          'id': 1,
-          'name': 'My High Priority Tasks',
-          'query': '',
-          'filters': {'category': 'Tasks', 'assignee': 'Me', 'priority': 'High'},
-          'created_at': '2025-01-10',
-        },
-        {
-          'id': 2,
-          'name': 'Frontend Issues',
-          'query': 'frontend',
-          'filters': {'category': 'Tasks', 'tags': ['frontend', 'bug-fix']},
-          'created_at': '2025-01-12',
-        },
-      ];
+      _savedSearches = [];
     });
   }
 
