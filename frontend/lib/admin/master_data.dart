@@ -502,9 +502,76 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
   }
 
   void _editPriority(Map<String, dynamic> priority) {
-    // TODO: Implement edit priority dialog
+    final nameController = TextEditingController(text: priority['name']);
+    final descriptionController = TextEditingController(text: priority['description']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Priority'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Priority Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Priority name is required')),
+                );
+                return;
+              }
+
+              Navigator.of(context).pop();
+              _updatePriority(priority['id'], nameController.text.trim(), descriptionController.text.trim());
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updatePriority(int id, String name, String description) {
+    // Update in local list (API implementation would go here)
+    setState(() {
+      final index = _priorities.indexWhere((p) => p['id'] == id);
+      if (index != -1) {
+        _priorities[index] = {
+          ..._priorities[index],
+          'name': name,
+          'description': description,
+        };
+      }
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Edit Priority: ${priority['name']} - Coming Soon')),
+      const SnackBar(content: Text('Priority updated successfully'), backgroundColor: Colors.green),
     );
   }
 
@@ -523,9 +590,76 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
   }
 
   void _editStatus(Map<String, dynamic> status) {
-    // TODO: Implement edit status dialog
+    final nameController = TextEditingController(text: status['name']);
+    final descriptionController = TextEditingController(text: status['description']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Status'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Status Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Status name is required')),
+                );
+                return;
+              }
+
+              Navigator.of(context).pop();
+              _updateStatus(status['id'], nameController.text.trim(), descriptionController.text.trim());
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updateStatus(int id, String name, String description) {
+    // Update in local list (API implementation would go here)
+    setState(() {
+      final index = _statuses.indexWhere((s) => s['id'] == id);
+      if (index != -1) {
+        _statuses[index] = {
+          ..._statuses[index],
+          'name': name,
+          'description': description,
+        };
+      }
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Edit Status: ${status['name']} - Coming Soon')),
+      const SnackBar(content: Text('Status updated successfully'), backgroundColor: Colors.green),
     );
   }
 
@@ -544,9 +678,76 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
   }
 
   void _editCategory(Map<String, dynamic> category) {
-    // TODO: Implement edit category dialog
+    final nameController = TextEditingController(text: category['name']);
+    final descriptionController = TextEditingController(text: category['description']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Category'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Category Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Category name is required')),
+                );
+                return;
+              }
+
+              Navigator.of(context).pop();
+              _updateCategory(category['id'], nameController.text.trim(), descriptionController.text.trim());
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _updateCategory(int id, String name, String description) {
+    // Update in local list (API implementation would go here)
+    setState(() {
+      final index = _categories.indexWhere((c) => c['id'] == id);
+      if (index != -1) {
+        _categories[index] = {
+          ..._categories[index],
+          'name': name,
+          'description': description,
+        };
+      }
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Edit Category: ${category['name']} - Coming Soon')),
+      const SnackBar(content: Text('Category updated successfully'), backgroundColor: Colors.green),
     );
   }
 

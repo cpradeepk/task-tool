@@ -269,42 +269,50 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
           // Header with project selection
           Container(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
               children: [
-                const Icon(Icons.settings, color: Colors.blue, size: 28),
-                const SizedBox(width: 12),
-                const Text(
-                  'Project Settings',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                SizedBox(
-                  width: 300,
-                  child: DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(
-                      labelText: 'Select Project',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.folder),
+                // Header row
+                Row(
+                  children: [
+                    const Icon(Icons.settings, color: Colors.blue, size: 28),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Project Settings',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
-                    value: _selectedProjectId,
-                    items: _projects.map<DropdownMenuItem<int>>((project) {
-                      return DropdownMenuItem<int>(
-                        value: project['id'],
-                        child: Text(project['name'] ?? 'Unnamed Project'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedProjectId = value;
-                        // Clear previous project data when switching projects
-                        _modules.clear();
-                        _projectTeam.clear();
-                      });
-                      if (value != null) {
-                        _loadModules();
-                        _loadProjectTeam();
-                      }
-                    },
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Centered project selection dropdown
+                Center(
+                  child: SizedBox(
+                    width: 400,
+                    child: DropdownButtonFormField<int>(
+                      decoration: const InputDecoration(
+                        labelText: 'Select Project',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.folder),
+                      ),
+                      value: _selectedProjectId,
+                      items: _projects.map<DropdownMenuItem<int>>((project) {
+                        return DropdownMenuItem<int>(
+                          value: project['id'],
+                          child: Text(project['name'] ?? 'Unnamed Project'),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedProjectId = value;
+                          // Clear previous project data when switching projects
+                          _modules.clear();
+                          _projectTeam.clear();
+                        });
+                        if (value != null) {
+                          _loadModules();
+                          _loadProjectTeam();
+                        }
+                      },
+                    ),
                   ),
                 ),
               ],
