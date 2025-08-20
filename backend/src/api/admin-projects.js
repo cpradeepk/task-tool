@@ -216,9 +216,20 @@ router.get('/:projectId/modules', async (req, res) => {
       return res.status(500).json({ error: 'Modules table not found. Please run database migrations.' });
     }
 
-    const modules = await knex('modules')
-      .where({ project_id: projectId })
-      .orderBy('order_index', 'asc');
+    // Get table columns to ensure compatibility
+    const columns = await knex('modules').columnInfo();
+    console.log('Available columns in modules table:', Object.keys(columns));
+
+    let query = knex('modules').where({ project_id: projectId });
+
+    // Only order by order_index if the column exists
+    if (columns.order_index) {
+      query = query.orderBy('order_index', 'asc');
+    } else {
+      query = query.orderBy('id', 'asc'); // Fallback to ID ordering
+    }
+
+    const modules = await query;
 
     console.log(`Found ${modules.length} modules for project ${projectId}`);
     res.json(modules);
@@ -388,16 +399,25 @@ router.get('/:projectId/team', async (req, res) => {
       return res.json([]);
     }
 
+    // Get table columns to ensure compatibility
+    const userColumns = await knex('users').columnInfo();
+    console.log('Available columns in users table:', Object.keys(userColumns));
+
+    // Build select array based on available columns
+    const selectFields = [
+      'project_team.*',
+      'users.email',
+      'users.name'
+    ];
+
+    // Add optional columns if they exist
+    if (userColumns.first_name) selectFields.push('users.first_name');
+    if (userColumns.last_name) selectFields.push('users.last_name');
+
     const teamMembers = await knex('project_team')
       .join('users', 'project_team.user_id', 'users.id')
       .where('project_team.project_id', projectId)
-      .select(
-        'project_team.*',
-        'users.email',
-        'users.name',
-        'users.first_name',
-        'users.last_name'
-      );
+      .select(selectFields);
 
     console.log(`Found ${teamMembers.length} team members for project ${projectId}`);
     res.json(teamMembers);
@@ -464,14 +484,19 @@ router.post('/:projectId/team', async (req, res) => {
       console.log('Email notification failed:', emailError);
     }
 
+    // Build user object based on available columns
+    const userObj = {
+      email: user.email,
+      name: user.name
+    };
+
+    // Add optional fields if they exist
+    if (user.first_name !== undefined) userObj.first_name = user.first_name;
+    if (user.last_name !== undefined) userObj.last_name = user.last_name;
+
     res.status(201).json({
       ...newTeamMember,
-      user: {
-        email: user.email,
-        name: user.name,
-        first_name: user.first_name,
-        last_name: user.last_name
-      }
+      user: userObj
     });
   } catch (err) {
     console.error('Error adding team member:', err);

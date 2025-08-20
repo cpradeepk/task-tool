@@ -721,19 +721,44 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
     );
   }
 
-  void _deleteProject(int projectId) {
-    setState(() {
-      _projects.removeWhere((p) => p['id'] == projectId);
-      if (_selectedProjectId == projectId) {
-        _selectedProjectId = null;
-        _modules.clear();
-        _projectTeam.clear();
-      }
-    });
+  Future<void> _deleteProject(int projectId) async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Project deleted successfully'), backgroundColor: Colors.orange),
-    );
+    try {
+      final response = await http.delete(
+        Uri.parse('$apiBase/task/api/admin/projects/$projectId'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _projects.removeWhere((p) => p['id'] == projectId);
+          if (_selectedProjectId == projectId) {
+            _selectedProjectId = null;
+            _modules.clear();
+            _projectTeam.clear();
+          }
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Project deleted successfully'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        String errorMessage = 'Failed to delete project';
+        try {
+          final errorData = jsonDecode(response.body);
+          errorMessage = 'Failed to delete project: ${errorData['error'] ?? 'Unknown error'}';
+        } catch (e) {
+          errorMessage = 'Failed to delete project: ${response.statusCode}';
+        }
+        _showErrorMessage(errorMessage);
+      }
+    } catch (e) {
+      _showErrorMessage('Error deleting project: $e');
+    }
   }
 
   Widget _buildModulesTab() {
