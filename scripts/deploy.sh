@@ -110,7 +110,7 @@ else
 fi
 
 # Check frontend
-if curl -f -s -I https://ai.swargfood.com/task/ > /dev/null; then
+if curl -f -s -I https://task.amtariksha.com/task/ > /dev/null; then
     log "✅ Frontend: OK"
 else
     warn "⚠️  Frontend: Check manually"
@@ -121,7 +121,7 @@ log "📊 PM2 Status:"
 pm2 status
 
 log "🎉 Deployment completed successfully!"
-log "🌐 Application available at: https://ai.swargfood.com/task/"
+log "🌐 Application available at: https://task.amtariksha.com/task/"
 
 echo ""
 log "📝 Post-deployment checklist:"

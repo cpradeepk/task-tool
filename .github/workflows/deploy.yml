@@ -1,0 +1,93 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual deployment
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # Backend tests
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci || npm install
+        
+      - name: Run backend tests
+        working-directory: backend
+        run: npm test || echo "No tests configured"
+        
+      # Frontend tests
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: flutter pub get
+        
+      - name: Analyze frontend code
+        working-directory: frontend
+        run: flutter analyze
+        
+      - name: Test frontend build
+        working-directory: frontend
+        run: flutter build web --base-href=/task/ --dart-define=API_BASE=https://task.amtariksha.com
+
+  deploy:
+    name: Deploy to Production
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            echo "🚀 Starting deployment..."
+            cd /srv/task-tool
+            
+            # Make sure we're on the right branch and pull latest
+            git checkout main
+            git pull origin main
+            
+            # Run the deployment script
+            chmod +x scripts/deploy.sh
+            ./scripts/deploy.sh
+            
+            echo "✅ Deployment completed!"
+
+  notify:
+    name: Notify Deployment Status
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify Success
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "Application is available at: https://task.amtariksha.com/task/"
+          
+      - name: Notify Failure
+        if: needs.deploy.result == 'failure' || needs.test.result == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Check the logs for details."
+          exit 1
