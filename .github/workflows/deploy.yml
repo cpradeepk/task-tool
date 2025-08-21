@@ -50,33 +50,33 @@ jobs:
         working-directory: frontend
         run: flutter build web --base-href=/task/ --dart-define=API_BASE=https://task.amtariksha.com
 
-  deploy:
-    name: Deploy to Production
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          port: ${{ secrets.DEPLOY_PORT || 22 }}
-          script: |
-            echo "🚀 Starting deployment..."
-            cd /srv/task-tool
-            
-            # Make sure we're on the right branch and pull latest
-            git checkout main
-            git pull origin main
-            
-            # Run the deployment script (using your existing script)
-            chmod +x scripts/deploy-new-domain.sh
-            ./scripts/deploy-new-domain.sh
-            
-            echo "✅ Deployment completed!"
+  # deploy:
+  #   name: Deploy to Production
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #
+  #   steps:
+  #     - name: Deploy to server
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.DEPLOY_HOST }}
+  #         username: ${{ secrets.DEPLOY_USER }}
+  #         key: ${{ secrets.DEPLOY_KEY }}
+  #         port: ${{ secrets.DEPLOY_PORT || 22 }}
+  #         script: |
+  #           echo "🚀 Starting deployment..."
+  #           cd /srv/task-tool
+  #
+  #           # Make sure we're on the right branch and pull latest
+  #           git checkout main
+  #           git pull origin main
+  #
+  #           # Run the deployment script (using your existing script)
+  #           chmod +x scripts/deploy-new-domain.sh
+  #           ./scripts/deploy-new-domain.sh
+  #
+  #           echo "✅ Deployment completed!"
 
   notify:
     name: Notify Deployment Status
