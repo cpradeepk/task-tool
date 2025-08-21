@@ -20,13 +20,14 @@ router.post('/', requireAnyRole(['Admin','Project Manager','Team Member']), asyn
     console.log('Creating task with data:', req.body);
     console.log('User:', req.user);
 
-    // Enforce hierarchy: Tasks must belong to a module
+    // Basic validation
     if (!title) return res.status(400).json({ error: 'title required' });
-    if (!module_id) return res.status(400).json({ error: 'module_id required - tasks must be created within a module' });
 
-    // Verify module belongs to the project
-    const module = await knex('modules').where({ id: module_id, project_id: projectId }).first();
-    if (!module) return res.status(400).json({ error: 'invalid module_id for this project' });
+    // Verify module belongs to the project (if module_id is provided)
+    if (module_id) {
+      const module = await knex('modules').where({ id: module_id, project_id: projectId }).first();
+      if (!module) return res.status(400).json({ error: 'invalid module_id for this project' });
+    }
 
     // Prepare task data
     const taskData = {

@@ -276,6 +276,19 @@ class _TasksScreenState extends State<TasksScreen> {
       tasksByModule[moduleName]!.add(task);
     }
 
+    // CRITICAL FIX: Ensure modules are always available for task creation
+    // If no tasks exist but modules are loaded, show empty module sections
+    if (tasksByModule.isEmpty && _modules.isNotEmpty) {
+      for (final module in _modules) {
+        tasksByModule[module['name'] as String] = [];
+      }
+    }
+
+    // If no modules are loaded, show at least an "Unassigned" section
+    if (tasksByModule.isEmpty) {
+      tasksByModule['Unassigned'] = [];
+    }
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,6 +370,34 @@ class _TasksScreenState extends State<TasksScreen> {
                 _buildAddTaskRow(entry.key),
             ],
           )),
+
+          // Show helpful message if no modules are loaded
+          if (_modules.isEmpty && !_busy)
+            Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Icon(Icons.info_outline, size: 48, color: Colors.orange),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No modules found for this project',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Create modules first in Project Settings to organize your tasks',
+                    style: TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => context.go('/admin/projects/settings'),
+                    icon: const Icon(Icons.settings),
+                    label: const Text('Go to Project Settings'),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -1416,7 +1457,19 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _addNewTask() {
-    // Start inline task creation for the first module or unassigned
+    // If we're viewing a specific module, use that module for task creation
+    if (widget.moduleId != null) {
+      final currentModule = _modules.firstWhere(
+        (m) => m['id'] == widget.moduleId,
+        orElse: () => null,
+      );
+      if (currentModule != null) {
+        _startInlineTaskCreation(currentModule['name']);
+        return;
+      }
+    }
+
+    // Otherwise, start inline task creation for the first module or unassigned
     final firstModuleName = _modules.isNotEmpty ? _modules.first['name'] : 'Unassigned';
     _startInlineTaskCreation(firstModuleName);
   }

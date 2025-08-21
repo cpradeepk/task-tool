@@ -189,7 +189,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('$apiBase/task/api/admin/projects/$projectId/modules'),
+        Uri.parse('$apiBase/task/api/projects/$projectId/modules'),
         headers: {'Authorization': 'Bearer $jwt'},
       );
 

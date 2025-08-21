@@ -78,7 +78,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
 
     try {
       final response = await http.get(
-        Uri.parse('$apiBase/task/api/admin/projects/$_selectedProjectId/modules'),
+        Uri.parse('$apiBase/task/api/projects/$_selectedProjectId/modules'),
         headers: {'Authorization': 'Bearer $jwt'},
       );
 
@@ -104,7 +104,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
 
     try {
       final response = await http.post(
-        Uri.parse('$apiBase/task/api/admin/projects/$_selectedProjectId/modules'),
+        Uri.parse('$apiBase/task/api/projects/$_selectedProjectId/modules'),
         headers: {
           'Authorization': 'Bearer $jwt',
           'Content-Type': 'application/json',
@@ -119,6 +119,8 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
       if (response.statusCode == 201) {
         _showSuccessMessage('Module created successfully');
         _loadModules();
+        // Trigger sidebar refresh to show new module
+        refreshSidebar();
       } else {
         String errorMessage = 'Failed to create module';
         try {
