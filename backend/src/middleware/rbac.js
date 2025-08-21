@@ -20,6 +20,21 @@ export async function getUserRoles(userId) {
   return rows.map(r => r.name);
 }
 
+export async function userHasRole(userId, allowedRoles = []) {
+  try {
+    // Handle special admin user case
+    if (userId === 'admin-user' || userId === 'test-user') {
+      return allowedRoles.includes('Admin');
+    }
+
+    const roles = await getUserRoles(userId);
+    return roles.some(r => allowedRoles.includes(r));
+  } catch (e) {
+    console.error('Error checking user roles:', e);
+    return false;
+  }
+}
+
 export function requireAnyRole(allowedRoles = []) {
   return async (req, res, next) => {
     try {

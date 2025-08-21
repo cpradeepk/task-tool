@@ -1,14 +1,27 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { knex } from '../db/index.js';
-import { requireAnyRole } from '../middleware/rbac.js';
+import { requireAnyRole, userHasRole } from '../middleware/rbac.js';
 
 const router = express.Router({ mergeParams: true });
 router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   const projectId = Number(req.params.projectId);
-  const rows = await knex('tasks').where({ project_id: projectId }).orderBy('id', 'desc');
+
+  // Check if is_deleted column exists
+  const hasIsDeletedColumn = await knex.schema.hasColumn('tasks', 'is_deleted');
+
+  let query = knex('tasks').where({ project_id: projectId });
+
+  // Filter out deleted tasks if column exists
+  if (hasIsDeletedColumn) {
+    query = query.where(function() {
+      this.where('is_deleted', false).orWhereNull('is_deleted');
+    });
+  }
+
+  const rows = await query.orderBy('id', 'desc');
   res.json(rows);
 });
 
@@ -43,7 +56,7 @@ router.post('/', requireAnyRole(['Admin','Project Manager','Team Member']), asyn
       end_date,
       assigned_to,
       task_id,
-      created_by: req.user.id === 'test-user' ? 1 : req.user.id
+      created_by: (req.user.id === 'test-user' || req.user.id === 'admin-user') ? 1 : req.user.id
     };
 
     // Remove undefined values
@@ -113,10 +126,62 @@ router.put('/:taskId', requireAnyRole(['Admin','Project Manager','Team Member'])
   }
 });
 
-router.delete('/:taskId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
-  const taskId = Number(req.params.taskId);
-  await knex('tasks').where({ id: taskId }).del();
-  res.json({ ok: true });
+router.delete('/:taskId', requireAnyRole(['Admin','Project Manager','Team Member']), async (req, res) => {
+  try {
+    const taskId = Number(req.params.taskId);
+    const projectId = Number(req.params.projectId);
+
+    console.log('Soft deleting task:', taskId, 'by user:', req.user);
+
+    // Check if user is a team member of this project
+    const isTeamMember = await knex('project_team')
+      .where({ project_id: projectId, user_id: req.user.id })
+      .first();
+
+    if (!isTeamMember && !await userHasRole(req.user.id, ['Admin', 'Project Manager'])) {
+      return res.status(403).json({ error: 'Only team members of this project can delete tasks' });
+    }
+
+    // Check if soft delete columns exist, if not add them
+    const hasIsDeletedColumn = await knex.schema.hasColumn('tasks', 'is_deleted');
+    const hasDeletedAtColumn = await knex.schema.hasColumn('tasks', 'deleted_at');
+    const hasDeletedByColumn = await knex.schema.hasColumn('tasks', 'deleted_by');
+
+    if (!hasIsDeletedColumn || !hasDeletedAtColumn || !hasDeletedByColumn) {
+      await knex.schema.alterTable('tasks', (table) => {
+        if (!hasIsDeletedColumn) {
+          table.boolean('is_deleted').defaultTo(false);
+        }
+        if (!hasDeletedAtColumn) {
+          table.timestamp('deleted_at');
+        }
+        if (!hasDeletedByColumn) {
+          table.integer('deleted_by').references('id').inTable('users');
+        }
+      });
+      console.log('Added soft delete columns to tasks table');
+    }
+
+    // Soft delete the task
+    const [row] = await knex('tasks')
+      .where({ id: taskId })
+      .update({
+        is_deleted: true,
+        deleted_at: new Date(),
+        deleted_by: req.user.id
+      })
+      .returning('*');
+
+    if (!row) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    console.log('Task soft deleted successfully:', row);
+    res.json({ ok: true, message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    res.status(500).json({ error: 'Failed to delete task', details: error.message });
+  }
 });
 
 export default router;

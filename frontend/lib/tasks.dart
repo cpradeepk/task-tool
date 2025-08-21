@@ -613,6 +613,15 @@ class _TasksScreenState extends State<TasksScreen> {
                 ),
               ),
             ),
+
+            // Delete button
+            IconButton(
+              onPressed: () => _deleteTask(task),
+              icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 16),
+              tooltip: 'Delete Task',
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: const EdgeInsets.all(4),
+            ),
           ],
         ),
       ),
@@ -711,6 +720,71 @@ class _TasksScreenState extends State<TasksScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to open task details'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteTask(Map<String, dynamic> task) async {
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Task'),
+          content: Text('Are you sure you want to delete "${task['title']}"?\n\nThis action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final jwt = await _jwt();
+      final response = await http.delete(
+        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/${task['id']}'),
+        headers: { 'Authorization': 'Bearer $jwt' },
+      );
+
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Task deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        // Refresh the task list
+        _load();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete task: ${response.body}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting task: $e'),
             backgroundColor: Colors.red,
           ),
         );

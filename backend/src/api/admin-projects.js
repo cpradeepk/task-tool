@@ -357,7 +357,7 @@ router.post('/:projectId/modules/:moduleId/tasks', async (req, res) => {
       due_date: due_date || null,
       estimated_hours: estimated_hours || null,
       assigned_to: assigned_to || null,
-      created_by: req.user.id,
+      created_by: (req.user.id === 'test-user' || req.user.id === 'admin-user') ? 1 : req.user.id,
       created_at: creationDate,
       updated_at: creationDate,
 
