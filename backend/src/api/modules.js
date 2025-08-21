@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { knex } from '../db/index.js';
 import { requireAnyRole } from '../middleware/rbac.js';
+import { softDelete, getQueryWithSoftDelete, ensureSoftDeleteColumns } from '../utils/softDelete.js';
 
 const router = express.Router({ mergeParams: true });
 router.use(requireAuth);
@@ -19,7 +20,12 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: 'Modules table not found. Please run database migrations.' });
     }
 
-    const rows = await knex('modules').where({ project_id: projectId }).orderBy('id', 'desc');
+    // Ensure soft delete columns exist
+    await ensureSoftDeleteColumns('modules');
+
+    const rows = await getQueryWithSoftDelete('modules')
+      .where({ project_id: projectId })
+      .orderBy('id', 'desc');
 
     console.log(`Found ${rows.length} modules for project ${projectId}`);
     res.json(rows);
@@ -54,11 +60,15 @@ router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) =
       name: name.trim(),
     };
 
+    // Ensure soft delete columns exist
+    await ensureSoftDeleteColumns('modules');
+
     // Add optional columns if they exist
     if (columns.description) moduleData.description = req.body.description?.trim() || '';
     if (columns.order_index) moduleData.order_index = req.body.order_index || 0;
     if (columns.created_at) moduleData.created_at = new Date();
     if (columns.updated_at) moduleData.updated_at = new Date();
+    if (columns.created_by) moduleData.created_by = req.user.id;
 
     console.log('Inserting module data:', moduleData);
 
@@ -95,7 +105,10 @@ router.put('/:moduleId', requireAnyRole(['Admin','Project Manager']), async (req
 
     console.log('Updating module:', moduleId, 'with data:', updateData);
 
-    const [row] = await knex('modules').where({ id: moduleId }).update(updateData).returning('*');
+    const [row] = await getQueryWithSoftDelete('modules')
+      .where({ id: moduleId })
+      .update(updateData)
+      .returning('*');
 
     if (!row) {
       return res.status(404).json({ error: 'Module not found' });
@@ -110,9 +123,24 @@ router.put('/:moduleId', requireAnyRole(['Admin','Project Manager']), async (req
 });
 
 router.delete('/:moduleId', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
-  const moduleId = Number(req.params.moduleId);
-  await knex('modules').where({ id: moduleId }).del();
-  res.json({ ok: true });
+  try {
+    const moduleId = Number(req.params.moduleId);
+
+    // Ensure soft delete columns exist
+    await ensureSoftDeleteColumns('modules');
+
+    // Perform soft delete
+    const success = await softDelete('modules', moduleId, req.user.id);
+
+    if (!success) {
+      return res.status(404).json({ error: 'Module not found or already deleted' });
+    }
+
+    res.json({ ok: true, message: 'Module deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting module:', error);
+    res.status(500).json({ error: 'Failed to delete module' });
+  }
 });
 
 export default router;

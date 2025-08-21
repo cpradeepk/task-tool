@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { requireAnyRole } from '../middleware/rbac.js';
 import { knex } from '../db/index.js';
+import { softDelete, getQueryWithSoftDelete, ensureSoftDeleteColumns } from '../utils/softDelete.js';
 
 const router = express.Router();
 router.use(requireAuth);
@@ -10,6 +11,9 @@ router.get('/', async (req, res) => {
   try {
     const { email } = req.query;
     console.log('Users API called with query:', req.query);
+
+    // Ensure soft delete columns exist
+    await ensureSoftDeleteColumns('users');
 
     // Get available columns to avoid selecting non-existent columns
     const columns = await knex('users').columnInfo();
@@ -30,7 +34,7 @@ router.get('/', async (req, res) => {
 
     console.log('Selecting columns:', selectColumns);
 
-    let q = knex('users').select(selectColumns);
+    let q = getQueryWithSoftDelete('users').select(selectColumns);
 
     if (email) {
       q = q.whereILike('email', `%${email}%`);
@@ -108,6 +112,33 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+  }
+});
+
+// Add user deletion endpoint (Admin only)
+router.delete('/:id', requireAnyRole(['Admin']), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    // Prevent self-deletion
+    if (id === req.user.id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    // Ensure soft delete columns exist
+    await ensureSoftDeleteColumns('users');
+
+    // Perform soft delete
+    const success = await softDelete('users', id, req.user.id);
+
+    if (!success) {
+      return res.status(404).json({ error: 'User not found or already deleted' });
+    }
+
+    res.json({ ok: true, message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 
