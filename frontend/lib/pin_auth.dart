@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class PinAuthWidget extends StatefulWidget {
   final VoidCallback onSuccess;
@@ -97,7 +97,7 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
           children: [
             Row(
               children: [
-                const Icon(Icons.pin, color: Colors.blue),
+                const Icon(Icons.pin, color: Color(0xFFFFA301)),
                 const SizedBox(width: 8),
                 Text(
                   'Login with PIN',
@@ -155,7 +155,7 @@ class _PinAuthWidgetState extends State<PinAuthWidget> {
             ElevatedButton(
               onPressed: _isLoading ? null : _authenticate,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: const Color(0xFFFFA301),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),

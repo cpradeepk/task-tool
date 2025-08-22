@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'pin_auth.dart';
+import 'theme/theme_provider.dart';
 import 'projects.dart';
 import 'profile.dart';
 import 'modules.dart';
@@ -164,12 +166,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Task Tool Login'),
+        backgroundColor: const Color(0xFFFFA301), // Orange theme
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             onPressed: () => _showAdminLogin(context),
             icon: const Icon(Icons.admin_panel_settings),
             tooltip: 'Admin Login',
-            color: Colors.red,
+            color: Colors.white,
           ),
           const SizedBox(width: 8),
         ],
