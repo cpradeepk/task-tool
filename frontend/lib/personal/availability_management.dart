@@ -158,19 +158,19 @@ class _AvailabilityManagementScreenState extends State<AvailabilityManagementScr
   Color _getTypeColor(String type) {
     switch (type) {
       case 'Available':
-        return Colors.green;
+        return const Color(0xFFE6920E);
       case 'Busy':
-        return Colors.orange;
+        return const Color(0xFFFFA301);
       case 'Out of Office':
-        return Colors.red;
+        return const Color(0xFFB37200);
       case 'Working from Home':
-        return Colors.blue;
+        return const Color(0xFFFFCA1A);
       case 'In Meeting':
-        return Colors.purple;
+        return const Color(0xFFCC8200);
       case 'On Leave':
-        return Colors.grey;
+        return const Color(0xFFA0A0A0);
       default:
-        return Colors.grey;
+        return const Color(0xFFA0A0A0);
     }
   }
 

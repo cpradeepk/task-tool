@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'modern_layout.dart';
+
 import 'components/professional_card.dart';
 import 'components/animations.dart';
 import 'components/professional_buttons.dart';
@@ -140,11 +140,9 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ModernLayout(
-      title: _getDashboardTitle(),
-      child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
               padding: const EdgeInsets.all(DesignTokens.spacing16),
               child: FadeInAnimation(
                 child: Column(
@@ -169,20 +167,10 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
                   ],
                 ),
               ),
-            ),
-    );
+            );
   }
 
-  String _getDashboardTitle() {
-    switch (_userRole) {
-      case 'admin':
-        return 'Admin Dashboard';
-      case 'management':
-        return 'Management Dashboard';
-      default:
-        return 'Dashboard';
-    }
-  }
+
 
   Widget _buildWelcomeSection() {
     final greeting = _getGreeting();
@@ -286,17 +274,17 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
     
     switch (warningLevel) {
       case 'critical':
-        alertColor = Colors.red;
+        alertColor = const Color(0xFFB37200);
         alertIcon = Icons.error;
         alertMessage = 'Critical: You have $warningCount overdue tasks!';
         break;
       case 'high':
-        alertColor = Colors.orange;
+        alertColor = DesignTokens.primaryOrange;
         alertIcon = Icons.warning;
         alertMessage = 'Warning: You have $warningCount overdue tasks';
         break;
       case 'medium':
-        alertColor = Colors.amber;
+        alertColor = const Color(0xFFFFCA1A);
         alertIcon = Icons.schedule;
         alertMessage = 'Notice: You have $warningCount tasks due today';
         break;
@@ -379,7 +367,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
         title: 'Total Users',
         value: '${_stats['total_users'] ?? 0}',
         icon: Icons.people,
-        iconColor: Colors.blue,
+        iconColor: DesignTokens.primaryOrange,
         onTap: () => _navigateToUsers(),
       ),
       StatsCard(
@@ -406,7 +394,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
         title: 'Overdue Tasks',
         value: '${_stats['overdue_tasks'] ?? 0}',
         icon: Icons.warning,
-        iconColor: Colors.red,
+        iconColor: const Color(0xFFB37200),
         onTap: () => _viewOverdueTasks(),
       ),
     ];
@@ -418,7 +406,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
         title: 'Active Projects',
         value: '${_stats['active_projects'] ?? 0}',
         icon: Icons.folder_open,
-        iconColor: Colors.blue,
+        iconColor: DesignTokens.primaryOrange,
       ),
       StatsCard(
         title: 'Team Members',
@@ -454,7 +442,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
         title: 'Total Tasks',
         value: '${_stats['total_tasks'] ?? 0}',
         icon: Icons.task,
-        iconColor: Colors.blue,
+        iconColor: DesignTokens.primaryOrange,
         onTap: () => _filterTasks('all'),
       ),
       StatsCard(
@@ -483,7 +471,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
         title: 'Delayed',
         value: '${_stats['delayed_tasks'] ?? 0}',
         icon: Icons.warning,
-        iconColor: Colors.red,
+        iconColor: const Color(0xFFB37200),
         onTap: () => _filterTasks('delayed'),
       ),
     ];

@@ -346,7 +346,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   List<String> get availableThemes => _themeColors.keys.toList();
 
   Color getThemeColor(String theme) {
-    return _themeColors[theme] ?? Colors.blue;
+    return _themeColors[theme] ?? DesignTokens.primaryOrange;
   }
 }
 

@@ -361,18 +361,18 @@ class ProfessionalTaskCard extends StatelessWidget {
     switch (priority.toLowerCase()) {
       case 'high':
       case 'urgent':
-        return Colors.red;
+        return const Color(0xFFB37200);
       case 'medium':
         return DesignTokens.primaryOrange;
       case 'low':
-        return Colors.green;
+        return const Color(0xFFE6920E);
       default:
         return DesignTokens.colors['gray500']!;
     }
   }
 
   Color _getDueDateColor() {
-    if (_isOverdue()) return Colors.red;
+    if (_isOverdue()) return const Color(0xFFB37200);
     if (_isDueToday()) return DesignTokens.primaryOrange;
     return DesignTokens.colors['gray600']!;
   }

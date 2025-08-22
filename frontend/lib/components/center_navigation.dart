@@ -18,7 +18,23 @@ class CenterNavigation extends ConsumerStatefulWidget {
 }
 
 class _CenterNavigationState extends ConsumerState<CenterNavigation> {
-  
+
+  List<DropdownNavItem> _getProjectDropdownItems() {
+    // TODO: Fetch actual projects and modules from API
+    return [
+      DropdownNavItem('All Projects', '/projects', Icons.folder),
+      DropdownNavItem('Karyasiddhi', '/projects/1', Icons.folder),
+      DropdownNavItem('  └ Frontend Module', '/projects/1/modules/1', Icons.view_module),
+      DropdownNavItem('  └ Backend Module', '/projects/1/modules/2', Icons.view_module),
+      DropdownNavItem('Anukul', '/projects/2', Icons.folder),
+      DropdownNavItem('  └ Core Module', '/projects/2/modules/1', Icons.view_module),
+      DropdownNavItem('TIMJ', '/projects/3', Icons.folder),
+      DropdownNavItem('  └ Main Module', '/projects/3/modules/1', Icons.view_module),
+      DropdownNavItem('Swarg', '/projects/4', Icons.folder),
+      DropdownNavItem('  └ Development', '/projects/4/modules/1', Icons.view_module),
+    ];
+  }
+
   List<NavigationTab> _getNavigationTabs() {
     List<NavigationTab> tabs = [
       NavigationTab(
@@ -30,6 +46,8 @@ class _CenterNavigationState extends ConsumerState<CenterNavigation> {
         icon: Icons.folder,
         label: 'Projects',
         route: '/projects',
+        hasDropdown: true,
+        dropdownItems: _getProjectDropdownItems(),
       ),
       NavigationTab(
         icon: Icons.timeline,
@@ -62,11 +80,15 @@ class _CenterNavigationState extends ConsumerState<CenterNavigation> {
           route: '/admin',
           hasDropdown: true,
           dropdownItems: [
-            DropdownNavItem('User Management', '/admin/users', Icons.people),
-            DropdownNavItem('Reports', '/admin/reports', Icons.bar_chart),
-            DropdownNavItem('Project Settings', '/admin/projects', Icons.settings),
+            DropdownNavItem('User Management', '/admin/users/manage', Icons.people),
+            DropdownNavItem('Project Management', '/admin/projects/settings', Icons.folder_special),
+            DropdownNavItem('Module Management', '/admin/modules/manage', Icons.view_module),
+            DropdownNavItem('Role Management', '/admin/roles/manage', Icons.security),
+            DropdownNavItem('Role Assignment', '/admin/roles/assign', Icons.assignment_ind),
             DropdownNavItem('Master Data', '/admin/master-data', Icons.edit_note),
-            DropdownNavItem('Role Management', '/admin/roles', Icons.security),
+            DropdownNavItem('JSR Reports', '/admin/reporting/jsr', Icons.bar_chart),
+            DropdownNavItem('Daily Summary', '/admin/reporting/daily-summary', Icons.today),
+            DropdownNavItem('Create Project', '/admin/projects/create', Icons.add_box),
           ],
         ),
       ]);

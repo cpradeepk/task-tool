@@ -67,12 +67,12 @@ class TaskStatus {
   ];
 
   static const Map<String, Color> colors = {
-    open: Colors.white,
-    inProgress: Colors.yellow,
-    completed: Colors.green,
-    cancelled: Colors.grey,
-    hold: Colors.brown,
-    delayed: Colors.red,
+    open: Color(0xFFFFF8E6),
+    inProgress: Color(0xFFFFCA1A),
+    completed: Color(0xFFE6920E),
+    cancelled: Color(0xFFA0A0A0),
+    hold: Color(0xFFCC8200),
+    delayed: Color(0xFFB37200),
   };
 
   static const Map<String, Color> backgroundColors = {
@@ -229,13 +229,13 @@ class UserRole {
   ];
 
   static const Map<String, Color> colors = {
-    admin: Colors.red,
-    projectManager: Colors.blue,
-    teamLead: Colors.green,
-    developer: Colors.purple,
-    designer: Colors.pink,
-    tester: Colors.orange,
-    viewer: Colors.grey,
+    admin: Color(0xFFB37200),
+    projectManager: Color(0xFFFFA301),
+    teamLead: Color(0xFFE6920E),
+    developer: Color(0xFFCC8200),
+    designer: Color(0xFFFFCA1A),
+    tester: Color(0xFFFFD54D),
+    viewer: Color(0xFFA0A0A0),
   };
 
   static const Map<String, List<String>> permissions = {
