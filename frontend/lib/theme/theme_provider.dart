@@ -108,16 +108,9 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     _loadTheme();
   }
 
-  // Theme colors mapping - Orange is now primary
+  // Theme colors mapping - Orange only as per roadmap
   static const Map<String, Color> _themeColors = {
     'Orange': DesignTokens.primaryOrange,
-    'Blue': Colors.blue,
-    'Green': Colors.green,
-    'Purple': Colors.purple,
-    'Red': Colors.red,
-    'Teal': Colors.teal,
-    'Indigo': Colors.indigo,
-    'Pink': Colors.pink,
   };
 
   Color get primaryColor => _themeColors[state.selectedTheme] ?? DesignTokens.primaryOrange;

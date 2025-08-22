@@ -178,14 +178,14 @@ class ProjectCategory {
   ];
 
   static const Map<String, Color> colors = {
-    development: Colors.blue,
-    design: Colors.purple,
-    marketing: Colors.green,
-    research: Colors.orange,
-    operations: Colors.teal,
-    maintenance: Colors.brown,
-    testing: Colors.red,
-    documentation: Colors.indigo,
+    development: Color(0xFFFFA301),
+    design: Color(0xFFE6920E),
+    marketing: Color(0xFFCC8200),
+    research: Color(0xFFB37200),
+    operations: Color(0xFF996200),
+    maintenance: Color(0xFFFFCA1A),
+    testing: Color(0xFFFFD54D),
+    documentation: Color(0xFFFFE080),
   };
 
   static const Map<String, IconData> icons = {

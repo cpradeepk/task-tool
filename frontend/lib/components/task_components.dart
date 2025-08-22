@@ -725,14 +725,14 @@ class _TaskFilterPanelState extends State<TaskFilterPanel> {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'done':
-        return Colors.green;
+        return DesignTokens.colors['primary600']!; // Dark orange for completed
       case 'in progress':
         return DesignTokens.primaryOrange;
       case 'delayed':
-        return Colors.red;
+        return DesignTokens.colors['primary800']!; // Darker orange for delayed
       case 'on hold':
       case 'hold':
-        return Colors.amber;
+        return DesignTokens.colors['primary400']!; // Light orange for hold
       default:
         return DesignTokens.colors['gray500']!;
     }
@@ -742,11 +742,11 @@ class _TaskFilterPanelState extends State<TaskFilterPanel> {
     switch (priority.toLowerCase()) {
       case 'high':
       case 'urgent':
-        return Colors.red;
+        return DesignTokens.colors['primary800']!; // Dark orange for high priority
       case 'medium':
         return DesignTokens.primaryOrange;
       case 'low':
-        return Colors.green;
+        return DesignTokens.colors['primary300']!; // Light orange for low priority
       default:
         return DesignTokens.colors['gray500']!;
     }

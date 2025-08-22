@@ -808,15 +808,15 @@ class _AlertsSystemScreenState extends State<AlertsSystemScreen> with TickerProv
   Color _getNotificationColor(String type) {
     switch (type.toLowerCase()) {
       case 'report':
-        return Colors.blue;
+        return const Color(0xFFFFA301); // Primary orange
       case 'reminder':
-        return Colors.orange;
+        return const Color(0xFFE6920E); // Orange variant
       case 'comment':
-        return Colors.green;
+        return const Color(0xFFCC8200); // Orange variant
       case 'system':
-        return Colors.purple;
+        return const Color(0xFFB37200); // Orange variant
       default:
-        return Colors.grey;
+        return const Color(0xFF808080); // Gray
     }
   }
 

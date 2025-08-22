@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main_layout.dart';
+import 'modern_layout.dart';
 import 'components/professional_card.dart';
 import 'components/animations.dart';
 import 'components/professional_buttons.dart';
@@ -140,7 +140,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
+    return ModernLayout(
       title: _getDashboardTitle(),
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())

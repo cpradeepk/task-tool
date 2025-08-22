@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main_layout.dart';
+import '../modern_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
@@ -21,7 +21,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
   final _descriptionController = TextEditingController();
   bool _isLoading = false;
   String _selectedCategory = 'All';
-  Color _selectedColor = Colors.blue;
+  Color _selectedColor = const Color(0xFFFFA301);
   int? _editingTagId;
 
   final List<String> _categories = [
@@ -29,8 +29,10 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
   ];
 
   final List<Color> _tagColors = [
-    Colors.blue, Colors.green, Colors.orange, Colors.red, Colors.purple,
-    Colors.teal, Colors.indigo, Colors.pink, Colors.amber, Colors.cyan,
+    const Color(0xFFFFA301), const Color(0xFFE6920E), const Color(0xFFCC8200),
+    const Color(0xFFB37200), const Color(0xFF996200), const Color(0xFFFFCA1A),
+    const Color(0xFFFFD54D), const Color(0xFFFFE080), const Color(0xFFFFECB3),
+    const Color(0xFFFFF8E6),
   ];
 
   @override
@@ -76,7 +78,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
         'name': 'urgent',
         'description': 'High priority tasks requiring immediate attention',
         'category': 'Priority',
-        'color': Colors.red.value,
+        'color': 0xFFB37200,
         'usage_count': 25,
         'created_at': '2025-01-10',
       },
@@ -85,7 +87,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
         'name': 'frontend',
         'description': 'Frontend development related tasks',
         'category': 'Project',
-        'color': Colors.blue.value,
+        'color': 0xFFFFA301,
         'usage_count': 18,
         'created_at': '2025-01-12',
       },
@@ -94,7 +96,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
         'name': 'backend',
         'description': 'Backend development and API tasks',
         'category': 'Project',
-        'color': Colors.green.value,
+        'color': 0xFFE6920E,
         'usage_count': 22,
         'created_at': '2025-01-12',
       },
@@ -103,7 +105,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
         'name': 'bug-fix',
         'description': 'Bug fixes and issue resolution',
         'category': 'Task',
-        'color': Colors.orange.value,
+        'color': 0xFFCC8200,
         'usage_count': 15,
         'created_at': '2025-01-14',
       },
@@ -112,7 +114,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
         'name': 'enhancement',
         'description': 'Feature enhancements and improvements',
         'category': 'Task',
-        'color': Colors.purple.value,
+        'color': 0xFF996200,
         'usage_count': 12,
         'created_at': '2025-01-15',
       },
@@ -121,7 +123,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
         'name': 'documentation',
         'description': 'Documentation and knowledge base',
         'category': 'General',
-        'color': Colors.teal.value,
+        'color': 0xFFFFCA1A,
         'usage_count': 8,
         'created_at': '2025-01-16',
       },
@@ -327,7 +329,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
+    return ModernLayout(
       title: 'Tag Management',
       child: Padding(
         padding: const EdgeInsets.all(16),

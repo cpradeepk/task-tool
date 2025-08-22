@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'main_layout.dart';
+import 'modern_layout.dart';
 import 'constants/task_constants.dart';
 import 'components/professional_card.dart';
 import 'components/animations.dart';
@@ -108,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
+    return ModernLayout(
       title: 'Dashboard',
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
