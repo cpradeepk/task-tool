@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main_layout.dart';
+import '../modern_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -278,7 +278,7 @@ class _NotificationSystemScreenState extends State<NotificationSystemScreen> wit
   Widget build(BuildContext context) {
     final unreadCount = _notifications.where((n) => !n['is_read']).length;
     
-    return MainLayout(
+    return ModernLayout(
       title: 'Notifications',
       child: Padding(
         padding: const EdgeInsets.all(16),

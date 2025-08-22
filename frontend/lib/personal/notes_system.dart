@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main_layout.dart';
+import '../modern_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -420,7 +420,7 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
+    return ModernLayout(
       title: 'My Notes',
       child: Row(
         children: [

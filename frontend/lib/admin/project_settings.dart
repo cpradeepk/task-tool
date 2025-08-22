@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../sidebar_navigation.dart';
-import '../main_layout.dart';
+import '../modern_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
@@ -119,8 +118,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
       if (response.statusCode == 201) {
         _showSuccessMessage('Module created successfully');
         _loadModules();
-        // Trigger sidebar refresh to show new module
-        refreshSidebar();
+        // Module created successfully - no sidebar to refresh
       } else {
         String errorMessage = 'Failed to create module';
         try {
@@ -270,7 +268,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
 
   @override
   Widget build(BuildContext context) {
-    return MainLayout(
+    return ModernLayout(
       title: 'Project Settings',
       child: Column(
         children: [
@@ -755,8 +753,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
           );
         }
 
-        // Refresh sidebar to remove deleted project
-        refreshSidebar();
+        // Project deleted successfully - no sidebar to refresh
       } else {
         String errorMessage = 'Failed to delete project';
         try {

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main_layout.dart';
+import '../modern_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -234,7 +234,7 @@ class _AlertsSystemScreenState extends State<AlertsSystemScreen> with TickerProv
     final unreadAlerts = _alerts.where((a) => !a['is_read']).length;
     final unreadNotifications = _notifications.where((n) => !n['is_read']).length;
 
-    return MainLayout(
+    return ModernLayout(
       title: 'Alerts & Notifications',
       child: Column(
         children: [
