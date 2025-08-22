@@ -94,9 +94,14 @@ class _TasksScreenState extends State<TasksScreen> {
       List<dynamic> list = [];
       if (r.statusCode == 200) {
         list = jsonDecode(r.body) as List<dynamic>;
-        print('Loaded ${list.length} tasks');
+        print('Loaded ${list.length} tasks from $tasksUrl');
+
+        // Debug: Print first few tasks to see their structure
+        if (list.isNotEmpty) {
+          print('Sample task data: ${jsonEncode(list.take(2).toList())}');
+        }
       } else {
-        print('Failed to load tasks: ${r.statusCode}');
+        print('Failed to load tasks: ${r.statusCode} - ${r.body}');
       }
 
       // Load users
@@ -133,7 +138,7 @@ class _TasksScreenState extends State<TasksScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load tasks: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFB37200),
             action: SnackBarAction(
               label: 'Retry',
               onPressed: _load,
@@ -323,18 +328,18 @@ class _TasksScreenState extends State<TasksScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: const Color(0xFFFFF8E6),
                   border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.folder, color: Colors.blue.shade600, size: 20),
+                    const Icon(Icons.folder, color: Color(0xFFFFA301), size: 20),
                     const SizedBox(width: 8),
                     Text(
                       entry.key,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade800,
+                        color: Color(0xFFCC8200),
                         fontSize: 14,
                       ),
                     ),
@@ -342,14 +347,14 @@ class _TasksScreenState extends State<TasksScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade100,
+                        color: const Color(0xFFFFECB3),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         '${entry.value.length}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
-                          color: Colors.blue.shade700,
+                          color: Color(0xFFE6920E),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -515,12 +520,12 @@ class _TasksScreenState extends State<TasksScreen> {
                     if (assignedUser['name'] != 'Unassigned') ...[
                       CircleAvatar(
                         radius: 12,
-                        backgroundColor: Colors.blue.shade100,
+                        backgroundColor: const Color(0xFFFFECB3),
                         child: Text(
                           assignedUser['name'].toString().substring(0, 1).toUpperCase(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
-                            color: Colors.blue.shade800,
+                            color: Color(0xFFCC8200),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -553,7 +558,7 @@ class _TasksScreenState extends State<TasksScreen> {
                         _formatDate(task['planned_end_date']) ?? '-',
                         style: TextStyle(
                           fontSize: 13,
-                          color: _isOverdue(task['planned_end_date']) ? Colors.red : Colors.grey.shade700,
+                          color: _isOverdue(task['planned_end_date']) ? const Color(0xFFB37200) : Colors.grey.shade700,
                         ),
                       ),
                     ),
@@ -587,14 +592,14 @@ class _TasksScreenState extends State<TasksScreen> {
                       height: 20,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: _isTimerRunning(task) ? Colors.red.shade100 : Colors.green.shade100,
+                        color: _isTimerRunning(task) ? const Color(0xFFFFECB3) : const Color(0xFFFFF8E6),
                         border: Border.all(
-                          color: _isTimerRunning(task) ? Colors.red.shade300 : Colors.green.shade300,
+                          color: _isTimerRunning(task) ? const Color(0xFFE6920E) : const Color(0xFFFFCA1A),
                         ),
                       ),
                       child: Icon(
                         _isTimerRunning(task) ? Icons.pause : Icons.play_arrow,
-                        color: _isTimerRunning(task) ? Colors.red.shade700 : Colors.green.shade700,
+                        color: _isTimerRunning(task) ? const Color(0xFFCC8200) : const Color(0xFFFFA301),
                         size: 12,
                       ),
                     ),
@@ -617,7 +622,7 @@ class _TasksScreenState extends State<TasksScreen> {
             // Delete button
             IconButton(
               onPressed: () => _deleteTask(task),
-              icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 16),
+              icon: const Icon(Icons.delete_outline, color: Color(0xFFB37200), size: 16),
               tooltip: 'Delete Task',
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               padding: const EdgeInsets.all(4),
@@ -631,19 +636,19 @@ class _TasksScreenState extends State<TasksScreen> {
   Color _getStatusColor(String statusName) {
     switch (statusName.toLowerCase()) {
       case 'open':
-        return Colors.grey.shade400;
+        return const Color(0xFFFFF8E6);
       case 'in progress':
-        return Colors.orange;
+        return const Color(0xFFFFCA1A);
       case 'completed':
-        return Colors.green;
+        return const Color(0xFFE6920E);
       case 'cancelled':
-        return Colors.grey;
+        return const Color(0xFFA0A0A0);
       case 'hold':
-        return Colors.brown;
+        return const Color(0xFFCC8200);
       case 'delayed':
-        return Colors.red;
+        return const Color(0xFFB37200);
       default:
-        return Colors.grey.shade400;
+        return const Color(0xFFFFF8E6);
     }
   }
 
@@ -656,11 +661,11 @@ class _TasksScreenState extends State<TasksScreen> {
 
     switch (priorityName.toLowerCase()) {
       case 'important & urgent':
-        return Colors.red;
+        return const Color(0xFFB37200);
       case 'important & not urgent':
-        return Colors.orange;
+        return const Color(0xFFFFA301);
       case 'not important & urgent':
-        return Colors.yellow.shade700;
+        return const Color(0xFFFFCA1A);
       case 'not important & not urgent':
         return Colors.grey.shade400;
       default:
@@ -964,12 +969,12 @@ class _TasksScreenState extends State<TasksScreen> {
               children: [
                 CircleAvatar(
                   radius: 12,
-                  backgroundColor: Colors.blue.shade100,
+                  backgroundColor: const Color(0xFFFFECB3),
                   child: Text(
                     user['name'].toString().substring(0, 1).toUpperCase(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 10,
-                      color: Colors.blue.shade800,
+                      color: Color(0xFFCC8200),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1171,7 +1176,7 @@ class _TasksScreenState extends State<TasksScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-        color: Colors.blue.shade50,
+        color: const Color(0xFFFFF8E6),
       ),
       child: Row(
         children: [
@@ -1300,13 +1305,13 @@ class _TasksScreenState extends State<TasksScreen> {
             children: [
               IconButton(
                 onPressed: _saveNewTask,
-                icon: const Icon(Icons.check, color: Colors.green),
+                icon: const Icon(Icons.check, color: Color(0xFFE6920E)),
                 iconSize: 20,
                 tooltip: 'Save Task',
               ),
               IconButton(
                 onPressed: _cancelTaskCreation,
-                icon: const Icon(Icons.close, color: Colors.red),
+                icon: const Icon(Icons.close, color: Color(0xFFB37200)),
                 iconSize: 20,
                 tooltip: 'Cancel',
               ),
@@ -1374,11 +1379,19 @@ class _TasksScreenState extends State<TasksScreen> {
     };
 
     try {
+      // Use module-specific endpoint if we're in a module view and have a module_id
+      String createUrl;
+      if (widget.moduleId != null && _newTaskModuleId != null) {
+        createUrl = '$apiBase/task/api/projects/${widget.projectId}/modules/${widget.moduleId}/tasks';
+      } else {
+        createUrl = '$apiBase/task/api/projects/${widget.projectId}/tasks';
+      }
+
       print('Creating task with data: ${jsonEncode(newTask)}'); // Debug log
-      print('API endpoint: $apiBase/task/api/projects/${widget.projectId}/tasks'); // Debug log
+      print('API endpoint: $createUrl'); // Debug log
 
       final res = await http.post(
-        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks'),
+        Uri.parse(createUrl),
         headers: {
           'Authorization': 'Bearer $jwt',
           'Content-Type': 'application/json',
@@ -1391,19 +1404,30 @@ class _TasksScreenState extends State<TasksScreen> {
 
       if (res.statusCode == 201 || res.statusCode == 200) {
         _cancelTaskCreation();
-        _load(); // Reload tasks
+
+        // Add a small delay before reloading to ensure backend processing is complete
+        await Future.delayed(const Duration(milliseconds: 500));
+        await _load(); // Reload tasks
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Task created successfully'),
-              backgroundColor: Colors.green,
+              backgroundColor: Color(0xFFE6920E),
             ),
           );
         }
       } else {
         // Handle non-success status codes
         print('Failed to create task. Status: ${res.statusCode}, Body: ${res.body}');
-        throw Exception('Failed to create task: ${res.statusCode}');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to create task: ${res.statusCode}'),
+              backgroundColor: const Color(0xFFB37200),
+            ),
+          );
+        }
       }
     } catch (e) {
       print('Error creating task: $e'); // Debug log
@@ -1449,9 +1473,9 @@ class _TasksScreenState extends State<TasksScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: const Color(0xFFFFF8E6),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: const Color(0xFFFFCA1A)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -1469,17 +1493,17 @@ class _TasksScreenState extends State<TasksScreen> {
               Container(
                 width: 8,
                 height: 8,
-                decoration: BoxDecoration(
-                  color: Colors.red,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFA301),
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'Time tracked',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.red.shade700,
+                  color: Color(0xFFE6920E),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1488,10 +1512,10 @@ class _TasksScreenState extends State<TasksScreen> {
           const SizedBox(height: 4),
           Text(
             _getTimeTracked(_activeTimerTask!),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.red.shade700,
+              color: Color(0xFFE6920E),
               fontFamily: 'monospace',
             ),
           ),
@@ -1512,14 +1536,14 @@ class _TasksScreenState extends State<TasksScreen> {
             children: [
               IconButton(
                 onPressed: () => _stopTimer(_activeTimerTask!),
-                icon: const Icon(Icons.pause, color: Colors.red),
+                icon: const Icon(Icons.pause, color: Color(0xFFB37200)),
                 iconSize: 20,
                 tooltip: 'Stop Timer',
               ),
               const SizedBox(width: 8),
               IconButton(
                 onPressed: () => _openTaskDetail(_activeTimerTask!),
-                icon: const Icon(Icons.open_in_new, color: Colors.blue),
+                icon: const Icon(Icons.open_in_new, color: Color(0xFFFFA301)),
                 iconSize: 20,
                 tooltip: 'Open Task',
               ),

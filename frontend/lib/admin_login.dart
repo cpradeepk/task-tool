@@ -49,8 +49,8 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
         // Store admin credentials
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('jwt', token);
-        await prefs.setString('email', user['email']);
-        await prefs.setBool('isAdmin', true);
+        await prefs.setString('user_email', user['email']);
+        await prefs.setBool('is_admin', true);
 
         if (mounted) {
           Navigator.of(context).pop();
@@ -72,7 +72,7 @@ class _AdminLoginDialogState extends State<AdminLoginDialog> {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.admin_panel_settings, color: Colors.red),
+          Icon(Icons.admin_panel_settings, color: Color(0xFFFFA301)),
           SizedBox(width: 8),
           Text('Admin Login'),
         ],

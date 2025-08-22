@@ -14,7 +14,7 @@ class ModernLayout extends ConsumerStatefulWidget {
   const ModernLayout({
     super.key,
     required this.child,
-    this.title = 'Task Tool',
+    this.title = 'KaryaSiddhi',
   });
 
   @override
@@ -76,7 +76,7 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
       scale: zoomLevel,
       alignment: Alignment.topLeft,
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: Colors.white,
         body: Column(
           children: [
             // Top Header Bar with Logo and User Info
@@ -84,9 +84,9 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
               height: 60,
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border(
+                border: const Border(
                   bottom: BorderSide(
-                    color: Colors.grey.shade300,
+                    color: Color(0xFFFFECB3),
                     width: 1,
                   ),
                 ),
@@ -119,12 +119,12 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        Text(
-                          'Task Tool',
+                        const Text(
+                          'KaryaSiddhi',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade800,
+                            color: Color(0xFF2D3748),
                           ),
                         ),
                       ],
@@ -137,24 +137,24 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
                       width: 320,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.grey.shade300),
+                        border: Border.all(color: const Color(0xFFFFECB3)),
                       ),
-                      child: TextField(
+                      child: const TextField(
                         decoration: InputDecoration(
                           hintText: 'Search tasks, projects...',
                           hintStyle: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: Color(0xFFA0A0A0),
                             fontSize: 14,
                           ),
                           prefixIcon: Icon(
                             Icons.search,
-                            color: Colors.grey.shade500,
+                            color: Color(0xFFA0A0A0),
                             size: 18,
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
                         ),
                       ),
                     ),
@@ -169,21 +169,21 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
                           icon: const Icon(Icons.zoom_out),
                           tooltip: 'Zoom Out',
                           iconSize: 18,
-                          color: Colors.grey.shade600,
+                          color: const Color(0xFFA0A0A0),
                         ),
                         GestureDetector(
                           onTap: _resetZoom,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
+                              color: Colors.white,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               '${(zoomLevel * 100).round()}%',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey.shade700,
+                                color: Color(0xFF2D3748),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -194,7 +194,7 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
                           icon: const Icon(Icons.zoom_in),
                           tooltip: 'Zoom In',
                           iconSize: 18,
-                          color: Colors.grey.shade600,
+                          color: const Color(0xFFA0A0A0),
                         ),
                       ],
                     ),
@@ -207,7 +207,7 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
                         onPressed: _showAdminLogin,
                         icon: const Icon(Icons.admin_panel_settings),
                         tooltip: 'Admin Login',
-                        color: Colors.grey.shade600,
+                        color: const Color(0xFFA0A0A0),
                       ),
                     ],
                     
@@ -286,7 +286,7 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
             // Main Content Area
             Expanded(
               child: Container(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 child: widget.child,
               ),
             ),

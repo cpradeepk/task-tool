@@ -131,21 +131,66 @@ class AppRouter {
         )),
 
         // Admin routes
-        GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const UserManagementScreen()),
-        GoRoute(path: '/admin/reporting/daily-summary', builder: (ctx, st) => const DailySummaryReportScreen()),
-        GoRoute(path: '/admin/reporting/jsr', builder: (ctx, st) => const JSRReportsScreen()),
-        GoRoute(path: '/admin/projects/create', builder: (ctx, st) => const ProjectCreateScreen()),
-        GoRoute(path: '/admin/projects/settings', builder: (ctx, st) => const ProjectSettingsScreen()),
-        GoRoute(path: '/admin/projects/:id/settings', builder: (ctx, st) => ProjectSettingsScreen(projectId: st.pathParameters['id'])),
-        GoRoute(path: '/admin/reporting/jsr/planned', builder: (ctx, st) => const JSRReportsScreen()),
-        GoRoute(path: '/admin/reporting/jsr/completed', builder: (ctx, st) => const JSRReportsScreen()),
-        GoRoute(path: '/admin/master-data', builder: (ctx, st) => const MasterDataScreen()),
-        GoRoute(path: '/admin/tags', builder: (ctx, st) => const TaggingSystemScreen()),
-        GoRoute(path: '/notifications', builder: (ctx, st) => const NotificationSystemScreen()),
-        GoRoute(path: '/search', builder: (ctx, st) => const AdvancedSearchScreen()),
-        GoRoute(path: '/admin/roles/assign', builder: (ctx, st) => const RoleAssignScreen()),
-        GoRoute(path: '/admin/roles/manage', builder: (ctx, st) => const RoleManageScreen()),
-        GoRoute(path: '/admin/modules/manage', builder: (ctx, st) => const ModuleManagementScreen()),
+        GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const ModernLayout(
+          title: 'User Management',
+          child: UserManagementScreen(),
+        )),
+        GoRoute(path: '/admin/reporting/daily-summary', builder: (ctx, st) => const ModernLayout(
+          title: 'Daily Summary Report',
+          child: DailySummaryReportScreen(),
+        )),
+        GoRoute(path: '/admin/reporting/jsr', builder: (ctx, st) => const ModernLayout(
+          title: 'JSR Reports',
+          child: JSRReportsScreen(),
+        )),
+        GoRoute(path: '/admin/projects/create', builder: (ctx, st) => const ModernLayout(
+          title: 'Create Project',
+          child: ProjectCreateScreen(),
+        )),
+        GoRoute(path: '/admin/projects/settings', builder: (ctx, st) => const ModernLayout(
+          title: 'Project Settings',
+          child: ProjectSettingsScreen(),
+        )),
+        GoRoute(path: '/admin/projects/:id/settings', builder: (ctx, st) => ModernLayout(
+          title: 'Project Settings',
+          child: ProjectSettingsScreen(projectId: st.pathParameters['id']),
+        )),
+        GoRoute(path: '/admin/reporting/jsr/planned', builder: (ctx, st) => const ModernLayout(
+          title: 'JSR Planned Reports',
+          child: JSRReportsScreen(),
+        )),
+        GoRoute(path: '/admin/reporting/jsr/completed', builder: (ctx, st) => const ModernLayout(
+          title: 'JSR Completed Reports',
+          child: JSRReportsScreen(),
+        )),
+        GoRoute(path: '/admin/master-data', builder: (ctx, st) => const ModernLayout(
+          title: 'Master Data Management',
+          child: MasterDataScreen(),
+        )),
+        GoRoute(path: '/admin/tags', builder: (ctx, st) => const ModernLayout(
+          title: 'Tag Management',
+          child: TaggingSystemScreen(),
+        )),
+        GoRoute(path: '/notifications', builder: (ctx, st) => const ModernLayout(
+          title: 'Notifications',
+          child: NotificationSystemScreen(),
+        )),
+        GoRoute(path: '/search', builder: (ctx, st) => const ModernLayout(
+          title: 'Advanced Search',
+          child: AdvancedSearchScreen(),
+        )),
+        GoRoute(path: '/admin/roles/assign', builder: (ctx, st) => const ModernLayout(
+          title: 'Role Assignment',
+          child: RoleAssignScreen(),
+        )),
+        GoRoute(path: '/admin/roles/manage', builder: (ctx, st) => const ModernLayout(
+          title: 'Role Management',
+          child: RoleManageScreen(),
+        )),
+        GoRoute(path: '/admin/modules/manage', builder: (ctx, st) => const ModernLayout(
+          title: 'Module Management',
+          child: ModuleManagementScreen(),
+        )),
 
         // Personal routes
         GoRoute(path: '/personal/notes', builder: (ctx, st) => const NotesSystemScreen()),
@@ -183,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Task Tool Login'),
+        title: const Text('KaryaSiddhi Login'),
         backgroundColor: const Color(0xFFFFA301), // Orange theme
         foregroundColor: Colors.white,
         actions: [
@@ -202,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('Task Tool', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+              const Text('KaryaSiddhi', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
               const SizedBox(height: 32),
 
 
