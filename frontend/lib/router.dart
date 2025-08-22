@@ -8,7 +8,7 @@ import 'projects.dart';
 import 'profile.dart';
 import 'modules.dart';
 import 'enhanced_dashboard.dart';
-import 'main_layout.dart';
+import 'modern_layout.dart';
 import 'tasks.dart';
 import 'task_detail.dart';
 import 'critical_path.dart';
@@ -53,64 +53,82 @@ class AppRouter {
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
 
         // Dashboard as default landing page
-        GoRoute(path: '/dashboard', builder: (ctx, st) => const EnhancedDashboardScreen()),
+        GoRoute(path: '/dashboard', builder: (ctx, st) => const ModernLayout(
+          title: 'Dashboard',
+          child: EnhancedDashboardScreen(),
+        )),
 
         // Legacy home route redirects to dashboard
         GoRoute(path: '/', redirect: (ctx, st) => '/dashboard'),
 
         // Main application routes with new layout
-        GoRoute(path: '/projects', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects', builder: (ctx, st) => ModernLayout(
           title: 'Projects',
           child: const ProjectsScreen(),
         )),
-        GoRoute(path: '/profile', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/profile', builder: (ctx, st) => ModernLayout(
           title: 'Profile',
           child: const ProfileEditScreen(),
         )),
-        GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => ModernLayout(
           title: 'Modules',
           child: ModulesScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
-        GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => ModernLayout(
           title: 'Tasks',
           child: TasksScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
-        GoRoute(path: '/projects/:id/kanban', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects/:id/kanban', builder: (ctx, st) => ModernLayout(
           title: 'Kanban Board',
           child: KanbanBoardScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
-        GoRoute(path: '/projects/:projectId/modules/:moduleId', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects/:projectId/modules/:moduleId', builder: (ctx, st) => ModernLayout(
           title: 'Module Tasks',
           child: TasksScreen(
             projectId: int.parse(st.pathParameters['projectId']!),
             moduleId: int.parse(st.pathParameters['moduleId']!),
           ),
         )),
-        GoRoute(path: '/projects/:projectId/modules/:moduleId/kanban', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects/:projectId/modules/:moduleId/kanban', builder: (ctx, st) => ModernLayout(
           title: 'Module Kanban Board',
           child: KanbanBoardScreen(
             projectId: int.parse(st.pathParameters['projectId']!),
             moduleId: int.parse(st.pathParameters['moduleId']!),
           ),
         )),
-        GoRoute(path: '/projects/:projectId/modules/:moduleId/tasks/:taskId', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects/:projectId/modules/:moduleId/tasks/:taskId', builder: (ctx, st) => ModernLayout(
           title: 'Task Details',
           child: TaskDetailScreen(
             projectId: int.parse(st.pathParameters['projectId']!),
             taskId: int.parse(st.pathParameters['taskId']!),
           ),
         )),
-        GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => MainLayout(
+        GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => ModernLayout(
           title: 'Critical Path',
           child: CriticalPathView(projectId: int.parse(st.pathParameters['id']!)),
         )),
 
         // New navigation routes
-        GoRoute(path: '/pert', builder: (ctx, st) => const PertAnalysisScreen()),
-        GoRoute(path: '/calendar', builder: (ctx, st) => const CalendarViewScreen()),
-        GoRoute(path: '/chat', builder: (ctx, st) => const ChatSystemScreen()),
-        GoRoute(path: '/alerts', builder: (ctx, st) => const AlertsSystemScreen()),
-        GoRoute(path: '/others-tasks', builder: (ctx, st) => const OtherPeopleTasksScreen()),
+        GoRoute(path: '/pert', builder: (ctx, st) => const ModernLayout(
+          title: 'PERT Analysis',
+          child: PertAnalysisScreen(),
+        )),
+        GoRoute(path: '/calendar', builder: (ctx, st) => const ModernLayout(
+          title: 'Calendar',
+          child: CalendarViewScreen(),
+        )),
+        GoRoute(path: '/chat', builder: (ctx, st) => const ModernLayout(
+          title: 'Chat',
+          child: ChatSystemScreen(),
+        )),
+        GoRoute(path: '/alerts', builder: (ctx, st) => const ModernLayout(
+          title: 'Alerts',
+          child: AlertsSystemScreen(),
+        )),
+        GoRoute(path: '/others-tasks', builder: (ctx, st) => const ModernLayout(
+          title: 'Other People\'s Tasks',
+          child: OtherPeopleTasksScreen(),
+        )),
 
         // Admin routes
         GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const UserManagementScreen()),
