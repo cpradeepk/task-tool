@@ -23,10 +23,6 @@ module.exports = {
         // Auth / JWT
         JWT_SECRET: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30',
 
-        // Admin credentials
-        ADMIN_EMAIL: 'admin@amtariksha.com',
-        ADMIN_PASSWORD: 'Admin@2024!',
-
         // CORS
         CORS_ORIGIN: 'https://task.amtariksha.com',
 

@@ -176,6 +176,20 @@ jobs:
           echo "📋 Deployment script: ./scripts/deploy-new-domain.sh"
       
       # Option 1: SSH Deployment (if SSH secrets are configured)
+      - name: Check SSH Configuration
+        run: |
+          echo "🔍 Checking SSH configuration..."
+          echo "📋 SSH secrets status:"
+          echo "  - DEPLOY_HOST: ${{ secrets.DEPLOY_HOST != '' && 'configured' || 'not configured' }}"
+          echo "  - DEPLOY_USER: ${{ secrets.DEPLOY_USER != '' && 'configured' || 'not configured' }}"
+          echo "  - DEPLOY_KEY: ${{ secrets.DEPLOY_KEY != '' && 'configured' || 'not configured' }}"
+          echo ""
+          if [ "${{ secrets.DEPLOY_HOST }}" = "" ] || [ "${{ secrets.DEPLOY_USER }}" = "" ] || [ "${{ secrets.DEPLOY_KEY }}" = "" ]; then
+            echo "⚠️  SSH secrets are not fully configured - will use manual deployment"
+          else
+            echo "✅ All SSH secrets configured - will attempt automated deployment"
+          fi
+
       - name: Deploy via SSH
         if: ${{ secrets.DEPLOY_HOST && secrets.DEPLOY_USER && secrets.DEPLOY_KEY }}
         uses: appleboy/ssh-action@v1.0.3
@@ -187,18 +201,18 @@ jobs:
           script: |
             echo "🚀 Starting automated deployment..."
             cd /srv/task-tool || cd /var/www/task-tool || cd ~/task-tool
-            
+
             # Pull latest code
             git fetch origin
             git checkout main
             git pull origin main
-            
+
             # Make deployment script executable
             chmod +x scripts/deploy-new-domain.sh
-            
+
             # Run your deployment script
             ./scripts/deploy-new-domain.sh
-            
+
             echo "✅ Deployment completed!"
       
       # Option 2: Manual deployment notification (if SSH not configured)
