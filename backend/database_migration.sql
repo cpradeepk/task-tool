@@ -4,13 +4,13 @@
 -- =====================================================
 
 -- Add support team columns to tasks table
-ALTER TABLE tasks ADD COLUMN support_team JSON;
+ALTER TABLE tasks ADD COLUMN support_team JSONB;
 ALTER TABLE tasks ADD COLUMN warning_count INTEGER DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN last_warning_date TIMESTAMP;
 ALTER TABLE tasks ADD COLUMN task_id_formatted TEXT;
 
 -- Add indexes for tasks table
-CREATE INDEX idx_tasks_support_team ON tasks USING GIN (support_team);
+CREATE INDEX idx_tasks_support_team ON tasks USING GIN (support_team jsonb_ops);
 CREATE INDEX idx_tasks_warning_count ON tasks (warning_count);
 CREATE INDEX idx_tasks_formatted_id ON tasks (task_id_formatted);
 
