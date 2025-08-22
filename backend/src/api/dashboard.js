@@ -7,26 +7,97 @@ const router = express.Router();
 // All dashboard routes require authentication
 router.use(requireAuth);
 
-// Get dashboard statistics
-router.get('/stats', async (req, res) => {
+// Get role-based dashboard statistics
+router.get('/stats/:role?', async (req, res) => {
   try {
     const userId = req.user.id;
-    
-    // Get basic counts
-    const [projectCount] = await knex('projects').count('* as count');
-    const [taskCount] = await knex('tasks').count('* as count');
-    const [userTaskCount] = await knex('tasks').where('assigned_to', userId).count('* as count');
-    const [completedTaskCount] = await knex('tasks')
-      .where('assigned_to', userId)
-      .where('status', 'Completed')
-      .count('* as count');
+    const role = req.params.role || 'employee';
 
-    res.json({
-      total_projects: parseInt(projectCount.count),
-      total_tasks: parseInt(taskCount.count),
-      my_tasks: parseInt(userTaskCount.count),
-      completed_tasks: parseInt(completedTaskCount.count),
-    });
+    // Get user roles to determine access level
+    const userRoles = await knex('user_roles')
+      .join('roles', 'roles.id', 'user_roles.role_id')
+      .where('user_roles.user_id', userId)
+      .select('roles.name');
+
+    const roleNames = userRoles.map(r => r.name.toLowerCase());
+    const isAdmin = roleNames.includes('admin');
+    const isManager = roleNames.includes('manager') || roleNames.includes('top_management');
+
+    let stats = {};
+
+    if (role === 'admin' && isAdmin) {
+      // Admin dashboard statistics
+      const [totalUsers] = await knex('users').count('* as count');
+      const [activeUsers] = await knex('users').where('status', 'active').count('* as count');
+      const [totalProjects] = await knex('projects').count('* as count');
+      const [totalTasks] = await knex('tasks').count('* as count');
+      const [completedTasks] = await knex('tasks').where('status', 'Completed').count('* as count');
+      const [overdueTasks] = await knex('tasks')
+        .where('due_date', '<', knex.fn.now())
+        .whereNotIn('status', ['Completed', 'Cancelled'])
+        .count('* as count');
+
+      stats = {
+        total_users: parseInt(totalUsers.count),
+        active_users: parseInt(activeUsers.count),
+        total_projects: parseInt(totalProjects.count),
+        total_tasks: parseInt(totalTasks.count),
+        completed_tasks: parseInt(completedTasks.count),
+        overdue_tasks: parseInt(overdueTasks.count),
+        completion_rate: totalTasks.count > 0 ?
+          Math.round((completedTasks.count / totalTasks.count) * 100) : 0,
+      };
+    } else if (role === 'management' && (isManager || isAdmin)) {
+      // Management dashboard statistics
+      const [totalProjects] = await knex('projects').count('* as count');
+      const [activeProjects] = await knex('projects').where('status', 'Active').count('* as count');
+      const [totalTasks] = await knex('tasks').count('* as count');
+      const [completedTasks] = await knex('tasks').where('status', 'Completed').count('* as count');
+      const [delayedTasks] = await knex('tasks').where('status', 'Delayed').count('* as count');
+      const [teamMembers] = await knex('users').where('status', 'active').count('* as count');
+
+      stats = {
+        total_projects: parseInt(totalProjects.count),
+        active_projects: parseInt(activeProjects.count),
+        total_tasks: parseInt(totalTasks.count),
+        completed_tasks: parseInt(completedTasks.count),
+        delayed_tasks: parseInt(delayedTasks.count),
+        team_members: parseInt(teamMembers.count),
+        completion_rate: totalTasks.count > 0 ?
+          Math.round((completedTasks.count / totalTasks.count) * 100) : 0,
+      };
+    } else {
+      // Employee dashboard statistics
+      const [myTasks] = await knex('tasks').where('assigned_to', userId).count('* as count');
+      const [completedTasks] = await knex('tasks')
+        .where('assigned_to', userId)
+        .where('status', 'Completed')
+        .count('* as count');
+      const [inProgressTasks] = await knex('tasks')
+        .where('assigned_to', userId)
+        .where('status', 'In Progress')
+        .count('* as count');
+      const [pendingTasks] = await knex('tasks')
+        .where('assigned_to', userId)
+        .where('status', 'Yet to Start')
+        .count('* as count');
+      const [delayedTasks] = await knex('tasks')
+        .where('assigned_to', userId)
+        .where('status', 'Delayed')
+        .count('* as count');
+
+      stats = {
+        total_tasks: parseInt(myTasks.count),
+        completed_tasks: parseInt(completedTasks.count),
+        in_progress_tasks: parseInt(inProgressTasks.count),
+        pending_tasks: parseInt(pendingTasks.count),
+        delayed_tasks: parseInt(delayedTasks.count),
+        completion_rate: myTasks.count > 0 ?
+          Math.round((completedTasks.count / myTasks.count) * 100) : 0,
+      };
+    }
+
+    res.json(stats);
   } catch (err) {
     console.error('Error fetching dashboard stats:', err);
     res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
@@ -178,6 +249,144 @@ router.get('/project-progress', async (req, res) => {
   } catch (err) {
     console.error('Error fetching project progress:', err);
     res.status(500).json({ error: 'Failed to fetch project progress' });
+  }
+});
+
+// Get overdue tasks
+router.get('/overdue-tasks', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user has admin or manager access
+    const userRoles = await knex('user_roles')
+      .join('roles', 'roles.id', 'user_roles.role_id')
+      .where('user_roles.user_id', userId)
+      .select('roles.name');
+
+    const roleNames = userRoles.map(r => r.name.toLowerCase());
+    const hasAccess = roleNames.includes('admin') || roleNames.includes('manager') || roleNames.includes('top_management');
+
+    let query = knex('tasks')
+      .select(
+        'tasks.*',
+        'projects.name as project_name',
+        'modules.name as module_name',
+        'users.email as assigned_to_email'
+      )
+      .leftJoin('modules', 'tasks.module_id', 'modules.id')
+      .leftJoin('projects', 'modules.project_id', 'projects.id')
+      .leftJoin('users', 'tasks.assigned_to', 'users.id')
+      .where('tasks.due_date', '<', knex.fn.now())
+      .whereNotIn('tasks.status', ['Completed', 'Cancelled'])
+      .orderBy('tasks.due_date', 'asc');
+
+    // If not admin/manager, only show user's own overdue tasks
+    if (!hasAccess) {
+      query = query.where('tasks.assigned_to', userId);
+    }
+
+    const overdueTasks = await query;
+
+    res.json(overdueTasks);
+  } catch (err) {
+    console.error('Error fetching overdue tasks:', err);
+    res.status(500).json({ error: 'Failed to fetch overdue tasks' });
+  }
+});
+
+// Get task warnings for a user
+router.get('/warnings/:employeeId?', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const employeeId = req.params.employeeId || userId;
+
+    // Check if user can access other user's warnings
+    if (employeeId !== userId) {
+      const userRoles = await knex('user_roles')
+        .join('roles', 'roles.id', 'user_roles.role_id')
+        .where('user_roles.user_id', userId)
+        .select('roles.name');
+
+      const roleNames = userRoles.map(r => r.name.toLowerCase());
+      const hasAccess = roleNames.includes('admin') || roleNames.includes('manager') || roleNames.includes('top_management');
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Get overdue tasks count for warnings
+    const [overdueCount] = await knex('tasks')
+      .where('assigned_to', employeeId)
+      .where('due_date', '<', knex.fn.now())
+      .whereNotIn('status', ['Completed', 'Cancelled'])
+      .count('* as count');
+
+    // Get tasks due today
+    const today = new Date().toISOString().split('T')[0];
+    const [dueTodayCount] = await knex('tasks')
+      .where('assigned_to', employeeId)
+      .where('due_date', today)
+      .whereNotIn('status', ['Completed', 'Cancelled'])
+      .count('* as count');
+
+    // Calculate warning level
+    let warningLevel = 'none';
+    let warningCount = 0;
+
+    if (overdueCount.count > 0) {
+      warningLevel = overdueCount.count > 5 ? 'critical' : 'high';
+      warningCount = parseInt(overdueCount.count);
+    } else if (dueTodayCount.count > 0) {
+      warningLevel = 'medium';
+      warningCount = parseInt(dueTodayCount.count);
+    }
+
+    res.json({
+      employee_id: employeeId,
+      warning_level: warningLevel,
+      warning_count: warningCount,
+      overdue_tasks: parseInt(overdueCount.count),
+      due_today_tasks: parseInt(dueTodayCount.count),
+      has_warnings: warningLevel !== 'none',
+    });
+  } catch (err) {
+    console.error('Error fetching task warnings:', err);
+    res.status(500).json({ error: 'Failed to fetch task warnings' });
+  }
+});
+
+// Get this week's tasks
+router.get('/this-week', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Calculate this week's date range
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const thisWeekTasks = await knex('tasks')
+      .select(
+        'tasks.*',
+        'projects.name as project_name',
+        'modules.name as module_name'
+      )
+      .leftJoin('modules', 'tasks.module_id', 'modules.id')
+      .leftJoin('projects', 'modules.project_id', 'projects.id')
+      .where('tasks.assigned_to', userId)
+      .whereBetween('tasks.due_date', [
+        startOfWeek.toISOString().split('T')[0],
+        endOfWeek.toISOString().split('T')[0]
+      ])
+      .orderBy('tasks.due_date', 'asc');
+
+    res.json(thisWeekTasks);
+  } catch (err) {
+    console.error('Error fetching this week tasks:', err);
+    res.status(500).json({ error: 'Failed to fetch this week tasks' });
   }
 });
 

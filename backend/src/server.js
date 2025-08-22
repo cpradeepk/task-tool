@@ -46,6 +46,26 @@ app.use('/task/api/pin-auth', pinAuthRouter);
 import dashboardRouter from './api/dashboard.js';
 app.use('/task/api/dashboard', dashboardRouter);
 
+// Task comments and history routes
+import taskCommentsRouter from './api/task-comments.js';
+app.use('/task/api/tasks', taskCommentsRouter);
+
+// Task templates routes
+import taskTemplatesRouter from './api/task-templates.js';
+app.use('/task/api/task-templates', taskTemplatesRouter);
+
+// Leave management routes
+import leaveManagementRouter from './api/leave-management.js';
+app.use('/task/api/leaves', leaveManagementRouter);
+
+// WFH management routes
+import wfhManagementRouter from './api/wfh-management.js';
+app.use('/task/api/wfh', wfhManagementRouter);
+
+// Enhanced user management routes
+import enhancedUsersRouter from './api/enhanced-users.js';
+app.use('/task/api/enhanced-users', enhancedUsersRouter);
+
 // Calendar routes
 import calendarRouter from './api/calendar.js';
 app.use('/task/api/calendar', calendarRouter);

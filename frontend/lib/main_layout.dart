@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'sidebar_navigation.dart';
 import 'admin_login.dart';
 import 'theme/theme_provider.dart';
+import 'components/animations.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
   final Widget child;
@@ -285,26 +286,25 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                   height: 60,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 2,
-                        offset: const Offset(0, 2),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: DesignTokens.colors['gray200']!,
+                        width: 1,
                       ),
-                    ],
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const SizedBox(width: 16),
-                      
+                      const SizedBox(width: DesignTokens.spacing16),
+
                       // Page Title
                       Expanded(
                         child: Text(
                           widget.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: DesignTokens.colors['black'],
                           ),
                         ),
                       ),
@@ -359,12 +359,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                       // User Menu
                       PopupMenuButton<String>(
                         icon: CircleAvatar(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: DesignTokens.primaryOrange,
                           radius: 16,
                           child: Text(
                             (_userEmail?.substring(0, 1).toUpperCase()) ?? 'U',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: DesignTokens.colors['black'],
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),

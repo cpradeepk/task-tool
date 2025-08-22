@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main_layout.dart';
 import 'constants/task_constants.dart';
+import 'components/professional_card.dart';
+import 'components/animations.dart';
+import 'components/professional_buttons.dart';
+import 'theme/theme_provider.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
@@ -133,68 +137,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildWelcomeSection() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade400],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+    return FadeInAnimation(
+      child: ProfessionalCard(
+        backgroundColor: DesignTokens.primaryOrange,
+        customShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: DesignTokens.primaryOrange.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Good morning! 👋',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Plan Weekly, Execute Daily',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => _showThisWeekTasks(),
-                      child: _buildQuickStat('Tasks This Week', '${_thisWeekTasks.length}'),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Good morning! 👋',
+                    style: TextStyle(
+                      color: DesignTokens.colors['black'],
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(width: 24),
-                    GestureDetector(
-                      onTap: () => _showHighPriorityTasks(),
-                      child: _buildQuickStat('High Priority', '${_priorityTasks.length}'),
+                  ),
+                  const SizedBox(height: DesignTokens.spacing8),
+                  Text(
+                    'Plan Weekly, Execute Daily',
+                    style: TextStyle(
+                      color: DesignTokens.colors['black']!.withValues(alpha: 0.8),
+                      fontSize: 16,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(height: DesignTokens.spacing16),
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _showThisWeekTasks(),
+                        child: _buildQuickStat('Tasks This Week', '${_thisWeekTasks.length}'),
+                      ),
+                      const SizedBox(width: DesignTokens.spacing24),
+                      GestureDetector(
+                        onTap: () => _showHighPriorityTasks(),
+                        child: _buildQuickStat('High Priority', '${_priorityTasks.length}'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const Icon(
-            Icons.dashboard,
-            size: 64,
-            color: Colors.white24,
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.all(DesignTokens.spacing16),
+              decoration: BoxDecoration(
+                color: DesignTokens.colors['black']!.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
+              ),
+              child: Icon(
+                Icons.dashboard,
+                size: 48,
+                color: DesignTokens.colors['black']!.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -205,8 +210,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: DesignTokens.colors['black'],
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -214,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: DesignTokens.colors['black']!.withValues(alpha: 0.7),
             fontSize: 12,
           ),
         ),
@@ -285,48 +290,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color? iconColor,
     VoidCallback? onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return ProfessionalCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(DesignTokens.spacing16),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: DesignTokens.colors['gray50'],
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
+                topLeft: Radius.circular(DesignTokens.radiusLarge),
+                topRight: Radius.circular(DesignTokens.radiusLarge),
               ),
             ),
             child: Row(
               children: [
-                Icon(icon, color: iconColor ?? Colors.blue, size: 20),
-                const SizedBox(width: 8),
+                Icon(
+                  icon,
+                  color: iconColor ?? DesignTokens.primaryOrange,
+                  size: 20,
+                ),
+                const SizedBox(width: DesignTokens.spacing8),
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      color: DesignTokens.colors['black'],
                     ),
                   ),
                 ),
                 if (onTap != null)
                   IconButton(
                     onPressed: onTap,
-                    icon: const Icon(Icons.more_horiz, size: 18),
+                    icon: Icon(
+                      Icons.more_horiz,
+                      size: 18,
+                      color: DesignTokens.colors['gray600'],
+                    ),
                   ),
               ],
             ),

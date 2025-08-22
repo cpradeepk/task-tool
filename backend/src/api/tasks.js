@@ -184,5 +184,265 @@ router.delete('/:taskId', requireAnyRole(['Admin','Project Manager','Team Member
   }
 });
 
+// Get tasks where user is support team member
+router.get('/support/:employeeId', async (req, res) => {
+  try {
+    const employeeId = req.params.employeeId;
+    const userId = req.user.id;
+
+    // Check if user can access other user's support tasks
+    if (employeeId !== userId) {
+      const hasAccess = await userHasRole(userId, ['Admin', 'Project Manager', 'Team Lead']);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Get tasks where user is in support team
+    const supportTasks = await knex('tasks')
+      .select(
+        'tasks.*',
+        'projects.name as project_name',
+        'modules.name as module_name',
+        'users.email as assigned_to_email'
+      )
+      .leftJoin('modules', 'tasks.module_id', 'modules.id')
+      .leftJoin('projects', 'modules.project_id', 'projects.id')
+      .leftJoin('users', 'tasks.assigned_to', 'users.id')
+      .whereRaw("JSON_CONTAINS(tasks.support_team, ?)", [`"${employeeId}"`])
+      .orWhereExists(function() {
+        this.select('*')
+          .from('task_support')
+          .whereRaw('task_support.task_id = tasks.id')
+          .where('task_support.employee_id', employeeId)
+          .where('task_support.is_active', true);
+      })
+      .orderBy('tasks.due_date', 'asc');
+
+    res.json(supportTasks);
+  } catch (err) {
+    console.error('Error fetching support tasks:', err);
+    res.status(500).json({ error: 'Failed to fetch support tasks' });
+  }
+});
+
+// Add/remove support team members
+router.put('/:taskId/support', requireAnyRole(['Admin', 'Project Manager', 'Team Lead']), async (req, res) => {
+  try {
+    const taskId = parseInt(req.params.taskId);
+    const { support_team, action } = req.body; // action: 'add' or 'remove'
+    const userId = req.user.id;
+
+    // Verify task exists
+    const task = await knex('tasks').where('id', taskId).first();
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    if (action === 'add') {
+      // Add support team members
+      for (const employeeId of support_team) {
+        // Check if already exists
+        const existing = await knex('task_support')
+          .where({ task_id: taskId, employee_id: employeeId })
+          .first();
+
+        if (!existing) {
+          await knex('task_support').insert({
+            task_id: taskId,
+            employee_id: employeeId,
+            added_by: userId,
+            role: 'support'
+          });
+        } else if (!existing.is_active) {
+          // Reactivate if previously removed
+          await knex('task_support')
+            .where({ task_id: taskId, employee_id: employeeId })
+            .update({ is_active: true, added_by: userId });
+        }
+      }
+
+      // Update JSON column as well for backward compatibility
+      const currentSupportTeam = task.support_team ? JSON.parse(task.support_team) : [];
+      const updatedSupportTeam = [...new Set([...currentSupportTeam, ...support_team])];
+
+      await knex('tasks')
+        .where('id', taskId)
+        .update({ support_team: JSON.stringify(updatedSupportTeam) });
+
+      // Log the change
+      await knex('task_history').insert({
+        task_id: taskId,
+        changed_by: userId,
+        change_type: 'support_added',
+        new_values: JSON.stringify({ support_team: support_team }),
+        comment: `Added support team members: ${support_team.join(', ')}`
+      });
+
+    } else if (action === 'remove') {
+      // Remove support team members
+      for (const employeeId of support_team) {
+        await knex('task_support')
+          .where({ task_id: taskId, employee_id: employeeId })
+          .update({ is_active: false });
+      }
+
+      // Update JSON column
+      const currentSupportTeam = task.support_team ? JSON.parse(task.support_team) : [];
+      const updatedSupportTeam = currentSupportTeam.filter(id => !support_team.includes(id));
+
+      await knex('tasks')
+        .where('id', taskId)
+        .update({ support_team: JSON.stringify(updatedSupportTeam) });
+
+      // Log the change
+      await knex('task_history').insert({
+        task_id: taskId,
+        changed_by: userId,
+        change_type: 'support_removed',
+        old_values: JSON.stringify({ support_team: support_team }),
+        comment: `Removed support team members: ${support_team.join(', ')}`
+      });
+    }
+
+    res.json({ success: true, message: `Support team ${action}ed successfully` });
+  } catch (err) {
+    console.error('Error updating support team:', err);
+    res.status(500).json({ error: 'Failed to update support team' });
+  }
+});
+
+// Get overdue tasks
+router.get('/overdue', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Check if user has admin or manager access
+    const hasAccess = await userHasRole(userId, ['Admin', 'Project Manager', 'Team Lead']);
+
+    let query = knex('tasks')
+      .select(
+        'tasks.*',
+        'projects.name as project_name',
+        'modules.name as module_name',
+        'users.email as assigned_to_email'
+      )
+      .leftJoin('modules', 'tasks.module_id', 'modules.id')
+      .leftJoin('projects', 'modules.project_id', 'projects.id')
+      .leftJoin('users', 'tasks.assigned_to', 'users.id')
+      .where('tasks.due_date', '<', knex.fn.now())
+      .whereNotIn('tasks.status', ['Completed', 'Cancelled'])
+      .orderBy('tasks.due_date', 'asc');
+
+    // If not admin/manager, only show user's own overdue tasks
+    if (!hasAccess) {
+      query = query.where('tasks.assigned_to', userId);
+    }
+
+    const overdueTasks = await query;
+
+    res.json(overdueTasks);
+  } catch (err) {
+    console.error('Error fetching overdue tasks:', err);
+    res.status(500).json({ error: 'Failed to fetch overdue tasks' });
+  }
+});
+
+// Bulk update delayed tasks
+router.put('/update-delayed', requireAnyRole(['Admin', 'Project Manager']), async (req, res) => {
+  try {
+    const { task_ids, new_status, new_due_date, reason } = req.body;
+    const userId = req.user.id;
+
+    if (!task_ids || !Array.isArray(task_ids) || task_ids.length === 0) {
+      return res.status(400).json({ error: 'task_ids array is required' });
+    }
+
+    const updateData = {};
+    if (new_status) updateData.status = new_status;
+    if (new_due_date) updateData.due_date = new_due_date;
+
+    // Update tasks
+    await knex('tasks')
+      .whereIn('id', task_ids)
+      .update(updateData);
+
+    // Log the bulk update
+    for (const taskId of task_ids) {
+      await knex('task_history').insert({
+        task_id: taskId,
+        changed_by: userId,
+        change_type: 'bulk_updated',
+        new_values: JSON.stringify(updateData),
+        comment: reason || 'Bulk update of delayed tasks'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Updated ${task_ids.length} tasks successfully`,
+      updated_count: task_ids.length
+    });
+  } catch (err) {
+    console.error('Error bulk updating tasks:', err);
+    res.status(500).json({ error: 'Failed to bulk update tasks' });
+  }
+});
+
+// Get task warnings for user
+router.get('/warnings/:employeeId', async (req, res) => {
+  try {
+    const employeeId = req.params.employeeId;
+    const userId = req.user.id;
+
+    // Check if user can access other user's warnings
+    if (employeeId !== userId) {
+      const hasAccess = await userHasRole(userId, ['Admin', 'Project Manager', 'Team Lead']);
+      if (!hasAccess) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Get overdue tasks count for warnings
+    const [overdueCount] = await knex('tasks')
+      .where('assigned_to', employeeId)
+      .where('due_date', '<', knex.fn.now())
+      .whereNotIn('status', ['Completed', 'Cancelled'])
+      .count('* as count');
+
+    // Get tasks due today
+    const today = new Date().toISOString().split('T')[0];
+    const [dueTodayCount] = await knex('tasks')
+      .where('assigned_to', employeeId)
+      .where('due_date', today)
+      .whereNotIn('status', ['Completed', 'Cancelled'])
+      .count('* as count');
+
+    // Calculate warning level
+    let warningLevel = 'none';
+    let warningCount = 0;
+
+    if (overdueCount.count > 0) {
+      warningLevel = overdueCount.count > 5 ? 'critical' : 'high';
+      warningCount = parseInt(overdueCount.count);
+    } else if (dueTodayCount.count > 0) {
+      warningLevel = 'medium';
+      warningCount = parseInt(dueTodayCount.count);
+    }
+
+    res.json({
+      employee_id: employeeId,
+      warning_level: warningLevel,
+      warning_count: warningCount,
+      overdue_tasks: parseInt(overdueCount.count),
+      due_today_tasks: parseInt(dueTodayCount.count),
+      has_warnings: warningLevel !== 'none',
+    });
+  } catch (err) {
+    console.error('Error fetching task warnings:', err);
+    res.status(500).json({ error: 'Failed to fetch task warnings' });
+  }
+});
+
 export default router;
 

@@ -5,7 +5,7 @@ import 'pin_auth.dart';
 import 'projects.dart';
 import 'profile.dart';
 import 'modules.dart';
-import 'dashboard.dart';
+import 'enhanced_dashboard.dart';
 import 'main_layout.dart';
 import 'tasks.dart';
 import 'task_detail.dart';
@@ -51,7 +51,7 @@ class AppRouter {
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
 
         // Dashboard as default landing page
-        GoRoute(path: '/dashboard', builder: (ctx, st) => const DashboardScreen()),
+        GoRoute(path: '/dashboard', builder: (ctx, st) => const EnhancedDashboardScreen()),
 
         // Legacy home route redirects to dashboard
         GoRoute(path: '/', redirect: (ctx, st) => '/dashboard'),
