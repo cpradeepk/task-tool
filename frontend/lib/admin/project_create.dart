@@ -82,7 +82,7 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
   void _showSuccessMessage(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
+        SnackBar(content: Text(message), backgroundColor: const Color(0xFFFFA301)),
       );
     }
   }
@@ -90,7 +90,7 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
   void _showErrorMessage(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(content: Text(message), backgroundColor: const Color(0xFFE6920E)),
       );
     }
   }
@@ -125,7 +125,7 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
               // Header
               Row(
                 children: [
-                  const Icon(Icons.add_box, color: Colors.blue, size: 28),
+                  const Icon(Icons.add_box, color: Color(0xFFFFA301), size: 28),
                   const SizedBox(width: 12),
                   const Text(
                     'Create New Project',
@@ -143,7 +143,7 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
                         : const Icon(Icons.save),
                     label: Text(_isLoading ? 'Creating...' : 'Create Project'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: const Color(0xFFFFA301),
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -288,7 +288,7 @@ class _ProjectCreateScreenState extends State<ProjectCreateScreen> {
                               ElevatedButton(
                                 onPressed: _isLoading ? null : _createProject,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
+                                  backgroundColor: const Color(0xFFFFA301),
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                                 ),

@@ -106,7 +106,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: const Color(0xFFE6920E),
       ),
     );
   }
@@ -120,7 +120,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Icon(Icons.settings, color: Colors.blue, size: 28),
+                const Icon(Icons.settings, color: Color(0xFFFFA301), size: 28),
                 const SizedBox(width: 12),
                 const Text(
                   'Master Data Management',
@@ -132,7 +132,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFFFFA301),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -224,7 +224,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                 icon: const Icon(Icons.add),
                 label: const Text('Add Priority'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color(0xFFFFA301),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -264,7 +264,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                         ),
                         IconButton(
                           onPressed: () => _deletePriority(priority['id']),
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: const Icon(Icons.delete, color: Color(0xFFE6920E)),
                         ),
                       ],
                     ),
@@ -296,7 +296,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                 icon: const Icon(Icons.add),
                 label: const Text('Add Status'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color(0xFFFFA301),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -332,7 +332,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                         ),
                         IconButton(
                           onPressed: () => _deleteStatus(status['id']),
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: const Icon(Icons.delete, color: Color(0xFFE6920E)),
                         ),
                       ],
                     ),
@@ -364,7 +364,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                 icon: const Icon(Icons.add),
                 label: const Text('Add Category'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color(0xFFFFA301),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -379,7 +379,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                 return Card(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    leading: const Icon(Icons.category, color: Colors.blue),
+                    leading: const Icon(Icons.category, color: Color(0xFFFFA301)),
                     title: Text(category['name']),
                     subtitle: Text(category['description']),
                     trailing: Row(
@@ -391,7 +391,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                         ),
                         IconButton(
                           onPressed: () => _deleteCategory(category['id']),
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: const Icon(Icons.delete, color: Color(0xFFE6920E)),
                         ),
                       ],
                     ),
@@ -494,7 +494,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Priority added successfully'), backgroundColor: Colors.green),
+      const SnackBar(content: Text('Priority added successfully'), backgroundColor: Color(0xFFFFA301)),
     );
   }
 
@@ -568,7 +568,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Priority updated successfully'), backgroundColor: Colors.green),
+      const SnackBar(content: Text('Priority updated successfully'), backgroundColor: Color(0xFFFFA301)),
     );
   }
 
@@ -656,7 +656,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Status updated successfully'), backgroundColor: Colors.green),
+      const SnackBar(content: Text('Status updated successfully'), backgroundColor: Color(0xFFFFA301)),
     );
   }
 
@@ -744,7 +744,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Category updated successfully'), backgroundColor: Colors.green),
+      const SnackBar(content: Text('Category updated successfully'), backgroundColor: Color(0xFFFFA301)),
     );
   }
 
