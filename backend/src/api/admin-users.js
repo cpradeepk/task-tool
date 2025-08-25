@@ -162,46 +162,63 @@ router.post('/', async (req, res) => {
 router.put('/:userId', async (req, res) => {
   try {
     const userId = Number(req.params.userId);
-    const { email, new_pin } = req.body;
-    
+    const {
+      email,
+      new_pin,
+      first_name,
+      last_name,
+      phone,
+      department,
+      job_title,
+      bio
+    } = req.body;
+
     const updateData = {};
-    
+
     if (email) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({ error: 'Invalid email format' });
       }
-      
+
       // Check if email is already taken by another user
       const existingUser = await knex('users')
         .where({ email })
         .whereNot({ id: userId })
         .first();
-        
+
       if (existingUser) {
         return res.status(409).json({ error: 'Email already taken by another user' });
       }
-      
+
       updateData.email = email;
     }
-    
+
     if (new_pin) {
       if (!/^\d{4,6}$/.test(new_pin)) {
         return res.status(400).json({ error: 'PIN must be 4-6 digits' });
       }
-      
+
       const pinHash = await bcrypt.hash(new_pin, 10);
       updateData.pin_hash = pinHash;
       updateData.pin_created_at = new Date();
       updateData.pin_attempts = 0;
       updateData.pin_locked_until = null;
     }
-    
+
+    // Add other profile fields
+    if (first_name !== undefined) updateData.first_name = first_name;
+    if (last_name !== undefined) updateData.last_name = last_name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (department !== undefined) updateData.department = department;
+    if (job_title !== undefined) updateData.job_title = job_title;
+    if (bio !== undefined) updateData.bio = bio;
+
     updateData.updated_at = new Date();
     
     const [user] = await knex('users')
       .where({ id: userId })
       .update(updateData)
-      .returning(['id', 'email', 'created_at', 'updated_at', 'pin_created_at', 'pin_last_used']);
+      .returning(['id', 'email', 'first_name', 'last_name', 'phone', 'department', 'job_title', 'bio', 'created_at', 'updated_at', 'pin_created_at', 'pin_last_used']);
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

@@ -24,8 +24,15 @@ export function requireAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, secret);
+
+    // Handle admin user case - use numeric ID for database queries
+    let userId = payload.id || payload.uid;
+    if (userId === 'admin-user') {
+      userId = 0; // Use 0 as the admin user ID for database queries
+    }
+
     req.user = {
-      id: payload.id || payload.uid,
+      id: userId,
       email: payload.email,
       role: payload.role,
       isAdmin: payload.isAdmin || false

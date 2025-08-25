@@ -2,7 +2,7 @@ import { knex } from '../db/index.js';
 
 export async function getUserRoles(userId) {
   // Handle special admin user case
-  if (userId === 'admin-user' || userId === 'test-user') {
+  if (userId === 'admin-user' || userId === 'test-user' || userId === 0) {
     return ['Admin']; // Admin users have all permissions
   }
 
@@ -23,7 +23,7 @@ export async function getUserRoles(userId) {
 export async function userHasRole(userId, allowedRoles = []) {
   try {
     // Handle special admin user case
-    if (userId === 'admin-user' || userId === 'test-user') {
+    if (userId === 'admin-user' || userId === 'test-user' || userId === 0) {
       return allowedRoles.includes('Admin');
     }
 

@@ -97,7 +97,7 @@ router.put('/profile', async (req, res) => {
 router.get('/roles', async (req, res) => {
   try {
     // Handle special admin user case
-    if (req.user.id === 'admin-user' || req.user.id === 'test-user') {
+    if (req.user.id === 'admin-user' || req.user.id === 'test-user' || req.user.id === 0) {
       return res.json(['Admin']); // Admin users have all permissions
     }
 
