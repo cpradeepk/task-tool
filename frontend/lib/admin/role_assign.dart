@@ -96,7 +96,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: const Color(0xFFE6920E),
       ),
     );
   }
@@ -141,7 +141,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
       if (response.statusCode == 201) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Role assigned successfully'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Role assigned successfully'), backgroundColor: Color(0xFFFFA301)),
           );
         }
 
@@ -221,7 +221,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
             // Header
             Row(
               children: [
-                const Icon(Icons.assignment_ind, color: Colors.blue, size: 28),
+                const Icon(Icons.assignment_ind, color: Color(0xFFFFA301), size: 28),
                 const SizedBox(width: 12),
                 const Text(
                   'Role Assignment',
@@ -233,7 +233,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFFFFA301),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -310,7 +310,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
                         icon: const Icon(Icons.add),
                         label: const Text('Assign'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
+                          backgroundColor: const Color(0xFFFFA301),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                         ),
@@ -341,7 +341,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
+                        color: const Color(0xFFFFECB3),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(12),
                           topRight: Radius.circular(12),
@@ -349,7 +349,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.people, color: Colors.blue),
+                          const Icon(Icons.people, color: Color(0xFFFFA301)),
                           const SizedBox(width: 8),
                           const Text(
                             'Current Role Assignments',
@@ -358,7 +358,7 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
                           const Spacer(),
                           Text(
                             '${_users.length} users',
-                            style: TextStyle(color: Colors.blue.shade600),
+                            style: TextStyle(color: Color(0xFFFFA301)),
                           ),
                         ],
                       ),
@@ -377,17 +377,17 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
                                   margin: const EdgeInsets.only(bottom: 8),
                                   child: ExpansionTile(
                                     leading: CircleAvatar(
-                                      backgroundColor: Colors.blue.shade100,
+                                      backgroundColor: const Color(0xFFFFECB3),
                                       child: Text(
                                         user['name'][0].toUpperCase(),
-                                        style: TextStyle(color: Colors.blue.shade700),
+                                        style: const TextStyle(color: Color(0xFFFFA301)),
                                       ),
                                     ),
                                     title: Text(user['name']),
                                     subtitle: Text(user['email']),
                                     trailing: Chip(
                                       label: Text('${userRoles.length} roles'),
-                                      backgroundColor: Colors.blue.shade50,
+                                      backgroundColor: const Color(0xFFFFECB3),
                                     ),
                                     children: userRoles.isEmpty
                                         ? [
@@ -403,11 +403,11 @@ class _RoleAssignScreenState extends State<RoleAssignScreen> {
                                             )['id'];
                                             
                                             return ListTile(
-                                              leading: const Icon(Icons.security, color: Colors.green),
+                                              leading: const Icon(Icons.security, color: Color(0xFFFFA301)),
                                               title: Text(roleName),
                                               trailing: IconButton(
                                                 onPressed: () => _removeRole(user['id'], roleId),
-                                                icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                                icon: const Icon(Icons.remove_circle, color: Color(0xFFE6920E)),
                                                 tooltip: 'Remove Role',
                                               ),
                                             );

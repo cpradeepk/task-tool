@@ -279,7 +279,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
   void _showSuccessMessage(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.green),
+        SnackBar(content: Text(message), backgroundColor: const Color(0xFFFFA301)),
       );
     }
   }
@@ -287,7 +287,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
   void _showErrorMessage(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(content: Text(message), backgroundColor: const Color(0xFFE6920E)),
       );
     }
   }
@@ -304,7 +304,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                 // Header row
                 Row(
                   children: [
-                    const Icon(Icons.settings, color: Colors.blue, size: 28),
+                    const Icon(Icons.settings, color: Color(0xFFFFA301), size: 28),
                     const SizedBox(width: 12),
                     const Text(
                       'Project Settings',
@@ -473,7 +473,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                     icon: const Icon(Icons.edit),
                     label: const Text('Edit Project'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: const Color(0xFFFFA301),
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -483,7 +483,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                     icon: const Icon(Icons.delete),
                     label: const Text('Delete'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
+                      backgroundColor: const Color(0xFFE6920E),
                       foregroundColor: Colors.white,
                     ),
                   ),
@@ -712,7 +712,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
             const SizedBox(height: 16),
             const Text(
               'This action cannot be undone. All associated modules, tasks, and data will be permanently deleted.',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Color(0xFFE6920E), fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             const Text('Type "delete me" to confirm:'),
@@ -742,7 +742,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE6920E)),
             child: const Text('Delete Project'),
           ),
         ],
@@ -772,7 +772,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Project deleted successfully'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Project deleted successfully'), backgroundColor: Color(0xFFFFA301)),
           );
         }
 
@@ -810,7 +810,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                 icon: const Icon(Icons.add),
                 label: const Text('Create Module'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: const Color(0xFFFFA301),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -852,7 +852,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                                 children: [
                                   Icon(
                                     Icons.view_module,
-                                    color: Colors.blue.shade700,
+                                    color: const Color(0xFFFFA301),
                                     size: 24,
                                   ),
                                   const SizedBox(width: 12),
@@ -906,7 +906,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                                         value: 'delete',
                                         child: Row(
                                           children: [
-                                            Icon(Icons.delete, size: 16, color: Colors.red),
+                                            Icon(Icons.delete, size: 16, color: Color(0xFFE6920E)),
                                             SizedBox(width: 8),
                                             Text('Delete Module'),
                                           ],
@@ -927,8 +927,8 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                                       style: const TextStyle(fontSize: 10),
                                     ),
                                     backgroundColor: module['status'] == 'Active'
-                                        ? Colors.green.shade100
-                                        : Colors.orange.shade100,
+                                        ? const Color(0xFFFFECB3)
+                                        : const Color(0xFFFFECB3),
                                   ),
                                   const SizedBox(width: 8),
                                   Chip(
@@ -936,7 +936,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                                       module['category'] ?? 'General',
                                       style: const TextStyle(fontSize: 10),
                                     ),
-                                    backgroundColor: Colors.blue.shade100,
+                                    backgroundColor: const Color(0xFFFFECB3),
                                   ),
                                   const Spacer(),
                                   Text(
@@ -955,7 +955,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                                 value: completionPercentage / 100,
                                 backgroundColor: Colors.grey.shade200,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  completionPercentage == 100 ? Colors.green : Colors.blue,
+                                  completionPercentage == 100 ? const Color(0xFFFFA301) : const Color(0xFFFFA301),
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -1122,7 +1122,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
               Navigator.of(context).pop();
               _showSuccessMessage('Module deleted successfully');
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE6920E)),
             child: const Text('Delete'),
           ),
         ],
@@ -1148,7 +1148,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                 icon: const Icon(Icons.person_add),
                 label: const Text('Add Member'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: const Color(0xFFFFA301),
                   foregroundColor: Colors.white,
                 ),
               ),
@@ -1189,10 +1189,10 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                         margin: const EdgeInsets.only(bottom: 8),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: Colors.blue.shade100,
+                            backgroundColor: const Color(0xFFFFECB3),
                             child: Text(
                               user['name'][0].toUpperCase(),
-                              style: TextStyle(color: Colors.blue.shade700),
+                              style: const TextStyle(color: Color(0xFFFFA301)),
                             ),
                           ),
                           title: Text(user['name']),
@@ -1206,7 +1206,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                           ),
                           trailing: IconButton(
                             onPressed: () => _removeTeamMember(teamMember['userId']),
-                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            icon: const Icon(Icons.remove_circle, color: Color(0xFFE6920E)),
                             tooltip: 'Remove from project',
                           ),
                         ),
@@ -1346,7 +1346,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
               Navigator.of(context).pop();
               await _removeTeamMemberFromProject(userId);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE6920E)),
             child: const Text('Remove'),
           ),
         ],
@@ -1395,7 +1395,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         ),
         child: Column(
           children: [
-            Icon(icon, color: Colors.blue),
+            Icon(icon, color: const Color(0xFFFFA301)),
             const SizedBox(height: 8),
             Text(
               title,

@@ -72,7 +72,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: const Color(0xFFE6920E),
       ),
     );
   }
@@ -198,7 +198,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
       if (response.statusCode == 201) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Role created successfully'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Role created successfully'), backgroundColor: Color(0xFFFFA301)),
           );
         }
         _loadRoles(); // Reload roles to get updated data
@@ -313,7 +313,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
       if (response.statusCode == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Role updated successfully'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('Role updated successfully'), backgroundColor: Color(0xFFFFA301)),
           );
         }
         _loadRoles(); // Reload roles to get updated data
@@ -364,7 +364,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
               Navigator.of(context).pop();
               await _performDeleteRole(roleId);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE6920E)),
             child: const Text('Delete'),
           ),
         ],
@@ -413,7 +413,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
             // Header
             Row(
               children: [
-                const Icon(Icons.security, color: Colors.blue, size: 28),
+                const Icon(Icons.security, color: Color(0xFFFFA301), size: 28),
                 const SizedBox(width: 12),
                 const Text(
                   'Role Management',
@@ -425,7 +425,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
                   icon: const Icon(Icons.add),
                   label: const Text('Create Role'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+                    backgroundColor: const Color(0xFFFFA301),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -435,7 +435,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFFFFA301),
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -468,7 +468,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
                                   children: [
                                     Icon(
                                       role['isSystem'] ? Icons.lock : Icons.security,
-                                      color: role['isSystem'] ? Colors.orange : Colors.blue,
+                                      color: role['isSystem'] ? const Color(0xFFE6920E) : const Color(0xFFFFA301),
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -521,7 +521,7 @@ class _RoleManageScreenState extends State<RoleManageScreen> {
                                     ),
                                     IconButton(
                                       onPressed: () => _deleteRole(role['id']),
-                                      icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                      icon: const Icon(Icons.delete, size: 20, color: Color(0xFFE6920E)),
                                       tooltip: 'Delete Role',
                                     ),
                                   ],
