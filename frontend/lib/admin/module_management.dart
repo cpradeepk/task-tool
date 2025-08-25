@@ -34,71 +34,60 @@ class _ModuleManagementScreenState extends State<ModuleManagementScreen> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
-    // Load mock data for development
-    _projects = [
-      {'id': 1, 'name': 'Task Tool Development'},
-      {'id': 2, 'name': 'Mobile App Development'},
-      {'id': 3, 'name': 'Website Redesign'},
-      {'id': 4, 'name': 'API Integration'},
-    ];
+    try {
+      final jwt = await _getJwt();
+      if (jwt == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
-    _modules = [
-      {
-        'id': 1,
-        'name': 'Authentication Module',
-        'description': 'User authentication and authorization system',
-        'category': ProjectCategory.development,
-        'status': 'Active',
-        'taskCount': 12,
-        'completedTasks': 8,
-        'createdAt': '2025-01-10',
-        'attachedProjects': [1, 2],
-      },
-      {
-        'id': 2,
-        'name': 'Dashboard Module',
-        'description': 'Main dashboard with analytics and reporting',
-        'category': ProjectCategory.development,
-        'status': 'Active',
-        'taskCount': 18,
-        'completedTasks': 15,
-        'createdAt': '2025-01-12',
-        'attachedProjects': [1],
-      },
-      {
-        'id': 3,
-        'name': 'UI Design System',
-        'description': 'Comprehensive design system and component library',
-        'category': ProjectCategory.design,
-        'status': 'Active',
-        'taskCount': 25,
-        'completedTasks': 20,
-        'createdAt': '2025-01-08',
-        'attachedProjects': [1, 3],
-      },
-      {
-        'id': 4,
-        'name': 'Payment Integration',
-        'description': 'Payment gateway integration and processing',
-        'category': ProjectCategory.development,
-        'status': 'Planning',
-        'taskCount': 8,
-        'completedTasks': 0,
-        'createdAt': '2025-01-15',
-        'attachedProjects': [],
-      },
-      {
-        'id': 5,
-        'name': 'Marketing Automation',
-        'description': 'Automated marketing campaigns and analytics',
-        'category': ProjectCategory.marketing,
-        'status': 'Active',
-        'taskCount': 15,
-        'completedTasks': 10,
-        'createdAt': '2025-01-05',
-        'attachedProjects': [3],
-      },
-    ];
+      // Load real projects from API
+      final projectsResponse = await http.get(
+        Uri.parse('$apiBase/task/api/projects'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (projectsResponse.statusCode == 200) {
+        _projects = jsonDecode(projectsResponse.body) as List<dynamic>;
+      } else {
+        _projects = [];
+      }
+
+      // Load real modules from all projects
+      _modules = [];
+      for (final project in _projects) {
+        try {
+          final modulesResponse = await http.get(
+            Uri.parse('$apiBase/task/api/projects/${project['id']}/modules'),
+            headers: {'Authorization': 'Bearer $jwt'},
+          );
+
+          if (modulesResponse.statusCode == 200) {
+            final projectModules = jsonDecode(modulesResponse.body) as List<dynamic>;
+            for (final module in projectModules) {
+              _modules.add({
+                'id': module['id'],
+                'name': module['name'],
+                'description': module['description'] ?? '',
+                'category': ProjectCategory.development,
+                'status': 'Active',
+                'taskCount': 0, // TODO: Load actual task count
+                'completedTasks': 0, // TODO: Load actual completed tasks
+                'createdAt': module['created_at']?.toString().substring(0, 10) ?? '',
+                'attachedProjects': [project['id']],
+                'projectName': project['name'],
+              });
+            }
+          }
+        } catch (e) {
+          print('Error loading modules for project ${project['id']}: $e');
+        }
+      }
+    } catch (e) {
+      print('Error loading data: $e');
+      _projects = [];
+      _modules = [];
+    }
 
     setState(() => _isLoading = false);
   }
@@ -200,24 +189,68 @@ class _ModuleManagementScreenState extends State<ModuleManagementScreen> {
     );
   }
 
-  void _createModule(String name, String description, String category, String status) {
-    setState(() {
-      _modules.add({
-        'id': _modules.length + 1,
-        'name': name,
-        'description': description,
-        'category': category,
-        'status': status,
-        'taskCount': 0,
-        'completedTasks': 0,
-        'createdAt': DateTime.now().toIso8601String().substring(0, 10),
-        'attachedProjects': [],
-      });
-    });
+  void _createModule(String name, String description, String category, String status) async {
+    try {
+      final jwt = await _getJwt();
+      if (jwt == null) {
+        _showErrorMessage('Authentication required');
+        return;
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Module created successfully'), backgroundColor: Colors.green),
-    );
+      // For now, we'll create a demo module since we need a project context
+      // In a real implementation, this would need to be associated with a specific project
+      final response = await http.post(
+        Uri.parse('$apiBase/task/api/admin/projects/1/modules'), // Using project ID 1 as default
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'description': description,
+          'order_index': _modules.length,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final newModule = jsonDecode(response.body);
+        setState(() {
+          _modules.add({
+            'id': newModule['id'],
+            'name': name,
+            'description': description,
+            'category': category,
+            'status': status,
+            'taskCount': 0,
+            'completedTasks': 0,
+            'createdAt': DateTime.now().toIso8601String().substring(0, 10),
+            'attachedProjects': [],
+          });
+        });
+
+        _showSuccessMessage('Module created successfully');
+      } else {
+        _showErrorMessage('Failed to create module: ${response.statusCode}');
+      }
+    } catch (e) {
+      _showErrorMessage('Error creating module: $e');
+    }
+  }
+
+  void _showSuccessMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: const Color(0xFFFFA301)),
+      );
+    }
+  }
+
+  void _showErrorMessage(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: const Color(0xFFE6920E)),
+      );
+    }
   }
 
   void _editModule(Map<String, dynamic> module) {

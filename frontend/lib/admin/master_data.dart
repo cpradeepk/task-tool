@@ -678,9 +678,85 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
   }
 
   void _showAddStatusDialog() {
-    // TODO: Implement add status dialog
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    Color selectedColor = Colors.blue;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Add Status'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Status Name *',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 16),
+                _buildColorPicker(selectedColor, (color) {
+                  setDialogState(() {
+                    selectedColor = color;
+                  });
+                }),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Status name is required')),
+                  );
+                  return;
+                }
+
+                Navigator.of(context).pop();
+                _addStatus(nameController.text.trim(), descriptionController.text.trim(), selectedColor);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFA301)),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _addStatus(String name, String description, Color color) {
+    // TODO: Implement API call to add status
+    setState(() {
+      _statuses.add({
+        'id': _statuses.length + 1,
+        'name': name,
+        'description': description,
+        'color': _getColorName(color),
+        'is_active': true,
+      });
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add Status functionality - Coming Soon')),
+      const SnackBar(content: Text('Status added successfully'), backgroundColor: Color(0xFFFFA301)),
     );
   }
 

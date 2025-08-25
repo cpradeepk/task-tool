@@ -151,6 +151,10 @@ class AppRouter {
           title: 'Project Settings',
           child: ProjectSettingsScreen(),
         )),
+        GoRoute(path: '/admin/projects/edit', builder: (ctx, st) => const ModernLayout(
+          title: 'Edit Projects',
+          child: ProjectSettingsScreen(), // TODO: Create dedicated ProjectEditScreen
+        )),
         GoRoute(path: '/admin/projects/:id/settings', builder: (ctx, st) => ModernLayout(
           title: 'Project Settings',
           child: ProjectSettingsScreen(projectId: st.pathParameters['id']),

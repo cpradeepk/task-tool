@@ -1379,13 +1379,8 @@ class _TasksScreenState extends State<TasksScreen> {
     };
 
     try {
-      // Use module-specific endpoint if we're in a module view and have a module_id
-      String createUrl;
-      if (widget.moduleId != null && _newTaskModuleId != null) {
-        createUrl = '$apiBase/task/api/projects/${widget.projectId}/modules/${widget.moduleId}/tasks';
-      } else {
-        createUrl = '$apiBase/task/api/projects/${widget.projectId}/tasks';
-      }
+      // Always use the standard tasks endpoint with module_id parameter
+      String createUrl = '$apiBase/task/api/projects/${widget.projectId}/tasks';
 
       print('Creating task with data: ${jsonEncode(newTask)}'); // Debug log
       print('API endpoint: $createUrl'); // Debug log
@@ -1562,7 +1557,14 @@ class _TasksScreenState extends State<TasksScreen> {
         orElse: () => null,
       );
       if (currentModule != null) {
-        _startInlineTaskCreation(currentModule['name']);
+        setState(() {
+          _isCreatingTask = true;
+          _newTaskModuleId = widget.moduleId; // Use the widget's moduleId directly
+          _newTaskTitleController.clear();
+          _newTaskDescriptionController.clear();
+          _newTaskAssigneeId = null;
+          _newTaskDueDate = null;
+        });
         return;
       }
     }

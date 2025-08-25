@@ -158,15 +158,16 @@ class _CenterNavigationState extends ConsumerState<CenterNavigation> {
             // User Management
             DropdownNavItem('User Management', '/admin/users/manage', Icons.people),
 
-            // Project Management Section
+            // Project Management Section (Restructured with clear grouping)
             DropdownNavItem('Project Settings', '/admin/projects/settings', Icons.folder_special),
             DropdownNavItem('Create Project', '/admin/projects/create', Icons.add_box),
+            DropdownNavItem('Edit Projects', '/admin/projects/edit', Icons.edit),
 
             // Role Management Section
             DropdownNavItem('Role Management', '/admin/roles/manage', Icons.security),
             DropdownNavItem('Role Assignment', '/admin/roles/assign', Icons.assignment_ind),
 
-            // Reports Section
+            // Reports Section (Restructured with clear grouping)
             DropdownNavItem('JSR Reports', '/admin/reporting/jsr', Icons.bar_chart),
             DropdownNavItem('Daily Summary', '/admin/reporting/daily-summary', Icons.today),
 
