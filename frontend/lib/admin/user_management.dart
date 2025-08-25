@@ -105,7 +105,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE6920E)),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -138,7 +138,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void _showSuccessMessage(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: const Color(0xFFFFA301)),
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
       );
     }
   }
@@ -146,7 +146,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   void _showErrorMessage(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: const Color(0xFFE6920E)),
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     }
   }
@@ -161,7 +161,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             // Header with Add User button
             Row(
               children: [
-                const Icon(Icons.people, color: Color(0xFFFFA301), size: 28),
+                const Icon(Icons.people, color: Colors.blue, size: 28),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
@@ -174,7 +174,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   icon: const Icon(Icons.person_add),
                   label: const Text('Add User'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFA301),
+                    backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -187,15 +187,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFECB3),
-                  border: Border.all(color: const Color(0xFFE6920E)),
+                  color: Colors.red.shade50,
+                  border: Border.all(color: Colors.red.shade200),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error, color: Color(0xFFE6920E)),
+                    const Icon(Icons.error, color: Colors.red),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFFE6920E)))),
+                    Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red))),
                   ],
                 ),
               ),
@@ -225,7 +225,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               margin: const EdgeInsets.only(bottom: 8),
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: const Color(0xFFFFA301),
+                                  backgroundColor: Colors.blue,
                                   child: Text(
                                     (user['email'] as String).substring(0, 1).toUpperCase(),
                                     style: const TextStyle(color: Colors.white),
@@ -247,12 +247,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                         // TODO: Implement edit user
                                         _showErrorMessage('Edit user functionality coming soon');
                                       },
-                                      icon: const Icon(Icons.edit, color: Color(0xFFFFA301)),
+                                      icon: const Icon(Icons.edit, color: Colors.blue),
                                       tooltip: 'Edit User',
                                     ),
                                     IconButton(
                                       onPressed: () => _deleteUser(user['id'], user['email']),
-                                      icon: const Icon(Icons.delete, color: Color(0xFFE6920E)),
+                                      icon: const Icon(Icons.delete, color: Colors.red),
                                       tooltip: 'Delete User',
                                     ),
                                   ],
@@ -349,7 +349,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
             });
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFFFA301),
+            backgroundColor: Colors.blue,
             foregroundColor: Colors.white,
           ),
           child: const Text('Add User'),
