@@ -56,7 +56,7 @@ router.post('/', requireAnyRole(['Admin','Project Manager','Team Member']), asyn
       end_date,
       assigned_to,
       task_id,
-      created_by: (req.user.id === 'test-user' || req.user.id === 'admin-user') ? 1 : req.user.id
+      created_by: (req.user.id === 'test-user' || req.user.id === 'admin-user' || req.user.id === 0) ? 1 : req.user.id
     };
 
     // Remove undefined values

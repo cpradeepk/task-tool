@@ -25,6 +25,7 @@ class _TasksScreenState extends State<TasksScreen> {
   List<dynamic> _modules = [];
   List<dynamic> _users = [];
   Map<String, dynamic>? _md;
+  Map<int, List<dynamic>> _subtasks = {}; // Map of task_id -> subtasks
   int? _moduleFilter;
   bool _busy = false;
   List<String> _roles = const [];
@@ -53,6 +54,114 @@ class _TasksScreenState extends State<TasksScreen> {
   Future<void> _loadRoles() async {
     final roles = await RBAC.roles();
     setState(() { _roles = roles; });
+  }
+
+  Future<void> _loadSubtasks(int taskId) async {
+    try {
+      final jwt = await _jwt();
+      if (jwt == null) return;
+
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/$taskId/subtasks'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        final subtasks = jsonDecode(response.body) as List<dynamic>;
+        setState(() {
+          _subtasks[taskId] = subtasks;
+        });
+      }
+    } catch (e) {
+      print('Error loading subtasks: $e');
+    }
+  }
+
+  Future<void> _createSubtask(int taskId, String title) async {
+    try {
+      final jwt = await _jwt();
+      if (jwt == null) return;
+
+      final response = await http.post(
+        Uri.parse('$apiBase/task/api/projects/${widget.projectId}/tasks/$taskId/subtasks'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'title': title,
+          'status': 'Open',
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        // Reload subtasks for this task
+        await _loadSubtasks(taskId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Subtask created successfully'),
+              backgroundColor: Color(0xFFFFA301),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to create subtask: ${response.statusCode}'),
+              backgroundColor: const Color(0xFFE6920E),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error creating subtask: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error creating subtask: $e'),
+            backgroundColor: const Color(0xFFE6920E),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showCreateSubtaskDialog(int taskId, String taskTitle) {
+    final subtaskTitleController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Add Subtask to: $taskTitle'),
+        content: TextField(
+          controller: subtaskTitleController,
+          decoration: const InputDecoration(
+            labelText: 'Subtask Title *',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (subtaskTitleController.text.trim().isNotEmpty) {
+                Navigator.of(context).pop();
+                _createSubtask(taskId, subtaskTitleController.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFA301)),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -617,6 +726,15 @@ class _TasksScreenState extends State<TasksScreen> {
                   ],
                 ),
               ),
+            ),
+
+            // Add Subtask button
+            IconButton(
+              onPressed: () => _showCreateSubtaskDialog(task['id'], task['title']),
+              icon: const Icon(Icons.add_task, color: Color(0xFFFFA301), size: 16),
+              tooltip: 'Add Subtask',
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              padding: const EdgeInsets.all(4),
             ),
 
             // Delete button
@@ -1363,12 +1481,11 @@ class _TasksScreenState extends State<TasksScreen> {
 
     final jwt = await _jwt();
     final now = DateTime.now();
-    final taskId = 'JSR-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${(_tasks.length + 1).toString().padLeft(3, '0')}';
 
     final newTask = {
       'title': _newTaskTitleController.text.trim(),
       'description': _newTaskDescriptionController.text.trim(),
-      'task_id': taskId,
+      // Remove task_id - let backend generate unique ID
       'module_id': _newTaskModuleId,
       'assigned_to': _newTaskAssigneeId,
       'planned_end_date': _newTaskDueDate?.toIso8601String().substring(0, 10),

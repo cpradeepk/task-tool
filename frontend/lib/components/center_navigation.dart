@@ -158,18 +158,20 @@ class _CenterNavigationState extends ConsumerState<CenterNavigation> {
             // User Management
             DropdownNavItem('User Management', '/admin/users/manage', Icons.people),
 
-            // Project Management Section (Restructured with clear grouping)
-            DropdownNavItem('Project Settings', '/admin/projects/settings', Icons.folder_special),
-            DropdownNavItem('Create Project', '/admin/projects/create', Icons.add_box),
-            DropdownNavItem('Edit Projects', '/admin/projects/edit', Icons.edit),
+            // Project Management Section (Grouped)
+            DropdownNavItem('── Project Management ──', null, Icons.folder_special, hasSubmenu: true),
+            DropdownNavItem('  Project Settings', '/admin/projects/settings', Icons.settings),
+            DropdownNavItem('  Create Project', '/admin/projects/create', Icons.add_box),
+            DropdownNavItem('  Edit Projects', '/admin/projects/edit', Icons.edit),
 
             // Role Management Section
             DropdownNavItem('Role Management', '/admin/roles/manage', Icons.security),
             DropdownNavItem('Role Assignment', '/admin/roles/assign', Icons.assignment_ind),
 
-            // Reports Section (Restructured with clear grouping)
-            DropdownNavItem('JSR Reports', '/admin/reporting/jsr', Icons.bar_chart),
-            DropdownNavItem('Daily Summary', '/admin/reporting/daily-summary', Icons.today),
+            // Reports Section (Grouped)
+            DropdownNavItem('── Reports ──', null, Icons.bar_chart, hasSubmenu: true),
+            DropdownNavItem('  JSR Reports', '/admin/reporting/jsr', Icons.assessment),
+            DropdownNavItem('  Daily Summary', '/admin/reporting/daily-summary', Icons.today),
 
             // Master Data
             DropdownNavItem('Master Data', '/admin/master-data', Icons.edit_note),
@@ -283,16 +285,37 @@ class _CenterNavigationState extends ConsumerState<CenterNavigation> {
           ),
         ),
         itemBuilder: (context) => tab.dropdownItems!.map((item) {
-          return PopupMenuItem<String>(
-            value: item.route,
-            child: Row(
-              children: [
-                Icon(item.icon, size: 18, color: Colors.grey.shade600),
-                const SizedBox(width: 12),
-                Text(item.label),
-              ],
-            ),
-          );
+          if (item.hasSubmenu && item.route == null) {
+            // Header item - non-clickable
+            return PopupMenuItem<String>(
+              enabled: false,
+              child: Row(
+                children: [
+                  Icon(item.icon, size: 18, color: const Color(0xFFFFA301)),
+                  const SizedBox(width: 12),
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFFA301),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            // Regular clickable item
+            return PopupMenuItem<String>(
+              value: item.route,
+              child: Row(
+                children: [
+                  Icon(item.icon, size: 18, color: Colors.grey.shade600),
+                  const SizedBox(width: 12),
+                  Text(item.label),
+                ],
+              ),
+            );
+          }
         }).toList(),
         onSelected: (route) {
           context.go(route);
@@ -353,8 +376,16 @@ class NavigationTab {
 
 class DropdownNavItem {
   final String label;
-  final String route;
+  final String? route;
   final IconData icon;
+  final bool hasSubmenu;
+  final List<DropdownNavItem>? submenuItems;
 
-  DropdownNavItem(this.label, this.route, this.icon);
+  DropdownNavItem(
+    this.label,
+    this.route,
+    this.icon, {
+    this.hasSubmenu = false,
+    this.submenuItems,
+  });
 }
