@@ -155,15 +155,23 @@ class _CenterNavigationState extends ConsumerState<CenterNavigation> {
           route: '/admin',
           hasDropdown: true,
           dropdownItems: [
+            // User Management
             DropdownNavItem('User Management', '/admin/users/manage', Icons.people),
-            DropdownNavItem('Project Management', '/admin/projects/settings', Icons.folder_special),
-            DropdownNavItem('Module Management', '/admin/modules/manage', Icons.view_module),
+
+            // Project Management Section
+            DropdownNavItem('Project Settings', '/admin/projects/settings', Icons.folder_special),
+            DropdownNavItem('Create Project', '/admin/projects/create', Icons.add_box),
+
+            // Role Management Section
             DropdownNavItem('Role Management', '/admin/roles/manage', Icons.security),
             DropdownNavItem('Role Assignment', '/admin/roles/assign', Icons.assignment_ind),
-            DropdownNavItem('Master Data', '/admin/master-data', Icons.edit_note),
+
+            // Reports Section
             DropdownNavItem('JSR Reports', '/admin/reporting/jsr', Icons.bar_chart),
             DropdownNavItem('Daily Summary', '/admin/reporting/daily-summary', Icons.today),
-            DropdownNavItem('Create Project', '/admin/projects/create', Icons.add_box),
+
+            // Master Data
+            DropdownNavItem('Master Data', '/admin/master-data', Icons.edit_note),
           ],
         ),
       ]);
