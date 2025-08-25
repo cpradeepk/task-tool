@@ -70,10 +70,18 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
   }
 
   Future<void> _loadModules() async {
-    if (_selectedProjectId == null) return;
+    if (_selectedProjectId == null) {
+      print('Cannot load modules: No project selected');
+      return;
+    }
 
     final jwt = await _getJwt();
-    if (jwt == null) return;
+    if (jwt == null) {
+      print('Cannot load modules: No JWT token');
+      return;
+    }
+
+    print('Loading modules for project $_selectedProjectId...');
 
     try {
       final response = await http.get(
@@ -81,17 +89,31 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         headers: {'Authorization': 'Bearer $jwt'},
       );
 
+      print('Modules API response: ${response.statusCode}');
+      print('Modules API response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final modulesData = jsonDecode(response.body) as List;
-        print('Loaded ${modulesData.length} modules for project $_selectedProjectId: $modulesData');
+        print('✅ Successfully loaded ${modulesData.length} modules for project $_selectedProjectId');
+        print('Modules data: $modulesData');
         setState(() => _modules = modulesData);
       } else {
-        print('Failed to load modules: ${response.statusCode} - ${response.body}');
+        print('❌ Failed to load modules: ${response.statusCode} - ${response.body}');
         setState(() => _modules = []);
+
+        // Show error message to user
+        if (mounted) {
+          _showErrorMessage('Failed to load modules: ${response.statusCode}');
+        }
       }
     } catch (e) {
-      print('Error loading modules: $e');
+      print('❌ Error loading modules: $e');
       setState(() => _modules = []);
+
+      // Show error message to user
+      if (mounted) {
+        _showErrorMessage('Error loading modules: $e');
+      }
     }
   }
 
@@ -115,10 +137,13 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         }),
       );
 
+      print('Module creation response: ${response.statusCode}');
+      print('Module creation response body: ${response.body}');
+
       if (response.statusCode == 201) {
+        print('✅ Module created successfully');
         _showSuccessMessage('Module created successfully');
-        _loadModules();
-        // Module created successfully - no sidebar to refresh
+        await _loadModules(); // Wait for modules to reload
       } else {
         String errorMessage = 'Failed to create module';
         try {
@@ -127,6 +152,7 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         } catch (e) {
           errorMessage = 'Failed to create module: ${response.statusCode}';
         }
+        print('❌ Module creation failed: $errorMessage');
         _showErrorMessage(errorMessage);
       }
     } catch (e) {
