@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../theme/theme_provider.dart';
+
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class CenterNavigation extends ConsumerStatefulWidget {
   final bool isAdmin;
@@ -18,21 +23,91 @@ class CenterNavigation extends ConsumerStatefulWidget {
 }
 
 class _CenterNavigationState extends ConsumerState<CenterNavigation> {
+  List<dynamic> _projects = [];
+  Map<int, List<dynamic>> _projectModules = {};
+  bool _isLoadingProjects = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProjectsAndModules();
+  }
+
+  Future<String?> _getJwt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt');
+  }
+
+  Future<void> _loadProjectsAndModules() async {
+    if (_isLoadingProjects) return;
+
+    setState(() => _isLoadingProjects = true);
+
+    final jwt = await _getJwt();
+    if (jwt == null) {
+      setState(() => _isLoadingProjects = false);
+      return;
+    }
+
+    try {
+      // Load projects
+      final projectsResponse = await http.get(
+        Uri.parse('$apiBase/task/api/projects'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (projectsResponse.statusCode == 200) {
+        final projects = jsonDecode(projectsResponse.body) as List;
+        setState(() => _projects = projects);
+
+        // Load modules for each project
+        for (final project in projects) {
+          try {
+            final modulesResponse = await http.get(
+              Uri.parse('$apiBase/task/api/projects/${project['id']}/modules'),
+              headers: {'Authorization': 'Bearer $jwt'},
+            );
+
+            if (modulesResponse.statusCode == 200) {
+              final modules = jsonDecode(modulesResponse.body) as List;
+              setState(() => _projectModules[project['id']] = modules);
+            }
+          } catch (e) {
+            print('Error loading modules for project ${project['id']}: $e');
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading projects: $e');
+    } finally {
+      setState(() => _isLoadingProjects = false);
+    }
+  }
 
   List<DropdownNavItem> _getProjectDropdownItems() {
-    // TODO: Fetch actual projects and modules from API
-    return [
+    List<DropdownNavItem> items = [
       DropdownNavItem('All Projects', '/projects', Icons.folder),
-      DropdownNavItem('Karyasiddhi', '/projects/1', Icons.folder),
-      DropdownNavItem('  └ Frontend Module', '/projects/1/modules/1', Icons.view_module),
-      DropdownNavItem('  └ Backend Module', '/projects/1/modules/2', Icons.view_module),
-      DropdownNavItem('Anukul', '/projects/2', Icons.folder),
-      DropdownNavItem('  └ Core Module', '/projects/2/modules/1', Icons.view_module),
-      DropdownNavItem('TIMJ', '/projects/3', Icons.folder),
-      DropdownNavItem('  └ Main Module', '/projects/3/modules/1', Icons.view_module),
-      DropdownNavItem('Swarg', '/projects/4', Icons.folder),
-      DropdownNavItem('  └ Development', '/projects/4/modules/1', Icons.view_module),
     ];
+
+    for (final project in _projects) {
+      items.add(DropdownNavItem(
+        project['name'] ?? 'Unnamed Project',
+        '/projects/${project['id']}',
+        Icons.folder,
+      ));
+
+      // Add modules for this project
+      final modules = _projectModules[project['id']] ?? [];
+      for (final module in modules) {
+        items.add(DropdownNavItem(
+          '  └ ${module['name'] ?? 'Unnamed Module'}',
+          '/projects/${project['id']}/modules/${module['id']}',
+          Icons.view_module,
+        ));
+      }
+    }
+
+    return items;
   }
 
   List<NavigationTab> _getNavigationTabs() {
