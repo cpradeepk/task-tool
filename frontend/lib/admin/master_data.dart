@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../modern_layout.dart';
+
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
@@ -113,9 +113,7 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return ModernLayout(
-      title: 'Master Data Management',
-      child: Column(
+    return Column(
         children: [
           // Header
           Container(
@@ -205,7 +203,6 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                   ),
           ),
         ],
-      ),
     );
   }
 

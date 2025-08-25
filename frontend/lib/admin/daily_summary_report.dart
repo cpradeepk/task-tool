@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../modern_layout.dart';
+
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'http://localhost:3003');
 
@@ -139,10 +139,8 @@ class _DailySummaryReportScreenState extends State<DailySummaryReportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ModernLayout(
-      title: 'Daily Summary Report',
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -242,7 +240,6 @@ class _DailySummaryReportScreenState extends State<DailySummaryReportScreen> {
               ),
           ],
         ),
-      ),
     );
   }
 
