@@ -428,6 +428,16 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
         return Colors.green;
       case 'red':
         return Colors.red;
+      case 'blue':
+        return Colors.blue;
+      case 'purple':
+        return Colors.purple;
+      case 'teal':
+        return Colors.teal;
+      case 'indigo':
+        return Colors.indigo;
+      case 'pink':
+        return Colors.pink;
       case 'brown':
         return Colors.brown;
       case 'grey':
@@ -438,13 +448,80 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
     }
   }
 
+  String _getColorName(Color color) {
+    if (color == Colors.orange) return 'Orange';
+    if (color == Colors.yellow) return 'Yellow';
+    if (color == Colors.green) return 'Green';
+    if (color == Colors.red) return 'Red';
+    if (color == Colors.blue) return 'Blue';
+    if (color == Colors.purple) return 'Purple';
+    if (color == Colors.teal) return 'Teal';
+    if (color == Colors.indigo) return 'Indigo';
+    if (color == Colors.pink) return 'Pink';
+    if (color == Colors.brown) return 'Brown';
+    if (color == Colors.grey) return 'Grey';
+    return 'White';
+  }
+
+  List<Color> get _availableColors => [
+    Colors.orange,
+    Colors.yellow,
+    Colors.green,
+    Colors.red,
+    Colors.blue,
+    Colors.purple,
+    Colors.teal,
+    Colors.indigo,
+    Colors.pink,
+    Colors.brown,
+    Colors.grey,
+    Colors.white,
+  ];
+
+  Widget _buildColorPicker(Color selectedColor, Function(Color) onColorSelected) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Color:', style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _availableColors.map((color) {
+            final isSelected = color == selectedColor;
+            return GestureDetector(
+              onTap: () => onColorSelected(color),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFFFFA301) : Colors.grey.shade300,
+                    width: isSelected ? 3 : 1,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(Icons.check, color: Colors.white, size: 20)
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   void _showAddPriorityDialog() {
     final nameController = TextEditingController();
     final descriptionController = TextEditingController();
+    Color selectedColor = Colors.blue;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
         title: const Text('Add Priority'),
         content: SizedBox(
           width: 400,
@@ -467,6 +544,12 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
                 ),
                 maxLines: 2,
               ),
+              const SizedBox(height: 16),
+              _buildColorPicker(selectedColor, (color) {
+                setDialogState(() {
+                  selectedColor = color;
+                });
+              }),
             ],
           ),
         ),
@@ -485,23 +568,25 @@ class _MasterDataScreenState extends State<MasterDataScreen> with TickerProvider
               }
 
               Navigator.of(context).pop();
-              _addPriority(nameController.text.trim(), descriptionController.text.trim());
+              _addPriority(nameController.text.trim(), descriptionController.text.trim(), selectedColor);
             },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFA301)),
             child: const Text('Add'),
           ),
         ],
+        ),
       ),
     );
   }
 
-  void _addPriority(String name, String description) {
+  void _addPriority(String name, String description, Color color) {
     // For now, add to local list (API implementation would go here)
     setState(() {
       _priorities.add({
         'id': _priorities.length + 1,
         'name': name,
         'description': description,
-        'color': 'Blue',
+        'color': _getColorName(color),
         'order': _priorities.length + 1,
       });
     });
