@@ -54,10 +54,20 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         final projectsData = jsonDecode(response.body);
         print('Loaded projects data: $projectsData'); // Debug log
         setState(() => _projects = projectsData);
+
+        // If a specific project was provided, ensure it exists in the loaded projects
         if (_selectedProjectId != null) {
-          _loadModules();
-          _loadProjectTeam();
+          final projectExists = _projects.any((p) => p['id'] == _selectedProjectId);
+          if (projectExists) {
+            print('Loading modules for pre-selected project $_selectedProjectId');
+            _loadModules();
+            _loadProjectTeam();
+          } else {
+            print('Pre-selected project $_selectedProjectId not found in loaded projects');
+            setState(() => _selectedProjectId = null);
+          }
         }
+
         _loadUsers();
       } else {
         setState(() => _errorMessage = 'Failed to load projects');
@@ -72,22 +82,27 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
   Future<void> _loadModules() async {
     if (_selectedProjectId == null) {
       print('Cannot load modules: No project selected');
+      setState(() => _modules = []);
       return;
     }
 
     final jwt = await _getJwt();
     if (jwt == null) {
       print('Cannot load modules: No JWT token');
+      setState(() => _modules = []);
       return;
     }
 
     print('Loading modules for project $_selectedProjectId...');
 
     try {
+      // Try both admin and regular API endpoints for better compatibility
+      String modulesUrl = '$apiBase/task/api/projects/$_selectedProjectId/modules';
+
       final response = await http.get(
-        Uri.parse('$apiBase/task/api/projects/$_selectedProjectId/modules'),
+        Uri.parse(modulesUrl),
         headers: {'Authorization': 'Bearer $jwt'},
-      );
+      ).timeout(const Duration(seconds: 30));
 
       print('Modules API response: ${response.statusCode}');
       print('Modules API response body: ${response.body}');
@@ -97,6 +112,15 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
         print('✅ Successfully loaded ${modulesData.length} modules for project $_selectedProjectId');
         print('Modules data: $modulesData');
         setState(() => _modules = modulesData);
+
+        // If no modules found, try the admin endpoint as fallback
+        if (modulesData.isEmpty) {
+          print('No modules found, trying admin endpoint...');
+          await _loadModulesFromAdminEndpoint();
+        }
+      } else if (response.statusCode == 404) {
+        print('Regular endpoint not found, trying admin endpoint...');
+        await _loadModulesFromAdminEndpoint();
       } else {
         print('❌ Failed to load modules: ${response.statusCode} - ${response.body}');
         setState(() => _modules = []);
@@ -114,6 +138,33 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
       if (mounted) {
         _showErrorMessage('Error loading modules: $e');
       }
+    }
+  }
+
+  Future<void> _loadModulesFromAdminEndpoint() async {
+    final jwt = await _getJwt();
+    if (jwt == null) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/admin/projects/$_selectedProjectId/modules'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      ).timeout(const Duration(seconds: 30));
+
+      print('Admin modules API response: ${response.statusCode}');
+      print('Admin modules API response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final modulesData = jsonDecode(response.body) as List;
+        print('✅ Successfully loaded ${modulesData.length} modules from admin endpoint');
+        setState(() => _modules = modulesData);
+      } else {
+        print('❌ Admin endpoint also failed: ${response.statusCode}');
+        setState(() => _modules = []);
+      }
+    } catch (e) {
+      print('❌ Error loading modules from admin endpoint: $e');
+      setState(() => _modules = []);
     }
   }
 
@@ -805,6 +856,13 @@ class _ProjectSettingsScreenState extends State<ProjectSettingsScreen> with Tick
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
+              IconButton(
+                onPressed: _loadModules,
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh Modules',
+                color: const Color(0xFFFFA301),
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _showAddModuleDialog,
                 icon: const Icon(Icons.add),

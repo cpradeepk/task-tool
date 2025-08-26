@@ -95,8 +95,33 @@ class _TasksScreenState extends State<TasksScreen> {
       );
 
       if (response.statusCode == 201) {
-        // Reload subtasks for this task
-        await _loadSubtasks(taskId);
+        // Parse the created subtask from response
+        Map<String, dynamic> createdSubtask;
+        try {
+          createdSubtask = jsonDecode(response.body);
+          print('Created subtask response: ${jsonEncode(createdSubtask)}');
+        } catch (e) {
+          print('Failed to parse created subtask response: $e');
+          // Fallback: reload subtasks
+          await _loadSubtasks(taskId);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Subtask created successfully'),
+                backgroundColor: Color(0xFFFFA301),
+              ),
+            );
+          }
+          return;
+        }
+
+        // Add the newly created subtask to local state immediately
+        setState(() {
+          if (_subtasks[taskId] == null) {
+            _subtasks[taskId] = [];
+          }
+          _subtasks[taskId]!.add(createdSubtask);
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1515,17 +1540,44 @@ class _TasksScreenState extends State<TasksScreen> {
       print('Response body: ${res.body}'); // Debug log
 
       if (res.statusCode == 201 || res.statusCode == 200) {
-        _cancelTaskCreation();
+        // Parse the created task from response
+        Map<String, dynamic> createdTask;
+        try {
+          createdTask = jsonDecode(res.body);
+          print('Created task response: ${jsonEncode(createdTask)}');
+        } catch (e) {
+          print('Failed to parse created task response: $e');
+          // Fallback: reload all tasks
+          _cancelTaskCreation();
+          await Future.delayed(const Duration(milliseconds: 500));
+          await _load();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Task created successfully'),
+                backgroundColor: Color(0xFFFFA301),
+              ),
+            );
+          }
+          return;
+        }
 
-        // Add a small delay before reloading to ensure backend processing is complete
-        await Future.delayed(const Duration(milliseconds: 500));
-        await _load(); // Reload tasks
+        // Add the newly created task to local state immediately
+        setState(() {
+          _tasks.add({
+            ...createdTask,
+            'timer_running': false,
+            'total_time_tracked': 0,
+          });
+        });
+
+        _cancelTaskCreation();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Task created successfully'),
-              backgroundColor: Color(0xFFE6920E),
+              backgroundColor: Color(0xFFFFA301),
             ),
           );
         }

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'pin_auth.dart';
 import 'theme/theme_provider.dart';
 import 'projects.dart';
+import 'project_detail.dart';
 import 'profile.dart';
 import 'modules.dart';
 import 'enhanced_dashboard.dart';
@@ -65,6 +66,10 @@ class AppRouter {
         GoRoute(path: '/projects', builder: (ctx, st) => ModernLayout(
           title: 'Projects',
           child: const ProjectsScreen(),
+        )),
+        GoRoute(path: '/projects/:projectId', builder: (ctx, st) => ModernLayout(
+          title: 'Project Details',
+          child: ProjectDetailScreen(projectId: int.parse(st.pathParameters['projectId']!)),
         )),
         GoRoute(path: '/profile', builder: (ctx, st) => ModernLayout(
           title: 'Profile',
