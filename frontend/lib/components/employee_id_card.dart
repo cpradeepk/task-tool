@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../theme/theme_provider.dart';
@@ -345,11 +347,11 @@ class EmployeeIdCard extends StatelessWidget {
     }
   }
 
-  List<int> _decodeBase64Photo(String base64String) {
+  Uint8List _decodeBase64Photo(String base64String) {
     try {
       // Remove data URL prefix if present
       final cleanBase64 = base64String.replaceFirst(RegExp(r'^data:image\/[^;]+;base64,'), '');
-      return Uri.dataFromString(cleanBase64, encoding: Encoding.getByName('base64')!).data;
+      return base64Decode(cleanBase64);
     } catch (e) {
       throw Exception('Invalid base64 image data');
     }

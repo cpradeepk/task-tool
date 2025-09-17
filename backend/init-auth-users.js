@@ -72,9 +72,6 @@ async function initializeAuthUsers() {
           email: user.email,
           pin_hash: pinHash,
           pin_created_at: new Date(),
-          name: user.name,
-          role: user.role,
-          is_active: true,
           created_at: new Date(),
           updated_at: new Date()
         });
@@ -87,7 +84,7 @@ async function initializeAuthUsers() {
 
     // Display all users
     console.log('\n📋 Current users in database:');
-    const allUsers = await knex('users').select('id', 'email', 'name', 'role', 'is_active', 'created_at');
+    const allUsers = await knex('users').select('id', 'email', 'created_at');
     console.table(allUsers);
 
     console.log('\n🎉 Authentication users initialization completed!');
