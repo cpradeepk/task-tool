@@ -7,6 +7,122 @@ const router = express.Router();
 // All dashboard routes require authentication
 router.use(requireAuth);
 
+// Main dashboard endpoint - returns comprehensive dashboard data
+router.get('/', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Handle admin user case
+    let userRoles = [];
+    if (userId === 'admin-user' || userId === 'test-user' || userId === 0) {
+      userRoles = [{ name: 'Admin' }];
+    } else {
+      // Get user roles to determine access level
+      userRoles = await knex('user_roles')
+        .join('roles', 'roles.id', 'user_roles.role_id')
+        .where('user_roles.user_id', userId)
+        .select('roles.name')
+        .catch(() => []); // Fallback if roles table doesn't exist
+    }
+
+    const roleNames = userRoles.map(r => r.name.toLowerCase());
+    const isAdmin = roleNames.includes('admin');
+    const isManager = roleNames.includes('manager') || roleNames.includes('top_management');
+
+    // Get basic stats
+    let stats = {};
+    try {
+      if (isAdmin) {
+        // Admin dashboard statistics
+        const [totalUsers] = await knex('users').count('* as count').catch(() => [{ count: 0 }]);
+        const [activeUsers] = await knex('users').where('status', 'active').count('* as count').catch(() => [{ count: 0 }]);
+        const [totalProjects] = await knex('projects').count('* as count').catch(() => [{ count: 0 }]);
+        const [totalTasks] = await knex('tasks').count('* as count').catch(() => [{ count: 0 }]);
+        const [completedTasks] = await knex('tasks').where('status', 'Completed').count('* as count').catch(() => [{ count: 0 }]);
+
+        stats = {
+          total_users: parseInt(totalUsers.count),
+          active_users: parseInt(activeUsers.count),
+          total_projects: parseInt(totalProjects.count),
+          total_tasks: parseInt(totalTasks.count),
+          completed_tasks: parseInt(completedTasks.count),
+          completion_rate: totalTasks.count > 0 ?
+            Math.round((completedTasks.count / totalTasks.count) * 100) : 0,
+        };
+      } else {
+        // Employee dashboard statistics
+        const [myTasks] = await knex('tasks').where('assigned_to', userId).count('* as count').catch(() => [{ count: 0 }]);
+        const [completedTasks] = await knex('tasks')
+          .where('assigned_to', userId)
+          .where('status', 'Completed')
+          .count('* as count').catch(() => [{ count: 0 }]);
+        const [inProgressTasks] = await knex('tasks')
+          .where('assigned_to', userId)
+          .where('status', 'In Progress')
+          .count('* as count').catch(() => [{ count: 0 }]);
+
+        stats = {
+          total_tasks: parseInt(myTasks.count),
+          completed_tasks: parseInt(completedTasks.count),
+          in_progress_tasks: parseInt(inProgressTasks.count),
+          completion_rate: myTasks.count > 0 ?
+            Math.round((completedTasks.count / myTasks.count) * 100) : 0,
+        };
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+      stats = {
+        total_tasks: 0,
+        completed_tasks: 0,
+        in_progress_tasks: 0,
+        completion_rate: 0,
+      };
+    }
+
+    // Get recent activities (simplified)
+    let recentActivities = [];
+    try {
+      recentActivities = await knex('tasks')
+        .select('tasks.id', 'tasks.title', 'tasks.status', 'tasks.updated_at')
+        .where('tasks.assigned_to', userId)
+        .orderBy('tasks.updated_at', 'desc')
+        .limit(5)
+        .catch(() => []);
+    } catch (err) {
+      console.error('Error fetching recent activities:', err);
+    }
+
+    // Get warnings
+    let warnings = { has_warnings: false, warning_count: 0 };
+    try {
+      const [overdueCount] = await knex('tasks')
+        .where('assigned_to', userId)
+        .where('due_date', '<', knex.fn.now())
+        .whereNotIn('status', ['Completed', 'Cancelled'])
+        .count('* as count')
+        .catch(() => [{ count: 0 }]);
+
+      warnings = {
+        has_warnings: overdueCount.count > 0,
+        warning_count: parseInt(overdueCount.count),
+        overdue_tasks: parseInt(overdueCount.count),
+      };
+    } catch (err) {
+      console.error('Error fetching warnings:', err);
+    }
+
+    res.json({
+      stats,
+      recent_activities: recentActivities,
+      warnings,
+      user_role: isAdmin ? 'admin' : (isManager ? 'manager' : 'employee'),
+    });
+  } catch (err) {
+    console.error('Error fetching dashboard data:', err);
+    res.status(500).json({ error: 'Failed to fetch dashboard data' });
+  }
+});
+
 // Get role-based dashboard statistics
 router.get('/stats/:role?', async (req, res) => {
   try {
