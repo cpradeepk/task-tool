@@ -88,6 +88,10 @@ app.use('/task/api/notes', notesRouter);
 import teamChatRouter from './api/team-chat.js';
 app.use('/task/api/chat', teamChatRouter);
 
+// Notifications routes
+import notificationsRouter from './api/notifications.js';
+app.use('/task/api/notifications', notificationsRouter);
+
 // Admin routes
 import adminUsersRouter from './api/admin-users.js';
 import adminReportsRouter from './api/admin-reports.js';
