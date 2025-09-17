@@ -149,14 +149,7 @@ app.use('/task/api/chat', chatRouter);
 import usersRouter from './api/users.js';
 app.use('/task/api/users', usersRouter);
 
-// Socket.io configuration will be handled by the server created below
-
-import { registerIO } from './events.js';
-registerIO(io);
-
-io.on('connection', (socket) => {
-  socket.emit('welcome', { message: 'Connected to Task Tool realtime gateway' });
-});
+// Socket.io configuration will be handled after server creation
 
 // Initialize email (Gmail SMTP)
 const email = initEmail();
@@ -195,6 +188,14 @@ const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   path: '/task/socket.io/',
   cors: { origin: process.env.CORS_ORIGIN?.split(',') || '*', credentials: true }
+});
+
+// Initialize Socket.io after creation
+import { registerIO } from './events.js';
+registerIO(io);
+
+io.on('connection', (socket) => {
+  socket.emit('welcome', { message: 'Connected to Task Tool realtime gateway' });
 });
 
 const PORT = process.env.PORT || 3003;

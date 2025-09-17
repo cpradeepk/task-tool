@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'pin_auth.dart';
+import 'utils/auth_utils.dart';
 import 'theme/theme_provider.dart';
 import 'projects.dart';
 import 'project_detail.dart';
@@ -45,8 +46,12 @@ class AppRouter {
     router = GoRouter(
       initialLocation: '/login',
       redirect: (context, state) async {
+        // Clear expired tokens first
+        final wasExpired = await AuthUtils.clearIfExpired();
+
         final prefs = await SharedPreferences.getInstance();
         final jwt = prefs.getString('jwt');
+
         if (jwt == null && state.uri.path != '/login') return '/login';
         if (jwt != null && state.uri.path == '/login') return '/dashboard';
         if (jwt != null && state.uri.path == '/') return '/dashboard';

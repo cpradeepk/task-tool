@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/error_handler.dart';
+import '../utils/auth_utils.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
@@ -12,10 +13,18 @@ class ApiService {
   static const int _maxRetries = 3;
   static const Duration _retryDelay = Duration(seconds: 1);
 
-  /// Get JWT token from SharedPreferences
+  /// Get JWT token from SharedPreferences, clearing if expired
   static Future<String?> _getJwt() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jwt');
+    final token = prefs.getString('jwt');
+
+    if (token != null && AuthUtils.isTokenExpired(token)) {
+      // Clear expired token
+      await AuthUtils.clearAuthData();
+      return null;
+    }
+
+    return token;
   }
 
   /// Get default headers with authentication
