@@ -147,10 +147,11 @@ export async function initializeTables() {
     if (!chatChannelsExists) {
       await knex.schema.createTable('chat_channels', (table) => {
         table.increments('id').primary();
-        table.string('name').notNullable();
+        table.string('name').notNullable().unique();
         table.text('description');
         table.string('type').defaultTo('public');
         table.integer('created_by').references('id').inTable('users');
+        table.boolean('is_archived').defaultTo(false);
         table.timestamps(true, true);
       });
       console.log('Created chat_channels table');
@@ -176,6 +177,20 @@ export async function initializeTables() {
       console.log('Inserted default chat channels');
     }
 
+    // Create channel_members table
+    const channelMembersExists = await knex.schema.hasTable('channel_members');
+    if (!channelMembersExists) {
+      await knex.schema.createTable('channel_members', (table) => {
+        table.increments('id').primary();
+        table.integer('channel_id').references('id').inTable('chat_channels').onDelete('CASCADE');
+        table.integer('user_id').references('id').inTable('users').onDelete('CASCADE');
+        table.string('role').defaultTo('member');
+        table.timestamp('joined_at').defaultTo(knex.fn.now());
+        table.unique(['channel_id', 'user_id']);
+      });
+      console.log('Created channel_members table');
+    }
+
     // Create chat_messages table
     const chatMessagesExists = await knex.schema.hasTable('chat_messages');
     if (!chatMessagesExists) {
@@ -183,7 +198,9 @@ export async function initializeTables() {
         table.increments('id').primary();
         table.integer('channel_id').references('id').inTable('chat_channels').onDelete('CASCADE');
         table.integer('user_id').references('id').inTable('users');
-        table.text('message').notNullable();
+        table.text('content').notNullable();
+        table.string('type').defaultTo('text');
+        table.timestamp('edited_at');
         table.timestamps(true, true);
       });
       console.log('Created chat_messages table');
