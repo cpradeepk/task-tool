@@ -45,8 +45,8 @@ router.get('/', async (req, res) => {
       let projectQuery = knex('projects')
         .select('id', 'name', 'description', 'status', 'created_at', 'updated_at')
         .where(function() {
-          this.where('name', 'ilike', searchTerm)
-              .orWhere('description', 'ilike', searchTerm);
+          this.whereRaw('LOWER(name) LIKE LOWER(?)', [searchTerm])
+              .orWhereRaw('LOWER(description) LIKE LOWER(?)', [searchTerm]);
         });
 
       if (!isAdmin) {
@@ -79,8 +79,8 @@ router.get('/', async (req, res) => {
         .select('tasks.*', 'projects.name as project_name')
         .leftJoin('projects', 'tasks.project_id', 'projects.id')
         .where(function() {
-          this.where('tasks.title', 'ilike', searchTerm)
-              .orWhere('tasks.description', 'ilike', searchTerm);
+          this.whereRaw('LOWER(tasks.title) LIKE LOWER(?)', [searchTerm])
+              .orWhereRaw('LOWER(tasks.description) LIKE LOWER(?)', [searchTerm]);
         });
 
       if (!isAdmin) {
@@ -124,9 +124,9 @@ router.get('/', async (req, res) => {
         .select('notes.*', 'projects.name as project_name')
         .leftJoin('projects', 'notes.project_id', 'projects.id')
         .where(function() {
-          this.where('notes.title', 'ilike', searchTerm)
-              .orWhere('notes.content', 'ilike', searchTerm)
-              .orWhere('notes.tags', 'ilike', searchTerm);
+          this.whereRaw('LOWER(notes.title) LIKE LOWER(?)', [searchTerm])
+              .orWhereRaw('LOWER(notes.content) LIKE LOWER(?)', [searchTerm])
+              .orWhereRaw('LOWER(notes.tags) LIKE LOWER(?)', [searchTerm]);
         });
 
       if (!isAdmin) {
@@ -163,7 +163,7 @@ router.get('/', async (req, res) => {
         .select('chat_messages.*', 'chat_channels.name as channel_name', 'users.name as user_name')
         .leftJoin('chat_channels', 'chat_messages.channel_id', 'chat_channels.id')
         .leftJoin('users', 'chat_messages.user_id', 'users.id')
-        .where('chat_messages.content', 'ilike', searchTerm);
+        .whereRaw('LOWER(chat_messages.content) LIKE LOWER(?)', [searchTerm]);
 
       if (!isAdmin) {
         // Only show messages from channels the user is a member of
@@ -197,8 +197,8 @@ router.get('/', async (req, res) => {
         .select('file_uploads.*', 'projects.name as project_name')
         .leftJoin('projects', 'file_uploads.project_id', 'projects.id')
         .where(function() {
-          this.where('file_uploads.original_name', 'ilike', searchTerm)
-              .orWhere('file_uploads.description', 'ilike', searchTerm);
+          this.whereRaw('LOWER(file_uploads.original_name) LIKE LOWER(?)', [searchTerm])
+              .orWhereRaw('LOWER(file_uploads.description) LIKE LOWER(?)', [searchTerm]);
         });
 
       if (!isAdmin) {
@@ -348,7 +348,7 @@ router.get('/suggestions', async (req, res) => {
     const suggestions = [];
 
     // Get project name suggestions
-    let projectQuery = knex('projects').select('name').where('name', 'ilike', searchTerm);
+    let projectQuery = knex('projects').select('name').whereRaw('LOWER(name) LIKE LOWER(?)', [searchTerm]);
     if (!isAdmin) {
       projectQuery = projectQuery.where('created_by', userId);
     }
@@ -356,7 +356,7 @@ router.get('/suggestions', async (req, res) => {
     suggestions.push(...projects.map(p => ({ text: p.name, type: 'project' })));
 
     // Get task title suggestions
-    let taskQuery = knex('tasks').select('title').where('title', 'ilike', searchTerm);
+    let taskQuery = knex('tasks').select('title').whereRaw('LOWER(title) LIKE LOWER(?)', [searchTerm]);
     if (!isAdmin) {
       taskQuery = taskQuery.where(function() {
         this.where('assigned_to', userId).orWhere('created_by', userId);
@@ -366,7 +366,7 @@ router.get('/suggestions', async (req, res) => {
     suggestions.push(...tasks.map(t => ({ text: t.title, type: 'task' })));
 
     // Get note title suggestions
-    let noteQuery = knex('notes').select('title').where('title', 'ilike', searchTerm);
+    let noteQuery = knex('notes').select('title').whereRaw('LOWER(title) LIKE LOWER(?)', [searchTerm]);
     if (!isAdmin) {
       noteQuery = noteQuery.where('user_id', userId);
     }
