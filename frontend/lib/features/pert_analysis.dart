@@ -437,8 +437,8 @@ class _PertAnalysisScreenState extends State<PertAnalysisScreen> {
               rows: allTasks.map<DataRow>((task) {
                 final isCritical = task['is_critical'] as bool;
                 return DataRow(
-                  color: isCritical 
-                    ? WidgetStateProperty.all(Colors.red.shade50)
+                  color: isCritical
+                    ? MaterialStateProperty.all(Colors.red.shade50)
                     : null,
                   cells: [
                     DataCell(

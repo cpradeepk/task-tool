@@ -9,7 +9,9 @@ import 'project_detail.dart';
 import 'profile.dart';
 import 'modules.dart';
 import 'enhanced_dashboard.dart';
+import 'components/jsr_dashboard.dart';
 import 'modern_layout.dart';
+import 'components/jsr_layout.dart';
 import 'tasks.dart';
 import 'task_detail.dart';
 import 'critical_path.dart';
@@ -54,159 +56,182 @@ class AppRouter {
         GoRoute(path: '/login', builder: (ctx, st) => const LoginScreen()),
 
         // Dashboard as default landing page
-        GoRoute(path: '/dashboard', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/dashboard', builder: (ctx, st) => const JSRLayout(
           title: 'Dashboard',
-          child: EnhancedDashboardScreen(),
+          child: JSRDashboard(),
         )),
 
         // Legacy home route redirects to dashboard
         GoRoute(path: '/', redirect: (ctx, st) => '/dashboard'),
 
         // Main application routes with new layout
-        GoRoute(path: '/projects', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects', builder: (ctx, st) => JSRLayout(
           title: 'Projects',
           child: const ProjectsScreen(),
         )),
-        GoRoute(path: '/projects/:projectId', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:projectId', builder: (ctx, st) => JSRLayout(
           title: 'Project Details',
           child: ProjectDetailScreen(projectId: int.parse(st.pathParameters['projectId']!)),
         )),
-        GoRoute(path: '/profile', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/profile', builder: (ctx, st) => JSRLayout(
           title: 'Profile',
           child: const ProfileEditScreen(),
         )),
-        GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:id/modules', builder: (ctx, st) => JSRLayout(
           title: 'Modules',
           child: ModulesScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
-        GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:id/tasks', builder: (ctx, st) => JSRLayout(
           title: 'Tasks',
           child: TasksScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
-        GoRoute(path: '/projects/:id/kanban', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:id/kanban', builder: (ctx, st) => JSRLayout(
           title: 'Kanban Board',
           child: KanbanBoardScreen(projectId: int.parse(st.pathParameters['id']!)),
         )),
-        GoRoute(path: '/projects/:projectId/modules/:moduleId', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:projectId/modules/:moduleId', builder: (ctx, st) => JSRLayout(
           title: 'Module Tasks',
           child: TasksScreen(
             projectId: int.parse(st.pathParameters['projectId']!),
             moduleId: int.parse(st.pathParameters['moduleId']!),
           ),
         )),
-        GoRoute(path: '/projects/:projectId/modules/:moduleId/kanban', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:projectId/modules/:moduleId/kanban', builder: (ctx, st) => JSRLayout(
           title: 'Module Kanban Board',
           child: KanbanBoardScreen(
             projectId: int.parse(st.pathParameters['projectId']!),
             moduleId: int.parse(st.pathParameters['moduleId']!),
           ),
         )),
-        GoRoute(path: '/projects/:projectId/modules/:moduleId/tasks/:taskId', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:projectId/modules/:moduleId/tasks/:taskId', builder: (ctx, st) => JSRLayout(
           title: 'Task Details',
           child: TaskDetailScreen(
             projectId: int.parse(st.pathParameters['projectId']!),
             taskId: int.parse(st.pathParameters['taskId']!),
           ),
         )),
-        GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/projects/:id/critical', builder: (ctx, st) => JSRLayout(
           title: 'Critical Path',
           child: CriticalPathView(projectId: int.parse(st.pathParameters['id']!)),
         )),
 
         // New navigation routes
-        GoRoute(path: '/pert', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/pert', builder: (ctx, st) => const JSRLayout(
           title: 'PERT Analysis',
           child: PertAnalysisScreen(),
         )),
-        GoRoute(path: '/calendar', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/calendar', builder: (ctx, st) => const JSRLayout(
           title: 'Calendar',
           child: CalendarViewScreen(),
         )),
-        GoRoute(path: '/chat', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/chat', builder: (ctx, st) => const JSRLayout(
           title: 'Chat',
           child: ChatSystemScreen(),
         )),
-        GoRoute(path: '/alerts', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/alerts', builder: (ctx, st) => const JSRLayout(
           title: 'Alerts',
           child: AlertsSystemScreen(),
         )),
-        GoRoute(path: '/others-tasks', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/others-tasks', builder: (ctx, st) => const JSRLayout(
           title: 'Other People\'s Tasks',
           child: OtherPeopleTasksScreen(),
         )),
 
         // Admin routes
-        GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/users/manage', builder: (ctx, st) => const JSRLayout(
           title: 'User Management',
           child: UserManagementScreen(),
         )),
-        GoRoute(path: '/admin/reporting/daily-summary', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/reporting/daily-summary', builder: (ctx, st) => const JSRLayout(
           title: 'Daily Summary Report',
           child: DailySummaryReportScreen(),
         )),
-        GoRoute(path: '/admin/reporting/jsr', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/reporting/jsr', builder: (ctx, st) => const JSRLayout(
           title: 'JSR Reports',
           child: JSRReportsScreen(),
         )),
-        GoRoute(path: '/admin/projects/create', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/projects/create', builder: (ctx, st) => const JSRLayout(
           title: 'Create Project',
           child: ProjectCreateScreen(),
         )),
-        GoRoute(path: '/admin/projects/settings', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/projects/settings', builder: (ctx, st) => const JSRLayout(
           title: 'Project Settings',
           child: ProjectSettingsScreen(),
         )),
-        GoRoute(path: '/admin/projects/edit', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/projects/edit', builder: (ctx, st) => const JSRLayout(
           title: 'Edit Projects',
           child: ProjectSettingsScreen(), // TODO: Create dedicated ProjectEditScreen
         )),
-        GoRoute(path: '/admin/projects/:id/settings', builder: (ctx, st) => ModernLayout(
+        GoRoute(path: '/admin/projects/:id/settings', builder: (ctx, st) => JSRLayout(
           title: 'Project Settings',
           child: ProjectSettingsScreen(projectId: st.pathParameters['id']),
         )),
-        GoRoute(path: '/admin/reporting/jsr/planned', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/reporting/jsr/planned', builder: (ctx, st) => const JSRLayout(
           title: 'JSR Planned Reports',
           child: JSRReportsScreen(),
         )),
-        GoRoute(path: '/admin/reporting/jsr/completed', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/reporting/jsr/completed', builder: (ctx, st) => const JSRLayout(
           title: 'JSR Completed Reports',
           child: JSRReportsScreen(),
         )),
-        GoRoute(path: '/admin/master-data', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/master-data', builder: (ctx, st) => const JSRLayout(
           title: 'Master Data Management',
           child: MasterDataScreen(),
         )),
-        GoRoute(path: '/admin/tags', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/tags', builder: (ctx, st) => const JSRLayout(
           title: 'Tag Management',
           child: TaggingSystemScreen(),
         )),
-        GoRoute(path: '/notifications', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/notifications', builder: (ctx, st) => const JSRLayout(
           title: 'Notifications',
           child: NotificationSystemScreen(),
         )),
-        GoRoute(path: '/search', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/search', builder: (ctx, st) => const JSRLayout(
           title: 'Advanced Search',
           child: AdvancedSearchScreen(),
         )),
-        GoRoute(path: '/admin/roles/assign', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/roles/assign', builder: (ctx, st) => const JSRLayout(
           title: 'Role Assignment',
           child: RoleAssignScreen(),
         )),
-        GoRoute(path: '/admin/roles/manage', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/roles/manage', builder: (ctx, st) => const JSRLayout(
           title: 'Role Management',
           child: RoleManageScreen(),
         )),
-        GoRoute(path: '/admin/modules/manage', builder: (ctx, st) => const ModernLayout(
+        GoRoute(path: '/admin/modules/manage', builder: (ctx, st) => const JSRLayout(
           title: 'Module Management',
           child: ModuleManagementScreen(),
         )),
+        GoRoute(path: '/admin/modules', builder: (ctx, st) => const JSRLayout(
+          title: 'Module Management',
+          child: ModuleManagementScreen(),
+        )),
+        GoRoute(path: '/admin/master-data', builder: (ctx, st) => const JSRLayout(
+          title: 'Master Data Management',
+          child: MasterDataScreen(),
+        )),
 
         // Personal routes
-        GoRoute(path: '/personal/notes', builder: (ctx, st) => const NotesSystemScreen()),
-        GoRoute(path: '/availability', builder: (ctx, st) => const AvailabilityManagementScreen()),
-        GoRoute(path: '/personal/customize', builder: (ctx, st) => const personal.ProfileEditScreen()),
-        GoRoute(path: '/personal/profile', builder: (ctx, st) => const personal.ProfileEditScreen()),
-        GoRoute(path: '/personal/notifications', builder: (ctx, st) => const AlertsSystemScreen()),
+        GoRoute(path: '/personal/notes', builder: (ctx, st) => const JSRLayout(
+          title: 'Notes',
+          child: NotesSystemScreen(),
+        )),
+        GoRoute(path: '/availability', builder: (ctx, st) => const JSRLayout(
+          title: 'Availability Management',
+          child: AvailabilityManagementScreen(),
+        )),
+        GoRoute(path: '/personal/customize', builder: (ctx, st) => const JSRLayout(
+          title: 'Customize Profile',
+          child: personal.ProfileEditScreen(),
+        )),
+        GoRoute(path: '/personal/profile', builder: (ctx, st) => const JSRLayout(
+          title: 'Profile',
+          child: personal.ProfileEditScreen(),
+        )),
+        GoRoute(path: '/personal/notifications', builder: (ctx, st) => const JSRLayout(
+          title: 'Notifications',
+          child: AlertsSystemScreen(),
+        )),
       ],
     );
   }

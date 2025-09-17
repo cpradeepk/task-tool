@@ -33,8 +33,42 @@ router.post('/', requireAnyRole(['Admin','Project Manager','Team Member']), asyn
     console.log('Creating task with data:', req.body);
     console.log('User:', req.user);
 
-    // Basic validation
-    if (!title) return res.status(400).json({ error: 'title required' });
+    // Input validation and sanitization
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Valid title is required' });
+    }
+
+    if (title.length > 255) {
+      return res.status(400).json({ error: 'Title must be less than 255 characters' });
+    }
+
+    if (description && typeof description !== 'string') {
+      return res.status(400).json({ error: 'Description must be a string' });
+    }
+
+    if (description && description.length > 5000) {
+      return res.status(400).json({ error: 'Description must be less than 5000 characters' });
+    }
+
+    if (isNaN(projectId) || projectId <= 0) {
+      return res.status(400).json({ error: 'Valid project ID is required' });
+    }
+
+    // Validate numeric IDs if provided
+    const numericFields = { module_id, status_id, priority_id, task_type_id, assigned_to };
+    for (const [field, value] of Object.entries(numericFields)) {
+      if (value !== undefined && value !== null && (isNaN(Number(value)) || Number(value) <= 0)) {
+        return res.status(400).json({ error: `Valid ${field} is required` });
+      }
+    }
+
+    // Validate dates if provided
+    const dateFields = { planned_end_date, start_date, end_date };
+    for (const [field, value] of Object.entries(dateFields)) {
+      if (value && isNaN(Date.parse(value))) {
+        return res.status(400).json({ error: `Valid ${field} is required` });
+      }
+    }
 
     // Verify module belongs to the project (if module_id is provided)
     if (module_id) {

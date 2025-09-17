@@ -630,7 +630,7 @@ class _CalendarViewScreenState extends State<CalendarViewScreen> {
                                   });
                                   _applyFilters();
                                 },
-                                backgroundColor: Color(tag['color']).withValues(alpha: 0.2),
+                                backgroundColor: Color(tag['color']).withOpacity(0.2),
                                 selectedColor: Color(tag['color']),
                                 checkmarkColor: Colors.white,
                               );

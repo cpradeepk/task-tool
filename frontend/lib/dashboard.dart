@@ -142,7 +142,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: DesignTokens.primaryOrange,
         customShadow: [
           BoxShadow(
-            color: DesignTokens.primaryOrange.withValues(alpha: 0.3),
+            color: DesignTokens.primaryOrange.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -165,7 +165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     'Plan Weekly, Execute Daily',
                     style: TextStyle(
-                      color: DesignTokens.colors['black']!.withValues(alpha: 0.8),
+                      color: DesignTokens.colors['black']!.withOpacity(0.8),
                       fontSize: 16,
                     ),
                   ),
@@ -189,13 +189,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               padding: const EdgeInsets.all(DesignTokens.spacing16),
               decoration: BoxDecoration(
-                color: DesignTokens.colors['black']!.withValues(alpha: 0.1),
+                color: DesignTokens.colors['black']!.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
               ),
               child: Icon(
                 Icons.dashboard,
                 size: 48,
-                color: DesignTokens.colors['black']!.withValues(alpha: 0.6),
+                color: DesignTokens.colors['black']!.withOpacity(0.6),
               ),
             ),
           ],
@@ -219,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           label,
           style: TextStyle(
-            color: DesignTokens.colors['black']!.withValues(alpha: 0.7),
+            color: DesignTokens.colors['black']!.withOpacity(0.7),
             fontSize: 12,
           ),
         ),

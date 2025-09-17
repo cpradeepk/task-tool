@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
-import 'components/center_navigation.dart';
+import 'components/left_sidebar.dart';
 import 'admin_login.dart';
 import 'theme/theme_provider.dart';
 import 'components/animations.dart';
@@ -24,6 +24,7 @@ class ModernLayout extends ConsumerStatefulWidget {
 class _ModernLayoutState extends ConsumerState<ModernLayout> {
   bool _isAdmin = false;
   String? _userEmail;
+  bool _isSidebarCollapsed = false;
 
   @override
   void initState() {
@@ -36,7 +37,16 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
     setState(() {
       _isAdmin = prefs.getBool('is_admin') ?? false;
       _userEmail = prefs.getString('user_email');
+      _isSidebarCollapsed = prefs.getBool('sidebar_collapsed') ?? false;
     });
+  }
+
+  void _toggleSidebar() async {
+    setState(() {
+      _isSidebarCollapsed = !_isSidebarCollapsed;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sidebar_collapsed', _isSidebarCollapsed);
   }
 
   void _showAdminLogin() {
@@ -77,27 +87,39 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
       alignment: Alignment.topLeft,
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: Column(
+        body: Row(
           children: [
-            // Top Header Bar with Logo and User Info
-            Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: const Border(
-                  bottom: BorderSide(
-                    color: Color(0xFFFFECB3),
-                    width: 1,
-                  ),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+            // Left Sidebar
+            LeftSidebar(
+              isAdmin: _isAdmin,
+              currentRoute: currentRoute,
+              isCollapsed: _isSidebarCollapsed,
+              onToggleCollapse: _toggleSidebar,
+            ),
+
+            // Main Content Area
+            Expanded(
+              child: Column(
+                children: [
+                  // Top Header Bar with Logo and User Info
+                  Container(
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: const Border(
+                        bottom: BorderSide(
+                          color: Color(0xFFFFECB3),
+                          width: 1,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -277,17 +299,14 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
               ),
             ),
             
-            // Center Navigation Tabs
-            CenterNavigation(
-              isAdmin: _isAdmin,
-              currentRoute: currentRoute,
-            ),
-            
-            // Main Content Area
-            Expanded(
-              child: Container(
-                color: Colors.white,
-                child: widget.child,
+                  // Main Content Area
+                  Expanded(
+                    child: Container(
+                      color: const Color(0xFFFAFAFA),
+                      child: widget.child,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

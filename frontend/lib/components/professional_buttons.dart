@@ -99,7 +99,7 @@ class _ProfessionalButtonState extends State<ProfessionalButton>
                 boxShadow: widget.variant == ButtonVariant.primary && isEnabled
                     ? [
                         BoxShadow(
-                          color: DesignTokens.primaryOrange.withValues(alpha: 0.2),
+                          color: DesignTokens.primaryOrange.withOpacity(0.2),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -351,7 +351,7 @@ class _ProfessionalFABState extends State<ProfessionalFAB>
                 borderRadius: BorderRadius.circular(widget.mini ? 20 : 28),
                 boxShadow: [
                   BoxShadow(
-                    color: DesignTokens.primaryOrange.withValues(alpha: 0.3),
+                    color: DesignTokens.primaryOrange.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),

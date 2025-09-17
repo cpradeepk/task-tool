@@ -442,7 +442,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   gradient: LinearGradient(
-                                    colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+                                    colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -521,7 +521,7 @@ class _TaggingSystemScreenState extends State<TaggingSystemScreen> {
                                             tag['category'],
                                             style: const TextStyle(fontSize: 10),
                                           ),
-                                          backgroundColor: color.withValues(alpha: 0.2),
+                                          backgroundColor: color.withOpacity(0.2),
                                         ),
                                         const Spacer(),
                                         Text(

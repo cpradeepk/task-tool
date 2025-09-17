@@ -10,6 +10,14 @@ import { initEmail } from './services/email.js';
 import authRouter from './routes/auth.js';
 import { emailQueue, startWorkers } from './queue/index.js';
 import { knex } from './db/index.js';
+import {
+  errorHandler,
+  notFoundHandler,
+  requestLogger,
+  corsErrorHandler,
+  healthCheck,
+  gracefulShutdown
+} from './middleware/errorHandler.js';
 
 const app = express();
 app.use(helmet());
@@ -21,10 +29,12 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(morgan('dev'));
 
+// Add request logging and CORS error handling
+app.use(requestLogger);
+app.use(corsErrorHandler);
+
 // Health route
-app.get('/task/health', (req, res) => {
-  res.json({ ok: true, ts: new Date().toISOString() });
-});
+app.get('/task/health', healthCheck);
 
 // API placeholder
 app.get('/task/api/hello', (req, res) => {
@@ -73,6 +83,10 @@ app.use('/task/api/calendar', calendarRouter);
 // Notes routes
 import notesRouter from './api/notes.js';
 app.use('/task/api/notes', notesRouter);
+
+// Team Chat routes
+import teamChatRouter from './api/team-chat.js';
+app.use('/task/api/chat', teamChatRouter);
 
 // Admin routes
 import adminUsersRouter from './api/admin-users.js';
@@ -135,13 +149,7 @@ app.use('/task/api/chat', chatRouter);
 import usersRouter from './api/users.js';
 app.use('/task/api/users', usersRouter);
 
-const server = http.createServer(app);
-
-// Socket.io under /task/socket.io
-const io = new SocketIOServer(server, {
-  path: '/task/socket.io/',
-  cors: { origin: process.env.CORS_ORIGIN?.split(',') || '*', credentials: true }
-});
+// Socket.io configuration will be handled by the server created below
 
 import { registerIO } from './events.js';
 registerIO(io);
@@ -178,6 +186,17 @@ app.post('/task/api/test-email', async (req, res) => {
   }
 });
 
+// Add error handling middleware (must be after all routes)
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+// Create HTTP server
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+  path: '/task/socket.io/',
+  cors: { origin: process.env.CORS_ORIGIN?.split(',') || '*', credentials: true }
+});
+
 const PORT = process.env.PORT || 3003;
 
 // Start server with basic database connection test
@@ -192,6 +211,17 @@ async function startServer() {
 
   server.listen(PORT, () => {
     console.log(`Task Tool backend listening on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/task/health`);
+    console.log(`API base: http://localhost:${PORT}/task/api`);
+
+    // Initialize email service
+    initEmail();
+
+    // Start queue workers
+    startWorkers();
+
+    // Setup graceful shutdown
+    gracefulShutdown(server);
   });
 }
 

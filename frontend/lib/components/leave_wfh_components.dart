@@ -155,7 +155,7 @@ class _LeaveApplicationFormState extends State<LeaveApplicationForm> {
                 decoration: BoxDecoration(
                   color: DesignTokens.colors['primary50'],
                   borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
-                  border: Border.all(color: DesignTokens.primaryOrange.withValues(alpha: 0.3)),
+                  border: Border.all(color: DesignTokens.primaryOrange.withOpacity(0.3)),
                 ),
                 child: Row(
                   children: [
@@ -698,9 +698,9 @@ class RequestCard extends StatelessWidget {
         vertical: DesignTokens.spacing4,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
         status.toUpperCase(),

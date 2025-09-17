@@ -679,7 +679,7 @@ class _TaskEditModalState extends State<TaskEditModal>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.2),
+                    color: Colors.amber.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(

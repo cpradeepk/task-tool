@@ -400,7 +400,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> with Ticker
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: _getTypeColor(result['type']).withValues(alpha: 0.1),
+                                color: _getTypeColor(result['type']).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Icon(
@@ -424,7 +424,7 @@ class _AdvancedSearchScreenState extends State<AdvancedSearchScreen> with Ticker
                                         result['type'],
                                         style: const TextStyle(fontSize: 10),
                                       ),
-                                      backgroundColor: _getTypeColor(result['type']).withValues(alpha: 0.2),
+                                      backgroundColor: _getTypeColor(result['type']).withOpacity(0.2),
                                     ),
                                     if (result['status'] != null) ...[
                                       const SizedBox(width: 8),

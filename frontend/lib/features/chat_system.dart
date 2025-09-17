@@ -57,10 +57,33 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
   }
 
   Future<void> _loadChannels() async {
+    setState(() => _isLoading = true);
+
+    final jwt = await _getJwt();
+    if (jwt == null) {
+      setState(() {
+        _channels = _generateMockChannels();
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
-      setState(() => _channels = _generateMockChannels());
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/chat/channels'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() => _channels = jsonDecode(response.body));
+      } else {
+        setState(() => _channels = _generateMockChannels());
+      }
     } catch (e) {
+      print('Error loading channels: $e');
       setState(() => _channels = _generateMockChannels());
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -100,37 +123,65 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
   Future<void> _loadMessages(int channelId) async {
     setState(() => _isLoading = true);
 
+    final jwt = await _getJwt();
+    if (jwt == null) {
+      setState(() {
+        _messages = _generateMockMessages(channelId);
+        _isLoading = false;
+      });
+      return;
+    }
+
     try {
-      // Mock messages for development
-      final now = DateTime.now();
-      setState(() => _messages = [
-        {
-          'id': 1,
-          'message': 'Welcome to the team chat! 🎉',
-          'user_email': 'admin@example.com',
-          'timestamp': now.subtract(const Duration(hours: 2)).toIso8601String(),
-          'channel_id': channelId,
-        },
-        {
-          'id': 2,
-          'message': 'Thanks for the warm welcome! Excited to be here.',
-          'user_email': _currentUserEmail ?? 'user@example.com',
-          'timestamp': now.subtract(const Duration(hours: 1)).toIso8601String(),
-          'channel_id': channelId,
-        },
-        {
-          'id': 3,
-          'message': 'Let\'s discuss the upcoming project milestones.',
-          'user_email': 'john@example.com',
-          'timestamp': now.subtract(const Duration(minutes: 30)).toIso8601String(),
-          'channel_id': channelId,
-        },
-      ]);
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/chat/channels/$channelId/messages'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() => _messages = jsonDecode(response.body));
+      } else {
+        setState(() => _messages = _generateMockMessages(channelId));
+      }
     } catch (e) {
-      setState(() => _messages = []);
+      print('Error loading messages: $e');
+      setState(() => _messages = _generateMockMessages(channelId));
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  List<dynamic> _generateMockMessages(int channelId) {
+    final now = DateTime.now();
+    return [
+      {
+        'id': 1,
+        'content': 'Welcome to the team chat! 🎉',
+        'email': 'admin@example.com',
+        'user_name': 'Admin User',
+        'created_at': now.subtract(const Duration(hours: 2)).toIso8601String(),
+        'channel_id': channelId,
+        'type': 'text',
+      },
+      {
+        'id': 2,
+        'content': 'Thanks for the warm welcome! Excited to be here.',
+        'email': _currentUserEmail ?? 'user@example.com',
+        'user_name': 'Current User',
+        'created_at': now.subtract(const Duration(hours: 1)).toIso8601String(),
+        'channel_id': channelId,
+        'type': 'text',
+      },
+      {
+        'id': 3,
+        'content': 'Let\'s discuss the upcoming project milestones.',
+        'email': 'john@example.com',
+        'user_name': 'John Doe',
+        'created_at': now.subtract(const Duration(minutes: 30)).toIso8601String(),
+        'channel_id': channelId,
+        'type': 'text',
+      },
+    ];
   }
 
   Future<void> _sendMessage() async {
@@ -139,18 +190,76 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
     final message = _messageController.text.trim();
     _messageController.clear();
 
-    // Add message locally for demo
-    setState(() {
-      _messages.add({
-        'id': _messages.length + 1,
-        'message': message,
-        'user_email': _currentUserEmail ?? 'user@example.com',
-        'timestamp': DateTime.now().toIso8601String(),
-        'channel_id': _selectedChannelId,
+    final jwt = await _getJwt();
+    if (jwt == null) {
+      // Add message locally for demo
+      setState(() {
+        _messages.add({
+          'id': _messages.length + 1,
+          'content': message,
+          'email': _currentUserEmail ?? 'user@example.com',
+          'user_name': 'Current User',
+          'created_at': DateTime.now().toIso8601String(),
+          'channel_id': _selectedChannelId,
+          'type': 'text',
+        });
       });
-    });
+      _scrollToBottom();
+      return;
+    }
 
-    // Scroll to bottom
+    try {
+      final response = await http.post(
+        Uri.parse('$apiBase/task/api/chat/channels/$_selectedChannelId/messages'),
+        headers: {
+          'Authorization': 'Bearer $jwt',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'content': message,
+          'type': 'text',
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final newMessage = jsonDecode(response.body);
+        setState(() {
+          _messages.add(newMessage);
+        });
+      } else {
+        // Fallback to local message
+        setState(() {
+          _messages.add({
+            'id': _messages.length + 1,
+            'content': message,
+            'email': _currentUserEmail ?? 'user@example.com',
+            'user_name': 'Current User',
+            'created_at': DateTime.now().toIso8601String(),
+            'channel_id': _selectedChannelId,
+            'type': 'text',
+          });
+        });
+      }
+    } catch (e) {
+      print('Error sending message: $e');
+      // Fallback to local message
+      setState(() {
+        _messages.add({
+          'id': _messages.length + 1,
+          'content': message,
+          'email': _currentUserEmail ?? 'user@example.com',
+          'user_name': 'Current User',
+          'created_at': DateTime.now().toIso8601String(),
+          'channel_id': _selectedChannelId,
+          'type': 'text',
+        });
+      });
+    }
+
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -163,22 +272,28 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
   }
 
   String _formatMessageTime(String timestamp) {
-    final messageTime = DateTime.parse(timestamp);
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final messageDate = DateTime(messageTime.year, messageTime.month, messageTime.day);
+    if (timestamp.isEmpty) return '';
 
-    if (messageDate == today) {
-      return DateFormat('HH:mm').format(messageTime);
-    } else if (messageDate == yesterday) {
-      return 'Yesterday ${DateFormat('HH:mm').format(messageTime)}';
-    } else if (now.difference(messageTime).inDays < 7) {
-      return '${DateFormat('EEEE HH:mm').format(messageTime)}';
-    } else if (messageTime.year == now.year) {
-      return DateFormat('MMM dd, HH:mm').format(messageTime);
-    } else {
-      return DateFormat('MMM dd, yyyy HH:mm').format(messageTime);
+    try {
+      final messageTime = DateTime.parse(timestamp);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+      final messageDate = DateTime(messageTime.year, messageTime.month, messageTime.day);
+
+      if (messageDate == today) {
+        return DateFormat('HH:mm').format(messageTime);
+      } else if (messageDate == yesterday) {
+        return 'Yesterday ${DateFormat('HH:mm').format(messageTime)}';
+      } else if (now.difference(messageTime).inDays < 7) {
+        return '${DateFormat('EEEE HH:mm').format(messageTime)}';
+      } else if (messageTime.year == now.year) {
+        return DateFormat('MMM dd, HH:mm').format(messageTime);
+      } else {
+        return DateFormat('MMM dd, yyyy HH:mm').format(messageTime);
+      }
+    } catch (e) {
+      return '';
     }
   }
 
@@ -439,7 +554,7 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                                     itemCount: _messages.length,
                                     itemBuilder: (context, index) {
                                       final message = _messages[index];
-                                      final isCurrentUser = message['user_email'] == _currentUserEmail;
+                                      final isCurrentUser = message['email'] == _currentUserEmail;
                                       
                                       return Container(
                                         margin: const EdgeInsets.only(bottom: 12),
@@ -453,7 +568,7 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                                                 backgroundColor: Colors.blue,
                                                 radius: 16,
                                                 child: Text(
-                                                  message['user_email'].substring(0, 1).toUpperCase(),
+                                                  (message['email'] ?? '').substring(0, 1).toUpperCase(),
                                                   style: const TextStyle(color: Colors.white, fontSize: 12),
                                                 ),
                                               ),
@@ -471,7 +586,7 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                                                   children: [
                                                     if (!isCurrentUser)
                                                       Text(
-                                                        message['user_email'].split('@')[0],
+                                                        message['user_name'] ?? message['email']?.split('@')[0] ?? 'User',
                                                         style: const TextStyle(
                                                           fontSize: 12,
                                                           fontWeight: FontWeight.bold,
@@ -479,18 +594,18 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                                                         ),
                                                       ),
                                                     Text(
-                                                      message['message'],
+                                                      message['content'] ?? '',
                                                       style: TextStyle(
                                                         color: isCurrentUser ? Colors.white : Colors.black,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 4),
                                                     Text(
-                                                      _formatMessageTime(message['timestamp']),
+                                                      _formatMessageTime(message['created_at'] ?? ''),
                                                       style: TextStyle(
                                                         fontSize: 10,
                                                         color: isCurrentUser 
-                                                            ? Colors.white.withValues(alpha: 0.7)
+                                                            ? Colors.white.withOpacity(0.7)
                                                             : Colors.grey.shade600,
                                                       ),
                                                     ),
@@ -504,7 +619,7 @@ class _ChatSystemScreenState extends State<ChatSystemScreen> {
                                                 backgroundColor: Colors.green,
                                                 radius: 16,
                                                 child: Text(
-                                                  message['user_email'].substring(0, 1).toUpperCase(),
+                                                  (message['email'] ?? '').substring(0, 1).toUpperCase(),
                                                   style: const TextStyle(color: Colors.white, fontSize: 12),
                                                 ),
                                               ),

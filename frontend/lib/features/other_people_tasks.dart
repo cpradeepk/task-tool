@@ -278,7 +278,7 @@ class _OtherPeopleTasksScreenState extends State<OtherPeopleTasksScreen> {
                                             task['priority'],
                                             style: const TextStyle(fontSize: 10),
                                           ),
-                                          backgroundColor: TaskPriority.getColor(task['priority']).withValues(alpha: 0.2),
+                                          backgroundColor: TaskPriority.getColor(task['priority']).withOpacity(0.2),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(

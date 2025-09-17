@@ -114,9 +114,9 @@ class ProfessionalTaskCard extends StatelessWidget {
         vertical: DesignTokens.spacing4,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(
         status,
@@ -257,10 +257,10 @@ class ProfessionalTaskCard extends StatelessWidget {
         vertical: DesignTokens.spacing2,
       ),
       decoration: BoxDecoration(
-        color: DesignTokens.primaryOrange.withValues(alpha: 0.1),
+        color: DesignTokens.primaryOrange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
         border: Border.all(
-          color: DesignTokens.primaryOrange.withValues(alpha: 0.3),
+          color: DesignTokens.primaryOrange.withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -298,9 +298,9 @@ class ProfessionalTaskCard extends StatelessWidget {
             vertical: DesignTokens.spacing2,
           ),
           decoration: BoxDecoration(
-            color: Colors.blue.withValues(alpha: 0.1),
+            color: Colors.blue.withOpacity(0.1),
             borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
-            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+            border: Border.all(color: Colors.blue.withOpacity(0.3)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -673,7 +673,7 @@ class _TaskFilterPanelState extends State<TaskFilterPanel> {
       decoration: BoxDecoration(
         color: DesignTokens.colors['primary50'],
         borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
-        border: Border.all(color: DesignTokens.primaryOrange.withValues(alpha: 0.3)),
+        border: Border.all(color: DesignTokens.primaryOrange.withOpacity(0.3)),
       ),
       child: Row(
         children: [

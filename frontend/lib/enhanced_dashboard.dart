@@ -180,7 +180,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
       backgroundColor: DesignTokens.primaryOrange,
       customShadow: [
         BoxShadow(
-          color: DesignTokens.primaryOrange.withValues(alpha: 0.3),
+          color: DesignTokens.primaryOrange.withOpacity(0.3),
           blurRadius: 12,
           offset: const Offset(0, 6),
         ),
@@ -203,7 +203,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: DesignTokens.colors['black']!.withValues(alpha: 0.8),
+                    color: DesignTokens.colors['black']!.withOpacity(0.8),
                     fontSize: 16,
                   ),
                 ),
@@ -213,13 +213,13 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(DesignTokens.spacing16),
             decoration: BoxDecoration(
-              color: DesignTokens.colors['black']!.withValues(alpha: 0.1),
+              color: DesignTokens.colors['black']!.withOpacity(0.1),
               borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
             ),
             child: Icon(
               _getRoleIcon(),
               size: 48,
-              color: DesignTokens.colors['black']!.withValues(alpha: 0.6),
+              color: DesignTokens.colors['black']!.withOpacity(0.6),
             ),
           ),
         ],
@@ -293,7 +293,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
     }
     
     return ProfessionalCard(
-      backgroundColor: alertColor.withValues(alpha: 0.1),
+      backgroundColor: alertColor.withOpacity(0.1),
       child: Row(
         children: [
           Icon(alertIcon, color: alertColor, size: 24),
@@ -798,7 +798,7 @@ class _EnhancedDashboardScreenState extends State<EnhancedDashboardScreen> {
               vertical: DesignTokens.spacing4,
             ),
             decoration: BoxDecoration(
-              color: _getStatusColor(task['status']).withValues(alpha: 0.1),
+              color: _getStatusColor(task['status']).withOpacity(0.1),
               borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
             ),
             child: Text(

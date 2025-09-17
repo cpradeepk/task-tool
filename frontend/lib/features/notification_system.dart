@@ -428,7 +428,7 @@ class _NotificationSystemScreenState extends State<NotificationSystemScreen> wit
                                   width: 40,
                                   height: 40,
                                   decoration: BoxDecoration(
-                                    color: _getPriorityColor(notification['priority']).withValues(alpha: 0.1),
+                                    color: _getPriorityColor(notification['priority']).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Icon(
@@ -469,7 +469,7 @@ class _NotificationSystemScreenState extends State<NotificationSystemScreen> wit
                                             notification['type'],
                                             style: const TextStyle(fontSize: 10),
                                           ),
-                                          backgroundColor: _getPriorityColor(notification['priority']).withValues(alpha: 0.2),
+                                          backgroundColor: _getPriorityColor(notification['priority']).withOpacity(0.2),
                                         ),
                                         const SizedBox(width: 8),
                                         Text(

@@ -66,7 +66,7 @@ class EmployeeIdCard extends StatelessWidget {
             'Employee ID Card',
             style: TextStyle(
               fontSize: isPrintable ? 12 : 10,
-              color: DesignTokens.colors['black']!.withValues(alpha: 0.8),
+              color: DesignTokens.colors['black']!.withOpacity(0.8),
             ),
           ),
         ],
@@ -142,7 +142,7 @@ class EmployeeIdCard extends StatelessWidget {
     
     return Container(
       decoration: BoxDecoration(
-        color: DesignTokens.primaryOrange.withValues(alpha: 0.2),
+        color: DesignTokens.primaryOrange.withOpacity(0.2),
         borderRadius: BorderRadius.circular(DesignTokens.radiusMedium),
       ),
       child: Center(
@@ -199,9 +199,9 @@ class EmployeeIdCard extends StatelessWidget {
                 vertical: DesignTokens.spacing2,
               ),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
+                color: Colors.blue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
               ),
               child: Text(
                 role.toString(),

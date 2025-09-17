@@ -3,7 +3,12 @@ import jwt from 'jsonwebtoken';
 export function requireAuth(req, res, next) {
   const hdr = req.headers['authorization'] || '';
   const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null;
-  const secret = process.env.JWT_SECRET || 'dev-secret';
+  const secret = process.env.JWT_SECRET;
+
+  if (!secret) {
+    console.error('JWT_SECRET environment variable is not set');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
 
   console.log('Auth middleware - URL:', req.url);
   console.log('Auth middleware - Authorization header:', hdr ? 'Present' : 'Missing');
@@ -14,8 +19,8 @@ export function requireAuth(req, res, next) {
     return res.status(401).json({ error: 'Missing token' });
   }
 
-  // Allow test token for development
-  if (token === 'test-jwt-token') {
+  // Allow test token for development ONLY
+  if (process.env.NODE_ENV === 'development' && token === 'test-jwt-token') {
     req.user = { id: 'test-user', email: 'test@swargfood.com' };
     // Add test user roles for RBAC
     req.user.testRoles = ['Admin', 'Project Manager', 'Team Member'];

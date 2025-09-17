@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Design tokens for consistent styling
 class DesignTokens {
@@ -52,10 +53,89 @@ class DesignTokens {
   static const double radiusLarge = 12.0;
   static const double radiusXLarge = 16.0;
 
+  // Typography
+  static const String fontFamily = 'Signika';
+
+  // Font sizes matching JSR web app
+  static const double fontSizeXS = 10.0;
+  static const double fontSizeS = 12.0;
+  static const double fontSizeM = 14.0;
+  static const double fontSizeL = 16.0;
+  static const double fontSizeXL = 18.0;
+  static const double fontSize2XL = 20.0;
+  static const double fontSize3XL = 24.0;
+  static const double fontSize4XL = 28.0;
+  static const double fontSize5XL = 32.0;
+  static const double fontSize6XL = 36.0;
+
+  // Text styles matching JSR web app hierarchy
+  static TextStyle get headingLarge => GoogleFonts.signika(
+    fontSize: fontSize5XL,
+    fontWeight: FontWeight.w700,
+    color: colors['black'],
+    height: 1.2,
+  );
+
+  static TextStyle get headingMedium => GoogleFonts.signika(
+    fontSize: fontSize3XL,
+    fontWeight: FontWeight.w600,
+    color: colors['black'],
+    height: 1.3,
+  );
+
+  static TextStyle get headingSmall => GoogleFonts.signika(
+    fontSize: fontSize2XL,
+    fontWeight: FontWeight.w600,
+    color: colors['black'],
+    height: 1.4,
+  );
+
+  static TextStyle get bodyLarge => GoogleFonts.signika(
+    fontSize: fontSizeL,
+    fontWeight: FontWeight.w400,
+    color: colors['black'],
+    height: 1.5,
+  );
+
+  static TextStyle get bodyMedium => GoogleFonts.signika(
+    fontSize: fontSizeM,
+    fontWeight: FontWeight.w400,
+    color: colors['black'],
+    height: 1.5,
+  );
+
+  static TextStyle get bodySmall => GoogleFonts.signika(
+    fontSize: fontSizeS,
+    fontWeight: FontWeight.w400,
+    color: colors['gray600'],
+    height: 1.4,
+  );
+
+  static TextStyle get labelLarge => GoogleFonts.signika(
+    fontSize: fontSizeM,
+    fontWeight: FontWeight.w500,
+    color: colors['black'],
+    height: 1.4,
+  );
+
+  static TextStyle get labelMedium => GoogleFonts.signika(
+    fontSize: fontSizeS,
+    fontWeight: FontWeight.w500,
+    color: colors['gray700'],
+    height: 1.4,
+  );
+
+  static TextStyle get labelSmall => GoogleFonts.signika(
+    fontSize: fontSizeXS,
+    fontWeight: FontWeight.w500,
+    color: colors['gray600'],
+    height: 1.3,
+  );
+
   // Shadows
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.05),
+      color: Colors.black.withOpacity(0.05),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
@@ -63,7 +143,7 @@ class DesignTokens {
 
   static List<BoxShadow> get cardShadowHover => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.1),
+      color: Colors.black.withOpacity(0.1),
       blurRadius: 12,
       offset: const Offset(0, 4),
     ),
@@ -125,16 +205,33 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         surface: DesignTokens.colors['white']!,
       ),
       scaffoldBackgroundColor: DesignTokens.colors['gray50'],
+      textTheme: GoogleFonts.signikaTextTheme(
+        TextTheme(
+          displayLarge: DesignTokens.headingLarge,
+          displayMedium: DesignTokens.headingMedium,
+          displaySmall: DesignTokens.headingSmall,
+          headlineLarge: DesignTokens.headingLarge,
+          headlineMedium: DesignTokens.headingMedium,
+          headlineSmall: DesignTokens.headingSmall,
+          titleLarge: DesignTokens.headingSmall,
+          titleMedium: DesignTokens.labelLarge,
+          titleSmall: DesignTokens.labelMedium,
+          bodyLarge: DesignTokens.bodyLarge,
+          bodyMedium: DesignTokens.bodyMedium,
+          bodySmall: DesignTokens.bodySmall,
+          labelLarge: DesignTokens.labelLarge,
+          labelMedium: DesignTokens.labelMedium,
+          labelSmall: DesignTokens.labelSmall,
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: DesignTokens.colors['black'],
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: TextStyle(
+        titleTextStyle: DesignTokens.headingSmall.copyWith(
           color: DesignTokens.colors['black'],
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -175,23 +272,14 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         elevation: 2,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: primaryColor.withValues(alpha: 0.1),
+        backgroundColor: primaryColor.withOpacity(0.1),
         selectedColor: primaryColor,
         labelStyle: TextStyle(color: DesignTokens.colors['black']),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
         ),
       ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
-          side: BorderSide(color: DesignTokens.colors['gray200']!),
-        ),
-      ),
+      // cardTheme: CardThemeData configuration removed for compatibility
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
@@ -225,16 +313,33 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         surface: DesignTokens.colors['gray800']!,
       ),
       scaffoldBackgroundColor: DesignTokens.colors['gray900'],
+      textTheme: GoogleFonts.signikaTextTheme(
+        ThemeData.dark().textTheme.copyWith(
+          displayLarge: DesignTokens.headingLarge.copyWith(color: Colors.white),
+          displayMedium: DesignTokens.headingMedium.copyWith(color: Colors.white),
+          displaySmall: DesignTokens.headingSmall.copyWith(color: Colors.white),
+          headlineLarge: DesignTokens.headingLarge.copyWith(color: Colors.white),
+          headlineMedium: DesignTokens.headingMedium.copyWith(color: Colors.white),
+          headlineSmall: DesignTokens.headingSmall.copyWith(color: Colors.white),
+          titleLarge: DesignTokens.headingSmall.copyWith(color: Colors.white),
+          titleMedium: DesignTokens.labelLarge.copyWith(color: Colors.white),
+          titleSmall: DesignTokens.labelMedium.copyWith(color: Colors.white70),
+          bodyLarge: DesignTokens.bodyLarge.copyWith(color: Colors.white),
+          bodyMedium: DesignTokens.bodyMedium.copyWith(color: Colors.white),
+          bodySmall: DesignTokens.bodySmall.copyWith(color: Colors.white70),
+          labelLarge: DesignTokens.labelLarge.copyWith(color: Colors.white),
+          labelMedium: DesignTokens.labelMedium.copyWith(color: Colors.white70),
+          labelSmall: DesignTokens.labelSmall.copyWith(color: Colors.white60),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: DesignTokens.colors['gray800'],
         foregroundColor: Colors.white,
         elevation: 0,
         shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: const TextStyle(
+        titleTextStyle: DesignTokens.headingSmall.copyWith(
           color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -253,23 +358,14 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         foregroundColor: DesignTokens.colors['black'],
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: primaryColor.withValues(alpha: 0.2),
+        backgroundColor: primaryColor.withOpacity(0.2),
         selectedColor: primaryColor,
         labelStyle: const TextStyle(color: Colors.white70),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(DesignTokens.radiusSmall),
         ),
       ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        shadowColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        color: DesignTokens.colors['gray800'],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(DesignTokens.radiusLarge),
-          side: BorderSide(color: DesignTokens.colors['gray700']!),
-        ),
-      ),
+      // cardTheme: CardThemeData configuration removed for compatibility
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: DesignTokens.colors['gray800'],

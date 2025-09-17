@@ -21,7 +21,7 @@ module.exports = {
         REDIS_URL: 'redis://127.0.0.1:6379',
 
         // Auth / JWT
-        JWT_SECRET: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30',
+        JWT_SECRET: 'afu6lJQakmsoXnRyxx3n9zP_VBL9trm7dudoWtTEafHPMh0qbY26S5UlMSA_lQq07c8LD80WnmHzhh-8rwvXWg',
 
         // CORS
         CORS_ORIGIN: 'https://task.amtariksha.com',
