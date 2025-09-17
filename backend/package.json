@@ -41,6 +41,7 @@
     "ics": "^3.7.6"
   },
   "devDependencies": {
+    "axios": "^1.6.0",
     "eslint": "^9.8.0",
     "nodemon": "^3.1.4"
   },
