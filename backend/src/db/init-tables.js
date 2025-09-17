@@ -245,6 +245,23 @@ export async function initializeTables() {
       console.log('Created file_uploads table');
     }
 
+    // Create email_logs table
+    const emailLogsExists = await knex.schema.hasTable('email_logs');
+    if (!emailLogsExists) {
+      await knex.schema.createTable('email_logs', (table) => {
+        table.increments('id').primary();
+        table.integer('user_id').references('id').inTable('users').onDelete('CASCADE');
+        table.string('recipient').notNullable();
+        table.string('subject').notNullable();
+        table.string('template');
+        table.string('status').notNullable(); // sent, failed, pending
+        table.string('message_id');
+        table.text('error_message');
+        table.timestamps(true, true);
+      });
+      console.log('Created email_logs table');
+    }
+
     console.log('Database initialization complete!');
   } catch (error) {
     console.error('Error initializing database:', error);

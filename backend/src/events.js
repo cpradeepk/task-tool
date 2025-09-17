@@ -1,4 +1,5 @@
 import { knex } from './db/index.js';
+import nodemailer from 'nodemailer';
 
 let ioInstance = null;
 const userSockets = new Map(); // Map user IDs to socket IDs
@@ -107,6 +108,15 @@ export function emitTaskCreated(task) {
     storeNotification(task.assigned_to, 'task_assigned', `New task assigned: ${task.title}`, {
       task_id: task.id,
       task_title: task.title
+    });
+
+    // Send email notification
+    sendEmailNotification(task.assigned_to, 'task_assigned', {
+      task_id: task.id,
+      task_title: task.title,
+      project_name: task.project_name,
+      priority: task.priority,
+      due_date: task.due_date
     });
   }
 }
@@ -262,5 +272,117 @@ export function emitUserActivity(userId, activity, data = {}) {
     data,
     timestamp: new Date().toISOString()
   });
+}
+
+// Email functionality
+const createEmailTransporter = () => {
+  if (process.env.EMAIL_SERVICE === 'gmail') {
+    return nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+  } else if (process.env.SMTP_HOST) {
+    return nodemailer.createTransporter({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  }
+  return null;
+};
+
+// Send email notification
+export async function sendEmailNotification(userId, template, data) {
+  try {
+    const transporter = createEmailTransporter();
+    if (!transporter) return;
+
+    // Get user email
+    const user = await knex('users').where('id', userId).first();
+    if (!user || !user.email || !user.email_notifications) return;
+
+    const emailTemplates = {
+      task_assigned: {
+        subject: `New Task Assigned: ${data.task_title}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #FFA301;">Task Assigned</h2>
+            <p>Hello ${user.name},</p>
+            <p>You have been assigned a new task:</p>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <h3 style="margin: 0 0 10px 0;">${data.task_title}</h3>
+              <p style="margin: 0;"><strong>Project:</strong> ${data.project_name || 'N/A'}</p>
+              <p style="margin: 0;"><strong>Priority:</strong> ${data.priority || 'Medium'}</p>
+              ${data.due_date ? `<p style="margin: 0;"><strong>Due Date:</strong> ${data.due_date}</p>` : ''}
+            </div>
+            <p><a href="${process.env.APP_URL || 'https://task.amtariksha.com'}/task/tasks/${data.task_id}" style="background: #FFA301; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Task</a></p>
+            <p>Best regards,<br>Task Tool Team</p>
+          </div>
+        `
+      },
+      deadline_reminder: {
+        subject: `Deadline Reminder: ${data.task_title}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #dc3545;">Deadline Reminder</h2>
+            <p>Hello ${user.name},</p>
+            <p>This is a reminder that the following task is due ${data.time_remaining}:</p>
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0;">
+              <h3 style="margin: 0 0 10px 0;">${data.task_title}</h3>
+              <p style="margin: 0;"><strong>Due Date:</strong> ${data.due_date}</p>
+              <p style="margin: 0;"><strong>Priority:</strong> ${data.priority || 'Medium'}</p>
+            </div>
+            <p><a href="${process.env.APP_URL || 'https://task.amtariksha.com'}/task/tasks/${data.task_id}" style="background: #dc3545; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Task</a></p>
+            <p>Best regards,<br>Task Tool Team</p>
+          </div>
+        `
+      }
+    };
+
+    const emailTemplate = emailTemplates[template];
+    if (!emailTemplate) return;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'noreply@tasktool.com',
+      to: user.email,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    // Log email
+    await knex('email_logs').insert({
+      user_id: userId,
+      recipient: user.email,
+      subject: emailTemplate.subject,
+      template,
+      status: 'sent',
+      message_id: info.messageId,
+      created_at: new Date()
+    }).catch(() => {});
+
+    console.log(`Email sent to ${user.email}: ${emailTemplate.subject}`);
+  } catch (error) {
+    console.error('Email send error:', error);
+
+    // Log failed email
+    await knex('email_logs').insert({
+      user_id: userId,
+      recipient: 'unknown',
+      subject: template,
+      template,
+      status: 'failed',
+      error_message: error.message,
+      created_at: new Date()
+    }).catch(() => {});
+  }
 }
 

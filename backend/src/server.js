@@ -92,6 +92,14 @@ app.use('/task/api/chat', teamChatRouter);
 import notificationsRouter from './api/notifications.js';
 app.use('/task/api/notifications', notificationsRouter);
 
+// Search routes
+import searchRouter from './api/search.js';
+app.use('/task/api/search', searchRouter);
+
+// Email routes
+import emailRouter from './api/email.js';
+app.use('/task/api/email', emailRouter);
+
 // Admin routes
 import adminUsersRouter from './api/admin-users.js';
 import adminReportsRouter from './api/admin-reports.js';
