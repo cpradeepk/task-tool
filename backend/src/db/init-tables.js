@@ -223,6 +223,28 @@ export async function initializeTables() {
       console.log('Created notifications table');
     }
 
+    // Create file_uploads table
+    const fileUploadsExists = await knex.schema.hasTable('file_uploads');
+    if (!fileUploadsExists) {
+      await knex.schema.createTable('file_uploads', (table) => {
+        table.increments('id').primary();
+        table.integer('user_id').references('id').inTable('users').onDelete('CASCADE');
+        table.string('original_name').notNullable();
+        table.string('filename').notNullable();
+        table.string('file_path').notNullable();
+        table.string('file_url').notNullable();
+        table.string('mime_type');
+        table.integer('file_size');
+        table.string('storage_type').defaultTo('local');
+        table.string('category').defaultTo('general');
+        table.text('description');
+        table.integer('task_id').references('id').inTable('tasks').onDelete('SET NULL');
+        table.integer('project_id').references('id').inTable('projects').onDelete('SET NULL');
+        table.timestamps(true, true);
+      });
+      console.log('Created file_uploads table');
+    }
+
     console.log('Database initialization complete!');
   } catch (error) {
     console.error('Error initializing database:', error);
