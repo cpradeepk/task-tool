@@ -215,7 +215,9 @@ export async function initializeTables() {
         table.string('title').notNullable();
         table.text('message');
         table.string('type');
-        table.boolean('is_read').defaultTo(false);
+        table.json('data');
+        table.boolean('read').defaultTo(false);
+        table.timestamp('read_at');
         table.timestamps(true, true);
       });
       console.log('Created notifications table');
