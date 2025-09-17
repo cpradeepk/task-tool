@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/theme_provider.dart';
+
+const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
 class HorizontalNavbar extends ConsumerStatefulWidget {
   final String currentRoute;
@@ -24,6 +28,48 @@ class HorizontalNavbar extends ConsumerStatefulWidget {
 
 class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
   bool _isMobileMenuOpen = false;
+  List<dynamic> _projects = [];
+  bool _projectsExpanded = false;
+  bool _loadingProjects = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.isAdmin) {
+      _loadProjects();
+    }
+  }
+
+  Future<String?> _getJwt() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt');
+  }
+
+  Future<void> _loadProjects() async {
+    if (_loadingProjects) return;
+
+    setState(() => _loadingProjects = true);
+
+    try {
+      final jwt = await _getJwt();
+      if (jwt == null) return;
+
+      final response = await http.get(
+        Uri.parse('$apiBase/task/api/projects'),
+        headers: {'Authorization': 'Bearer $jwt'},
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _projects = jsonDecode(response.body) as List<dynamic>;
+        });
+      }
+    } catch (e) {
+      print('Error loading projects: $e');
+    } finally {
+      setState(() => _loadingProjects = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -195,9 +241,17 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
-                  children: _getNavigationItems()
-                      .map((item) => _buildNavTab(item, false))
-                      .toList(),
+                  children: [
+                    ..._getNavigationItems()
+                        .where((item) => item.route != '/projects')
+                        .map((item) => _buildNavTab(item, false))
+                        .toList(),
+                    if (!widget.isAdmin) _buildProjectsDropdown(),
+                    ..._getNavigationItems()
+                        .where((item) => item.route != '/projects' && item.route != '/dashboard' && item.route != '/tasks')
+                        .map((item) => _buildNavTab(item, false))
+                        .toList(),
+                  ],
                 ),
               ),
             ),
@@ -221,6 +275,105 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProjectsDropdown() {
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 8),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: widget.currentRoute.startsWith('/projects')
+              ? DesignTokens.colors['primary']
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: widget.currentRoute.startsWith('/projects')
+              ? Border.all(
+                  color: DesignTokens.colors['primary600']!.withOpacity(0.3),
+                  width: 1,
+                )
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.folder,
+              size: 16,
+              color: widget.currentRoute.startsWith('/projects')
+                  ? DesignTokens.colors['black']
+                  : DesignTokens.colors['gray600'],
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Projects',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: widget.currentRoute.startsWith('/projects')
+                    ? FontWeight.w600
+                    : FontWeight.w500,
+                color: widget.currentRoute.startsWith('/projects')
+                    ? DesignTokens.colors['black']
+                    : DesignTokens.colors['gray600'],
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 16,
+              color: widget.currentRoute.startsWith('/projects')
+                  ? DesignTokens.colors['black']
+                  : DesignTokens.colors['gray600'],
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => [
+        PopupMenuItem<String>(
+          value: '/projects',
+          child: Row(
+            children: [
+              Icon(Icons.folder, size: 16, color: DesignTokens.colors['gray600']),
+              const SizedBox(width: 8),
+              const Text('All Projects'),
+            ],
+          ),
+        ),
+        if (_projects.isNotEmpty) const PopupMenuDivider(),
+        ..._projects.take(5).map((project) => PopupMenuItem<String>(
+          value: '/projects/${project['id']}',
+          child: Row(
+            children: [
+              Icon(Icons.folder_open, size: 16, color: DesignTokens.colors['primary']),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  project['name'] ?? 'Unnamed Project',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
+        if (_projects.length > 5) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: '/projects',
+            child: Row(
+              children: [
+                Icon(Icons.more_horiz, size: 16, color: DesignTokens.colors['gray600']),
+                const SizedBox(width: 8),
+                Text('View All (${_projects.length})'),
+              ],
+            ),
+          ),
+        ],
+      ],
+      onSelected: (value) {
+        context.go(value);
+      },
     );
   }
 
