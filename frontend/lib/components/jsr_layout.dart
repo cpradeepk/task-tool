@@ -15,7 +15,7 @@ class JSRLayout extends ConsumerStatefulWidget {
   const JSRLayout({
     super.key,
     required this.child,
-    this.title = 'EassyLife',
+    this.title = 'Amtariksha',
   });
 
   @override
@@ -100,60 +100,7 @@ class _JSRLayoutState extends ConsumerState<JSRLayout> {
           ],
         ),
 
-        // Floating Action Buttons for Zoom and Admin
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // Admin Login Button (only show if not admin and no user email)
-            if (!_isAdmin && _userEmail == null) ...[
-              FloatingActionButton.small(
-                onPressed: _showAdminLogin,
-                backgroundColor: DesignTokens.colors['primary'],
-                foregroundColor: DesignTokens.colors['black'],
-                tooltip: 'Admin Login',
-                heroTag: 'admin',
-                child: const Icon(Icons.admin_panel_settings),
-              ),
-              const SizedBox(height: 8),
-            ],
 
-            // Zoom Controls
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                FloatingActionButton.small(
-                  onPressed: _zoomOut,
-                  backgroundColor: Colors.white,
-                  foregroundColor: DesignTokens.colors['black'],
-                  tooltip: 'Zoom Out',
-                  heroTag: 'zoomOut',
-                  child: const Icon(Icons.zoom_out),
-                ),
-                const SizedBox(width: 8),
-                FloatingActionButton.small(
-                  onPressed: _resetZoom,
-                  backgroundColor: Colors.white,
-                  foregroundColor: DesignTokens.colors['black'],
-                  tooltip: 'Reset Zoom (${(zoomLevel * 100).round()}%)',
-                  heroTag: 'resetZoom',
-                  child: Text(
-                    '${(zoomLevel * 100).round()}%',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FloatingActionButton.small(
-                  onPressed: _zoomIn,
-                  backgroundColor: Colors.white,
-                  foregroundColor: DesignTokens.colors['black'],
-                  tooltip: 'Zoom In',
-                  heroTag: 'zoomIn',
-                  child: const Icon(Icons.zoom_in),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

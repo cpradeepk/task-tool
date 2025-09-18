@@ -267,7 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('KaryaSiddhi Login'),
+        title: const Text('Amtariksha Login'),
         backgroundColor: const Color(0xFFFFA301), // Orange theme
         foregroundColor: Colors.white,
         actions: [
@@ -286,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('KaryaSiddhi', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+              const Text('Amtariksha', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
               const SizedBox(height: 32),
 
 

@@ -179,41 +179,104 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
                       const SizedBox(width: 12),
                     ],
 
-                    // Admin Login Button (if not admin)
-                    if (!widget.isAdmin) ...[
-                      TextButton.icon(
-                        onPressed: () => context.go('/admin-login'),
-                        icon: Icon(
-                          Icons.admin_panel_settings,
-                          size: 16,
-                          color: DesignTokens.colors['primary'],
-                        ),
-                        label: Text(
-                          isMobile ? '' : 'Admin',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: DesignTokens.colors['primary'],
+                    // Profile Menu with Settings
+                    PopupMenuButton<String>(
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'settings':
+                            context.go('/personal/profile');
+                            break;
+                          case 'admin':
+                            context.go('/admin-login');
+                            break;
+                          case 'logout':
+                            widget.onSignOut?.call();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem<String>(
+                          value: 'settings',
+                          child: Row(
+                            children: [
+                              Icon(Icons.settings, size: 16, color: DesignTokens.colors['gray600']),
+                              const SizedBox(width: 8),
+                              const Text('Settings'),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-
-                    // Logout Button
-                    TextButton.icon(
-                      onPressed: widget.onSignOut,
-                      icon: Icon(
-                        Icons.logout,
-                        size: 16,
-                        color: DesignTokens.colors['black'],
-                      ),
-                      label: Text(
-                        isMobile ? '' : 'Logout',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: DesignTokens.colors['black'],
+                        if (!widget.isAdmin) ...[
+                          PopupMenuItem<String>(
+                            value: 'admin',
+                            child: Row(
+                              children: [
+                                Icon(Icons.admin_panel_settings, size: 16, color: DesignTokens.colors['primary']),
+                                const SizedBox(width: 8),
+                                const Text('Admin Login'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const PopupMenuDivider(),
+                        PopupMenuItem<String>(
+                          value: 'logout',
+                          child: Row(
+                            children: [
+                              Icon(Icons.logout, size: 16, color: DesignTokens.colors['gray600']),
+                              const SizedBox(width: 8),
+                              const Text('Sign Out'),
+                            ],
+                          ),
+                        ),
+                      ],
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: DesignTokens.colors['primary'],
+                              child: Text(
+                                _getUserInitials(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            if (!isMobile) ...[
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _getUserDisplayName(),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: DesignTokens.colors['black'],
+                                    ),
+                                  ),
+                                  Text(
+                                    _getRoleDisplayName(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: DesignTokens.colors['gray600'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                size: 16,
+                                color: DesignTokens.colors['gray600'],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                       style: TextButton.styleFrom(
@@ -263,15 +326,13 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
+                    // Render all navigation items without duplicates
                     ..._getNavigationItems()
-                        .where((item) => item.route != '/projects')
+                        .where((item) => item.route != '/projects') // Projects handled separately
                         .map((item) => _buildNavTab(item, false))
                         .toList(),
+                    // Projects dropdown (only for non-admin users)
                     if (!widget.isAdmin) _buildProjectsDropdown(),
-                    ..._getNavigationItems()
-                        .where((item) => item.route != '/projects' && item.route != '/dashboard' && item.route != '/tasks')
-                        .map((item) => _buildNavTab(item, false))
-                        .toList(),
                   ],
                 ),
               ),
@@ -466,57 +527,61 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
   }
 
   List<NavigationItem> _getNavigationItems() {
-    final baseItems = [
+    // Common navigation items for all users
+    final commonItems = [
       NavigationItem(
         route: '/dashboard',
         label: 'Dashboard',
         icon: Icons.home,
       ),
+      NavigationItem(
+        route: '/tasks',
+        label: 'Tasks',
+        icon: Icons.add_task,
+      ),
+      NavigationItem(
+        route: '/projects',
+        label: 'Projects',
+        icon: Icons.folder,
+      ),
+      NavigationItem(
+        route: '/pert',
+        label: 'Pert',
+        icon: Icons.account_tree,
+      ),
+      NavigationItem(
+        route: '/calendar',
+        label: 'Calendar',
+        icon: Icons.calendar_today,
+      ),
+      NavigationItem(
+        route: '/chat',
+        label: 'Chat',
+        icon: Icons.chat,
+      ),
+      NavigationItem(
+        route: '/personal/notes',
+        label: 'Notes',
+        icon: Icons.note,
+      ),
+      NavigationItem(
+        route: '/other-people-tasks',
+        label: 'Other People\'s Tasks',
+        icon: Icons.people_alt,
+      ),
     ];
 
     if (widget.isAdmin) {
       return [
-        ...baseItems,
+        ...commonItems,
         NavigationItem(
           route: '/users',
           label: 'User Management',
           icon: Icons.people,
         ),
-        NavigationItem(
-          route: '/settings',
-          label: 'Settings',
-          icon: Icons.settings,
-        ),
       ];
     } else {
-      return [
-        ...baseItems,
-        NavigationItem(
-          route: '/tasks',
-          label: 'Tasks',
-          icon: Icons.add_task,
-        ),
-        NavigationItem(
-          route: '/projects',
-          label: 'Projects',
-          icon: Icons.folder,
-        ),
-        NavigationItem(
-          route: '/chat',
-          label: 'Chat',
-          icon: Icons.chat,
-        ),
-        NavigationItem(
-          route: '/personal/notes',
-          label: 'Notes',
-          icon: Icons.note,
-        ),
-        NavigationItem(
-          route: '/personal/profile',
-          label: 'Profile',
-          icon: Icons.person,
-        ),
-      ];
+      return commonItems;
     }
   }
 
@@ -531,11 +596,25 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
     if (widget.userEmail == null) return 'User';
     final emailParts = widget.userEmail!.split('@');
     if (emailParts.isNotEmpty) {
-      return emailParts[0].split('.').map((part) => 
+      return emailParts[0].split('.').map((part) =>
         part.isNotEmpty ? part[0].toUpperCase() + part.substring(1) : part
       ).join(' ');
     }
     return 'User';
+  }
+
+  String _getUserInitials() {
+    if (widget.userEmail == null) return 'U';
+    final emailParts = widget.userEmail!.split('@');
+    if (emailParts.isNotEmpty) {
+      final nameParts = emailParts[0].split('.');
+      if (nameParts.length >= 2) {
+        return '${nameParts[0][0].toUpperCase()}${nameParts[1][0].toUpperCase()}';
+      } else if (nameParts.isNotEmpty) {
+        return nameParts[0].substring(0, 2).toUpperCase();
+      }
+    }
+    return 'U';
   }
 }
 

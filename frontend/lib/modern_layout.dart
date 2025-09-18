@@ -142,7 +142,7 @@ class _ModernLayoutState extends ConsumerState<ModernLayout> {
                         ),
                         const SizedBox(width: 12),
                         const Text(
-                          'KaryaSiddhi',
+                          'Amtariksha',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
