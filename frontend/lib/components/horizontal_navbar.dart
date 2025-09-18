@@ -128,7 +128,7 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'EassyLife',
+                                  'Amtariksha',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -177,6 +177,27 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
                         ],
                       ),
                       const SizedBox(width: 12),
+                    ],
+
+                    // Admin Login Button (if not admin)
+                    if (!widget.isAdmin) ...[
+                      TextButton.icon(
+                        onPressed: () => context.go('/admin-login'),
+                        icon: Icon(
+                          Icons.admin_panel_settings,
+                          size: 16,
+                          color: DesignTokens.colors['primary'],
+                        ),
+                        label: Text(
+                          isMobile ? '' : 'Admin',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: DesignTokens.colors['primary'],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                     ],
 
                     // Logout Button
@@ -486,12 +507,12 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
           icon: Icons.chat,
         ),
         NavigationItem(
-          route: '/notes',
+          route: '/personal/notes',
           label: 'Notes',
           icon: Icons.note,
         ),
         NavigationItem(
-          route: '/profile',
+          route: '/personal/profile',
           label: 'Profile',
           icon: Icons.person,
         ),
