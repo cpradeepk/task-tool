@@ -24,6 +24,33 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
+    // Ensure soft delete columns exist
+    await ensureSoftDeleteColumns('projects');
+
+    // Get single project excluding soft deleted ones
+    const project = await getQueryWithSoftDelete('projects')
+      .select('*')
+      .where('id', id)
+      .first();
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    res.json(project);
+  } catch (error) {
+    console.error('Error fetching project:', error);
+    res.status(500).json({ error: 'Failed to fetch project' });
+  }
+});
+
 router.post('/', requireAnyRole(['Admin','Project Manager']), async (req, res) => {
   try {
     const { name, start_date } = req.body;

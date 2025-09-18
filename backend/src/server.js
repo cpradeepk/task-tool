@@ -58,7 +58,7 @@ app.use('/task/api/dashboard', dashboardRouter);
 
 // Task comments and history routes
 import taskCommentsRouter from './api/task-comments.js';
-app.use('/task/api/tasks', taskCommentsRouter);
+app.use('/task/api/task-comments', taskCommentsRouter);
 
 // Task templates routes
 import taskTemplatesRouter from './api/task-templates.js';
@@ -118,6 +118,10 @@ import modulesRouter from './api/modules.js';
 import tasksRouter from './api/tasks.js';
 app.use('/task/api/projects/:projectId/modules', modulesRouter);
 app.use('/task/api/projects/:projectId/tasks', tasksRouter);
+
+// Global tasks route (for frontend compatibility)
+app.use('/task/api/tasks', tasksRouter);
+
 import tasksAdvancedRouter from './api/tasks-advanced.js';
 app.use('/task/api/projects/:projectId/tasks', tasksAdvancedRouter);
 
