@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import '../modern_layout.dart';
 
 const String apiBase = String.fromEnvironment('API_BASE', defaultValue: 'https://task.amtariksha.com');
 
@@ -266,6 +265,37 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
       } else {
         // For demo, add/update locally
         final now = DateTime.now().toIso8601String();
+        setState(() {
+          if (_editingNoteId != null) {
+            final index = _notes.indexWhere((n) => n['id'] == _editingNoteId);
+            if (index != -1) {
+              _notes[index] = {
+                ..._notes[index],
+                ...noteData,
+                'updated_at': now,
+              };
+            }
+          } else {
+            _notes.insert(0, {
+              'id': _notes.length + 1,
+              ...noteData,
+              'created_at': now,
+              'updated_at': now,
+              'tags': [],
+              'is_favorite': false,
+              'attachments': [],
+              'type': _selectedNoteType,
+            });
+          }
+        });
+        _clearForm();
+        _filterNotes();
+        _showSuccessMessage(_editingNoteId != null ? 'Note updated successfully' : 'Note created successfully');
+      }
+    } catch (e) {
+      // For demo, add/update locally
+      final now = DateTime.now().toIso8601String();
+      setState(() {
         if (_editingNoteId != null) {
           final index = _notes.indexWhere((n) => n['id'] == _editingNoteId);
           if (index != -1) {
@@ -282,33 +312,12 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
             'created_at': now,
             'updated_at': now,
             'tags': [],
+            'is_favorite': false,
+            'attachments': [],
+            'type': _selectedNoteType,
           });
         }
-        _clearForm();
-        _filterNotes();
-        _showSuccessMessage(_editingNoteId != null ? 'Note updated successfully' : 'Note created successfully');
-      }
-    } catch (e) {
-      // For demo, add/update locally
-      final now = DateTime.now().toIso8601String();
-      if (_editingNoteId != null) {
-        final index = _notes.indexWhere((n) => n['id'] == _editingNoteId);
-        if (index != -1) {
-          _notes[index] = {
-            ..._notes[index],
-            ...noteData,
-            'updated_at': now,
-          };
-        }
-      } else {
-        _notes.insert(0, {
-          'id': _notes.length + 1,
-          ...noteData,
-          'created_at': now,
-          'updated_at': now,
-          'tags': [],
-        });
-      }
+      });
       _clearForm();
       _filterNotes();
       _showSuccessMessage(_editingNoteId != null ? 'Note updated successfully' : 'Note created successfully');
@@ -420,9 +429,8 @@ class _NotesSystemScreenState extends State<NotesSystemScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ModernLayout(
-      title: 'My Notes',
-      child: Row(
+    return Scaffold(
+      body: Row(
         children: [
           // Notes List
           Expanded(

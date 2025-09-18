@@ -27,6 +27,7 @@ import 'features/other_people_tasks.dart';
 import 'features/tagging_system.dart';
 import 'features/notification_system.dart';
 import 'features/advanced_search.dart';
+import 'features/all_tasks.dart';
 import 'admin/jsr_reports.dart';
 import 'admin/project_create.dart';
 import 'admin/project_settings.dart';
@@ -68,6 +69,12 @@ class AppRouter {
 
         // Legacy home route redirects to dashboard
         GoRoute(path: '/', redirect: (ctx, st) => '/dashboard'),
+
+        // General tasks page - shows all user's tasks across projects
+        GoRoute(path: '/tasks', builder: (ctx, st) => const JSRLayout(
+          title: 'All Tasks',
+          child: AllTasksScreen(),
+        )),
 
         // Main application routes with new layout
         GoRoute(path: '/projects', builder: (ctx, st) => JSRLayout(
