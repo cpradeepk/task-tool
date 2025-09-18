@@ -279,13 +279,6 @@ class _HorizontalNavbarState extends ConsumerState<HorizontalNavbar> {
                           ],
                         ),
                       ),
-                      style: TextButton.styleFrom(
-                        foregroundColor: DesignTokens.colors['black'],
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                      ),
                     ),
 
                     // Mobile menu button
